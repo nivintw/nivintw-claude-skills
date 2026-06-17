@@ -52,9 +52,31 @@ end_rec() { # name
   echo "wrote $CAST_OUT/$1.cast"
 }
 
-# Type literal text into the recorded shell (the -l flag stops tmux interpreting
-# words like "Enter" as key names).
+# Type literal text in ONE keystroke event (instant). Rarely what you want for a
+# command — it appears all at once and the viewer never sees it typed. Prefer
+# type_human for anything the viewer should watch being entered. The -l flag
+# stops tmux interpreting words like "Enter" as key names.
 type_in() { tmux send-keys -t "cast_$1" -l "$2"; }
+
+# Type text one character at a time, so asciinema records the keystrokes spread
+# over time and playback shows a typewriter effect instead of an instant paste.
+# This is the single biggest difference between a cast that reads as "someone is
+# using this tool" and one that's disorienting. CAST_TYPE_DELAY tunes the speed
+# (seconds per char; ~0.045 ≈ a brisk human). Use it for commands AND for queries
+# typed into a TUI (fzf filters, etc.).
+: "${CAST_TYPE_DELAY:=0.045}"
+type_human() { # name text
+  local s="cast_$1" text="$2" i
+  for (( i=0; i<${#text}; i++ )); do
+    tmux send-keys -t "$s" -l "${text:i:1}"
+    sleep "$CAST_TYPE_DELAY"
+  done
+}
+
+# Type a command with type_human, hold a beat so it's readable, then press Enter.
+# The pause-before-Enter (default 0.5s) is what lets a viewer actually read the
+# command before output scrolls in.
+run_cmd() { type_human "$1" "$2"; sleep "${3:-0.5}"; tmux send-keys -t "cast_$1" Enter; }
 
 # Send a named key or chord: Enter, Tab, Escape, BSpace, C-c, C-d, Up, Down …
 key() { tmux send-keys -t "cast_$1" "$2"; }

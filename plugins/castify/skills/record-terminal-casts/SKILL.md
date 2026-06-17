@@ -54,9 +54,13 @@ In this skill's `scripts/` directory (read them before adapting):
   functions/aliases still load but the prompt chrome is tidy. Adapt the idea
   (a minimal `PS1`) for bash/zsh.
 - **`example-fixtures.sh`** / **`example-record.sh`** — a complete worked batch:
-  builds throwaway fixtures, then records six demos (a fuzzy git checkout, live
-  ripgrep search, a process killer, multi-repo status, cache cleanup, name
-  resolution). Copy this shape.
+  builds throwaway fixtures, then records five demos (a fuzzy git checkout, live
+  ripgrep search, multi-repo status, cache cleanup, name resolution). Copy this
+  shape.
+- **`cast-scrub.py`** — post-process a `.cast` to delete output events matching a
+  pattern (default: `direnv:` noise). A `.cast` is JSON with absolute timestamps,
+  so dropping an event is safe — remaining timing is unchanged. Use it to remove
+  shell-startup noise a recording caught without re-recording.
 
 ## Process
 
@@ -69,11 +73,17 @@ In this skill's `scripts/` directory (read them before adapting):
    clean. See `example-fixtures.sh`. Keep fixture git identity isolated
    (`GIT_CONFIG_GLOBAL=/dev/null`, dummy author).
 
-3. **Write a driver per demo** as a short sequence of `type_in` / `key` / `pause`.
+3. **Write a driver per demo** as a short sequence of `run_cmd` / `type_human` /
+   `key` / `pause`.
    Rules that matter:
-   - Use `type_in` (tmux `send-keys -l`) for literal text so words like "Enter"
-     aren't interpreted as keys; use `key` for actual keys (`Enter`, `Tab`,
-     `Escape`, `C-c`).
+   - **Type like a human, not a paste.** Use `run_cmd` (types char-by-char, holds
+     a beat, presses Enter) for commands, and `type_human` for text typed into a
+     TUI (an fzf query, etc.). The instant `type_in` dumps the whole string in one
+     event — the viewer never sees it typed, so the command just *appears* and
+     runs, which reads as disorienting. This per-character pacing is the single
+     biggest quality lever; reserve `type_in` for when instant really is wanted.
+   - Use `key` for actual keys (`Enter`, `Tab`, `Escape`, `C-c`); the `-l` typing
+     helpers won't misinterpret words like "Enter" as key names.
    - Give each interactive tool time to come up before typing into it
      (`start_rec` already sleeps ~3s for asciinema+shell; add a `pause` after
      launching fzf/less/etc.).

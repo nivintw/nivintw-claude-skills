@@ -16,6 +16,15 @@ set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 SHELL_CMD="${CAST_SHELL:-fish}"
 
+# Keep direnv silent in the cast. The recorded shell's direnv hook fires at
+# startup (before any prompt-init runs), so this must happen here, not in
+# recprompt.fish. Clearing DIRENV_* removes any inherited "we were in a direnv
+# dir" state, so the hook finds a clean slate and says nothing (rather than
+# printing "direnv: unloading"). The empty log format is a belt-and-suspenders.
+# All harmless if direnv isn't used.
+export DIRENV_LOG_FORMAT=''
+unset DIRENV_DIR DIRENV_FILE DIRENV_DIFF DIRENV_WATCHES 2>/dev/null || true
+
 case "$SHELL_CMD" in
   fish) CMD="fish -C 'source \"$HERE/recprompt.fish\"'" ;;
   bash) CMD="bash --rcfile '$HERE/recprompt.bash'" ;;   # provide your own if used
