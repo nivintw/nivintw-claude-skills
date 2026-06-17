@@ -1,0 +1,20 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "nivintw-claude-skills",
+  "description": "Tyler Nivin's Claude Code plugins.",
+  "owner": {
+    "name": "Tyler Nivin",
+    "url": "https://github.com/nivintw"
+  },
+  "plugins": [
+    {
+      "name": "castify",
+      "source": "./plugins/castify",
+      "description": "Make asciinema recordings scriptable: script every keystroke and pause instead of performing the session live, so casts are reproducible and automatable — and so you can even record interactive TUIs like fzf. Includes the tmux-driven harness and a web-embedding guide.",
+      "author": {
+        "name": "Tyler Nivin"
+      },
+      "category": "documentation"
+    }
+  ]
+}

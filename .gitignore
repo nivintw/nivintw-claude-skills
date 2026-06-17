@@ -1,0 +1,4 @@
+# Generated cast output from the example scripts
+casts/
+*.txt
+.DS_Store
