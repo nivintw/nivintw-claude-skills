@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: © 2026 Tyler Nivin
+# SPDX-License-Identifier: MIT
+
 # shellcheck shell=bash
 # cast-lib.sh — tmux-driven asciinema cast recording helpers.
 #

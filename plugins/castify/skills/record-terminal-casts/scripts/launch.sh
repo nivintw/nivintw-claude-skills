@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# SPDX-FileCopyrightText: © 2026 Tyler Nivin
+# SPDX-License-Identifier: MIT
+
 # launch.sh — start one asciinema recording of a clean shell.
 #
 # Run inside the tmux pane by cast-lib.sh's start_rec. $1 = output .cast path.

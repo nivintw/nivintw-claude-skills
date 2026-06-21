@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# SPDX-FileCopyrightText: © 2026 Tyler Nivin
+# SPDX-License-Identifier: MIT
+
 # example-fixtures.sh — build clean, throwaway fixtures to record against.
 #
 # Casts read best when the working tree is predictable: known branches, known
