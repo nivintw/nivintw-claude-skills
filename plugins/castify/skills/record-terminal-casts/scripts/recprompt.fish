@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: © 2026 Tyler Nivin
+# SPDX-License-Identifier: MIT
+
 # recprompt.fish — clean, on-brand prompt for cast recordings.
 #
 # Sourced into the recorded fish shell by launch.sh (via `fish -C`). It runs

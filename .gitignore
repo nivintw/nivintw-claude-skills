@@ -1,4 +1,27 @@
-# Generated cast output from the example scripts
+# SPDX-FileCopyrightText: © 2026 Tyler Nivin
+# SPDX-License-Identifier: MIT
+
+### Direnv ###
+.direnv/
+
+### Dotenv / secrets ###
+.env
+
+### macOS ###
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+### Editors ###
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+.idea/
+*~
+
+### castify (generated cast output from the example scripts) ###
 casts/
 *.txt
-.DS_Store
+# ...but never the REUSE license texts — they're .txt and MUST be tracked.
+!LICENSES/*.txt

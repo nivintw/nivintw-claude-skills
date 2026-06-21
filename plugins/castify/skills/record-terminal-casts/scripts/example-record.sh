@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# SPDX-FileCopyrightText: © 2026 Tyler Nivin
+# SPDX-License-Identifier: MIT
+
 # example-record.sh — record a batch of casts with the tmux harness.
 #
 # This is the exact shape that produced the dotfiles "Commands" page: one driver
@@ -13,7 +16,7 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 LAB="${CAST_LAB:-/tmp/castlab}"
 export CAST_OUT="${CAST_OUT:-./casts}"
 export CAST_CWD="$LAB"
-# shellcheck source=cast-lib.sh
+# shellcheck source-path=SCRIPTDIR source=cast-lib.sh
 source "$HERE/cast-lib.sh"
 
 # ---- wtfis: resolve a name to alias/function/builtin/binary ------------------

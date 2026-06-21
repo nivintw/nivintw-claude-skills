@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: © 2026 Tyler Nivin
+# SPDX-License-Identifier: MIT
+
 """cast-scrub.py — delete terminal-output events from an asciicast (v2) file.
 
 A `.cast` is JSON: a header object on line 1, then `[time, "o"|"i", data]`

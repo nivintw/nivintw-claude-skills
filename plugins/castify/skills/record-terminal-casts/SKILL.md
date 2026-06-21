@@ -31,7 +31,7 @@ an authentic session. Your `sleep`s between keystrokes become the playback pacin
 because asciinema records wall-clock time. The whole demo is a script you can
 commit, diff, and re-run.
 
-```
+```text
 tmux pane ── shell ── asciinema rec ── recorded shell ── your CLI/TUI
    ▲ tmux send-keys injects keys here (real PTY)        ▲ records what appears
 ```
@@ -93,6 +93,7 @@ In this skill's `scripts/` directory (read them before adapting):
      out instead of launching a GUI editor, and say so in the caption.
 
 4. **Record the batch.** From a working dir where casts should land:
+
    ```bash
    CAST_LAB=/tmp/castlab bash scripts/example-fixtures.sh
    CAST_OUT=./casts CAST_LAB=/tmp/castlab bash scripts/example-record.sh
@@ -100,9 +101,11 @@ In this skill's `scripts/` directory (read them before adapting):
 
 5. **Verify without watching.** You can't eyeball the rendered player from a
    script, but you can confirm content and pacing from the text render:
+
    ```bash
    asciinema convert -f txt casts/fco.cast /dev/stdout
    ```
+
    Check the expected output appears (the branch list, the search hits, the kill
    confirmation) and that the prompt is clean (no greeting, no `direnv:` lines).
    Re-record if a `pause` was too short and a tool hadn't drawn yet.

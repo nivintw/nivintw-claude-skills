@@ -3,9 +3,13 @@
 
 version = 1
 
-# Files that can't carry an SPDX header (no comment syntax / generated). Everything
-# else gets a real header from hawkeye (see licenserc.toml).
+# Files licensed via this manifest instead of an inline SPDX header:
+#   - JSON / .vscode: no comment syntax.
+#   - Markdown: this is a Claude Code plugin repo, so much of it is frontmatter-first
+#     (SKILL.md, agents, commands) where a line-1 header breaks the YAML. hawkeye can't
+#     reliably exclude only those, so all markdown is declared here (see licenserc.toml).
+#     Files that still carry an inline header (README, CHANGELOG) stay compliant too.
 [[annotations]]
-path = ["**/*.json", "**/.vscode/*"]
+path = ["**/*.json", "**/.vscode/*", "**/*.md"]
 SPDX-FileCopyrightText = "© 2026 Tyler Nivin"
 SPDX-License-Identifier = "MIT"
