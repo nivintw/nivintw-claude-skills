@@ -513,14 +513,16 @@ def find_repo_root(start: Path) -> Path:
 
 def derive_marketplace_add_target(owner_url: str, marketplace_name: str) -> str:
     """Derive the /plugin marketplace add target from owner URL."""
-    # If it looks like a GitHub URL, extract owner/repo-like path
+    # If it looks like a GitHub URL, extract owner/repo-like path.
     m = re.match(r'https?://github\.com/([^/]+)(?:/([^/]+))?', owner_url)
     if m:
         owner = m.group(1)
         repo = m.group(2)
         if repo:
             return f"{owner}/{repo}"
-        return owner
+        # owner.url is just the profile (common case). The marketplace `name` is the
+        # repo name, so `owner/name` is the correct `/plugin marketplace add` target.
+        return f"{owner}/{marketplace_name}"
     return marketplace_name
 
 
