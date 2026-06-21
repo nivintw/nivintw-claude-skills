@@ -1,0 +1,10 @@
+{
+  "name": "dev-kit",
+  "version": "0.1.0",
+  "description": "A Human + AI teaming development workflow. Ship orchestrates a change end to end (plan in a worktree, implement with tiered subagent delegation, simplify, refresh docs, review, PR); review-pr runs a full review battery (code-review, security-review, pr-review-toolkit, and a context-chosen adversarial pass) on your own or a teammate's PR; generate-docs builds a self-contained docs site that works from file:// and GitHub Pages.",
+  "author": {
+    "name": "Tyler Nivin"
+  },
+  "homepage": "https://github.com/nivintw/nivintw-claude-skills/tree/main/plugins/dev-kit",
+  "keywords": ["workflow", "pull-request", "code-review", "security-review", "documentation", "github-pages", "subagents", "ci"]
+}
