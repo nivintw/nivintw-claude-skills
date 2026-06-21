@@ -1,0 +1,19 @@
+# SPDX-FileCopyrightText: © 2026 Tyler Nivin
+# SPDX-License-Identifier: MIT
+
+# Changes here will be overwritten by Copier; NEVER EDIT MANUALLY.
+_commit: dd3075e
+_src_path: gh:nivintw/scaffold
+author_email: tyler@nivin.tech
+author_name: Tyler Nivin
+contains_python: false
+include_docker: false
+include_helm: false
+include_terraform: false
+license: MIT
+project_description: Tyler Nivin's Claude Code plugin marketplace.
+project_name: nivintw-claude-skills
+project_slug: nivintw-claude-skills
+test_frameworks:
+- bats
+year: 2026
