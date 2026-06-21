@@ -25,3 +25,10 @@ casts/
 *.txt
 # ...but never the REUSE license texts — they're .txt and MUST be tracked.
 !LICENSES/*.txt
+
+### dev-kit (ship's per-branch progress file) ###
+.ship/
+
+### Python (dev-kit's generate-docs build.py runs under uv) ###
+__pycache__/
+*.py[cod]

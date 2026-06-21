@@ -15,6 +15,15 @@
         "name": "Tyler Nivin"
       },
       "category": "documentation"
+    },
+    {
+      "name": "dev-kit",
+      "source": "./plugins/dev-kit",
+      "description": "A Human + AI teaming development workflow. /dev-kit:ship orchestrates a change end to end (plan in a worktree, implement with tiered subagent delegation, simplify, refresh docs, review, PR); /dev-kit:review-pr runs a full review battery plus a context-chosen adversarial pass on your own or a teammate's PR; /dev-kit:generate-docs builds a self-contained docs site that works from file:// and GitHub Pages.",
+      "author": {
+        "name": "Tyler Nivin"
+      },
+      "category": "workflow"
     }
   ]
 }
