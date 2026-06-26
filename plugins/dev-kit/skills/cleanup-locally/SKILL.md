@@ -39,9 +39,10 @@ What it does, in order:
 2. **Update the default branch** (e.g. `main`) in whichever worktree holds it: a dirty tree
    is **stashed** first, unpushed local commits are **rebased forward** onto `origin`, then
    the stash is **popped** back. A genuine rebase or stash-pop **conflict aborts that step
-   with a warning** and leaves the work exactly as it was — it never clobbers or silently
-   drops anything. If the default branch isn't checked out anywhere, its ref is
-   fast-forwarded only when that's a clean ancestor move.
+   with a warning** — a rebase conflict is fully rolled back, and a stash-pop conflict keeps
+   your work safe in the stash (the tree may carry conflict markers to resolve). It never
+   clobbers or silently drops anything. If the default branch isn't checked out anywhere, its
+   ref is fast-forwarded only when that's a clean ancestor move.
 3. **Prune merged worktrees** under `.claude/worktrees/` (never the primary checkout, never
    the current one): removed only when the branch is merged *and* the tree is clean.
 4. **Prune merged branches**: a branch is deleted only when its commits are verified present

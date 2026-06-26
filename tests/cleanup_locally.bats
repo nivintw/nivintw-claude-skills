@@ -114,6 +114,22 @@ merged_gone_branch() {
   [ "$status" -eq 0 ] # still there — its only copy was not destroyed
 }
 
+@test "reports and counts a merged local-only branch checked out in a worktree" {
+  git checkout -q -b lo-wt main
+  commit_on "$REPO" lo.txt lo "lo work"
+  git checkout -q main
+  git merge -q --no-ff lo-wt
+  git push -q origin main # lo-wt never pushed → local-only, no upstream
+  git worktree add -q "$SANDBOX/lo-ext" lo-wt
+
+  run "$SCRIPT"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"checked out in a worktree"* ]] # reported, not silently skipped
+  [[ "$output" == *"kept 1."* ]]                    # and counted in the summary
+  run git rev-parse --verify --quiet refs/heads/lo-wt
+  [ "$status" -eq 0 ] # kept
+}
+
 @test "deletes a merged local-only branch (no upstream)" {
   git checkout -q -b local-merged main
   commit_on "$REPO" l.txt l "local work"

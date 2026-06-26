@@ -168,7 +168,13 @@ update_default() {
 
   if [ "$stashed" = 1 ]; then
     if ! git -C "$wt" stash pop >/dev/null 2>&1; then
-      echo "WARNING: auto-stashed changes didn't re-apply cleanly; they remain in the stash in $wt." >&2
+      # A conflicting pop keeps the stash entry (git does not drop it on conflict), so no
+      # work is lost — but the tree in $wt may carry conflict markers. We deliberately do
+      # NOT auto-reset it: that could discard restored-then-untracked files. Tell the user
+      # exactly where their work is and how to finish.
+      echo "WARNING: auto-stashed changes in $wt didn't re-apply cleanly and may have left" >&2
+      echo "         conflict markers. Your work is safe in the stash — resolve, then run:" >&2
+      echo "         git -C \"$wt\" stash pop   (or: git -C \"$wt\" checkout . && git -C \"$wt\" stash pop)" >&2
       had_failure=1
     fi
   fi
@@ -192,7 +198,14 @@ while IFS=$'\t' read -r wt branch; do
     kept=$((kept + 1))
     continue
   fi
-  if [ -n "$(git -C "$wt" status --porcelain 2>/dev/null)" ]; then
+  # Read status explicitly so a failure (missing/corrupt worktree) can't masquerade as a
+  # clean tree via empty output and lead to removal — on any read error, keep it.
+  if ! wt_status=$(git -C "$wt" status --porcelain 2>/dev/null); then
+    echo "Skipping worktree (couldn't read status): $wt [$branch]"
+    kept=$((kept + 1))
+    continue
+  fi
+  if [ -n "$wt_status" ]; then
     echo "Skipping worktree (uncommitted changes): $wt [$branch]"
     kept=$((kept + 1))
     continue
@@ -263,7 +276,11 @@ done < <(git for-each-ref --format '%(refname:short)%09%(upstream:track)' refs/h
 while IFS= read -r branch; do
   [ "$branch" = "$default_local" ] && continue
   already_handled "$branch" && continue
-  is_checked_out "$branch" && continue
+  if is_checked_out "$branch"; then
+    echo "Skipping branch (checked out in a worktree): $branch"
+    kept=$((kept + 1))
+    continue
+  fi
   if [ -n "$(git config --get "branch.$branch.remote" 2>/dev/null)" ]; then
     continue # has a live upstream — leave it alone
   fi
