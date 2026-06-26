@@ -97,6 +97,8 @@ Tie the code to the ledger so they never drift:
 
 - **Branch from the issue** so the branch, PR, and issue are obviously one thread
   (`/dev-kit:ship` does this).
+- **Flip to `status:in-review`** when the PR opens, so the ledger shows the work is awaiting
+  review rather than still in progress.
 - **Close from the PR** — `Closes #N` in the PR body closes the issue on merge and stamps it
   with the resolving commit.
 - **Cross-link** blockers and related issues so dependencies are visible; promote a blocker
