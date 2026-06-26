@@ -21,6 +21,16 @@ The orchestrator for shipping a change well. Run the phases **in order**. The th
 keep the human in control at the ends (plan sign-off, final merge) and do rigorous,
 token-aware work in the middle. **ship never merges** — it hands off a review-ready PR.
 
+## Start of run — reconcile local state (cleanup-locally)
+
+Before anything else, run **`/dev-kit:cleanup-locally`** from the primary checkout. It
+fetches, brings the default branch up to date (stashing/rebasing any local work forward,
+never clobbering), and prunes branches and `.claude/worktrees/` worktrees whose work has
+already merged. Two payoffs: the worktree this run creates in Phase 2 branches off a
+*current* base, and the leftovers from previously-shipped work don't pile up. It's
+conservative — anything unmerged, dirty, or checked out is kept — so this is always safe to
+run first. If it isn't installed, note the gap and continue.
+
 ## Phase 0 — Continuity setup (do this first, maintain throughout)
 
 Create a durable progress file — `.ship/<branch>.md` (gitignore `.ship/`) — and update it
@@ -79,9 +89,11 @@ EnterWorktree is *not* a drop-in for `git worktree add` — account for each dif
 
 This isolates the in-progress change (the user keeps their main checkout) and lets parallel,
 file-mutating subagents run in **per-agent worktree isolation** without clobbering each
-other. Teardown is in Phase 8 via **ExitWorktree**; on abort, `ExitWorktree({ action:
-"remove", discard_changes: true })` — but only once you've confirmed nothing in the worktree
-is worth keeping (Phase 8 covers the `discard_changes` guard).
+other. The worktree **survives hand-off** and is torn down only **post-merge** (the section
+after Phase 8), when `/dev-kit:cleanup-locally` removes it once its branch is verified merged.
+On abort *before* hand-off, remove it directly with `ExitWorktree({ action: "remove",
+discard_changes: true })` — but only once you've confirmed nothing in the worktree is worth
+keeping.
 
 ## Phase 3 — Implement (fan out; delegate by cost)
 
@@ -156,19 +168,34 @@ green before a person looks. If Copilot review isn't enabled on the repo, note t
 
 Once the review has converged, **mark the PR ready for review** (`gh pr ready`) and **hand
 off** — that flip from draft to ready *is* the hand-off signal. Ship stops here; merging is
-the human's call (or a later, explicitly-authorized step). Finally, tear down the worktree
-with **ExitWorktree** (`action: "remove"`) — but first confirm the working tree is clean and
-everything is pushed (the PR holds all the work). ExitWorktree refuses to remove a worktree
-that has *either* uncommitted files *or* local commits not on the base branch:
+the human's call (or a later, explicitly-authorized step).
 
-- **Commits not on base** is expected here — they're safely on the pushed PR branch — so
-  passing `discard_changes: true` to clear *that* is safe.
-- **Uncommitted files** means unsaved work. Do **not** blindly pass `discard_changes: true`
-  to steamroll it: stop, inspect, and commit/push or deliberately drop it first. (Or use
-  `action: "keep"` to leave the worktree on disk.)
+**Leave the worktree in place at hand-off.** The change isn't done until it merges: review
+feedback may land, and addressing it means more commits *in this worktree*. Tearing it down
+now would strand that work and force you to recreate it. Just confirm everything is committed
+and pushed (the PR holds all the work) before you stop. The worktree's teardown is the
+**post-merge** step below — not hand-off.
 
-`discard_changes: true` is only safe once you've verified the sole reason ExitWorktree
-balked is the on-the-remote feature commits — never as a reflex.
+## Post-merge — clean up (when the human reports the merge)
+
+ship doesn't merge, but it does clean up *after* the human does. When the user says the PR
+landed (e.g. "merged", "I merged it"), reconcile local state via **`/dev-kit:cleanup-locally`**:
+
+1. If the session is still inside the ship worktree, **ExitWorktree (`action: "keep"`)**
+   first — this returns the session to the primary checkout *without* deleting anything.
+   (Don't use `action: "remove"` here: the local default branch hasn't been updated yet, so
+   the worktree's commits look un-merged and removal would balk or need force.)
+2. From the primary checkout, run **`/dev-kit:cleanup-locally`**. In one verified pass it
+   updates the default branch to include the just-merged change (so it now *sees* the merge,
+   squash-merge included), removes this change's now-merged worktree, and prunes the merged
+   local branch.
+
+Running keep-then-cleanup — rather than `ExitWorktree({ action: "remove" })` — is what makes
+the order work: cleanup-locally refreshes the default branch *before* judging the worktree, so
+a squash-merged branch is correctly recognized as merged and torn down. If cleanup-locally
+**keeps** the worktree or branch (reports it unmerged, dirty, or still checked out), don't
+force it: surface *why* it was kept. Confirm the tracking issue closed (`Closes #N` usually
+handles it on merge); close it explicitly if not.
 
 ## Guardrails
 
