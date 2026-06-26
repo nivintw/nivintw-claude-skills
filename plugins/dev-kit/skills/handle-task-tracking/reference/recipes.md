@@ -65,7 +65,7 @@ gh label create "priority:low"    -c "#c5def5" --force
 
 ## Capture
 
-**MCP:** `mcp__github__issue_write` (action `create`) with `owner`, `repo`, `title`,
+**MCP:** `mcp__github__issue_write` (`method: "create"`) with `owner`, `repo`, `title`,
 `body`, `labels`, optional `assignees`, `milestone`. Read `mcp__github__list_issue_types`
 first if the repo uses GitHub issue *types*.
 
@@ -82,18 +82,22 @@ gh issue create \
 ## Decompose into sub-issues
 
 **MCP:** create the child issues with `mcp__github__issue_write`, then attach each to the
-parent with `mcp__github__sub_issue_write` (action `add`, parent + child issue numbers).
-Native sub-issues give the parent a real progress count.
+parent with `mcp__github__sub_issue_write` (`method: "add"`). The parent is `issue_number`,
+but `sub_issue_id` is the child's **database ID — not its issue number** (read it with
+`mcp__github__issue_read`). Native sub-issues give the parent a real progress count.
 
 **gh:** sub-issues are a GraphQL feature; plain `gh issue` doesn't cover them. Create the
-children normally, then link via the API:
+children normally, resolve each issue *number* to its node ID, then link via the API:
 
 ```bash
-# create children first, then add each to the parent (replace IDs)
+# resolve node IDs from issue numbers (the hard part of the gh fallback)
+PARENT_NODE_ID=$(gh issue view <parent#> --json id -q .id)
+CHILD_NODE_ID=$(gh issue view <child#> --json id -q .id)
+
 gh api graphql -f query='
   mutation($parent:ID!,$child:ID!){
     addSubIssue(input:{issueId:$parent, subIssueId:$child}){ issue { number } }
-  }' -f parent=$PARENT_NODE_ID -f child=$CHILD_NODE_ID
+  }' -f parent="$PARENT_NODE_ID" -f child="$CHILD_NODE_ID"
 ```
 
 When sub-issues are more friction than they're worth (trivial same-PR steps), use a task
@@ -117,8 +121,11 @@ gh issue comment 42 --body "Root cause: token refresh drops the TOTP window. Fix
 ```
 
 **MCP:** `mcp__github__list_issues` (filter by `labels`/`state`),
-`mcp__github__issue_write` (action `update`) to swap labels / set assignee,
-`mcp__github__add_issue_comment` for the log.
+`mcp__github__issue_write` (`method: "update"`) to swap labels / set assignee,
+`mcp__github__add_issue_comment` for the log. **Caveat:** `issue_write`'s `labels`
+*replaces the entire label set* (unlike gh's surgical `--add-label`/`--remove-label`), so
+pass the complete desired set — status **plus** the existing `type:`/`priority:` labels —
+or the others get stripped.
 
 ## Link work to issues
 
@@ -136,8 +143,9 @@ gh issue close 42 --comment "Fixed in #57 — refresh now preserves the TOTP win
 gh issue close 99 --reason "not planned" --comment "Superseded by the new auth flow in #80."
 ```
 
-**MCP:** `mcp__github__issue_write` (action `update`, `state: closed`, optional
-`state_reason`) after an `add_issue_comment` carrying the resolution.
+**MCP:** `mcp__github__issue_write` (`method: "update"`, `state: "closed"`, optional
+`state_reason` — one of `completed` / `not_planned` / `duplicate`) after an
+`add_issue_comment` carrying the resolution.
 
 ## Projects (optional)
 
