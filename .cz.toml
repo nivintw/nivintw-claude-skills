@@ -11,7 +11,7 @@
 [tool.commitizen]
 name = "cz_gitmoji"
 version_provider = "commitizen"
-version = "0.0.0"
+version = "1.0.0"
 update_changelog_on_bump = true
 annotated_tag = true
 tag_format = "v$version"
