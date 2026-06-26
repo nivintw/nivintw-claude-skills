@@ -40,12 +40,12 @@ generated config expecting it to survive unless you're deliberately reconciling.
 
 ## Commits
 
-Commits are **gitmoji + Conventional Commits** (`cz-conventional-gitmoji`), enforced by a
-`commit-msg` hook. Each gitmoji pairs with one specific type word — using the wrong emoji
-fails the hook. Common pairs: `✨ feat`, `🐛 fix`, `📝 docs`, `♻️ refactor`, `✅ test`,
-`👷 build`, `💚 ci`, `🔧 config`, `🧹 chore`, `🎉 init`. You can also write just
-`feat: …` and the `gitmojify` hook prepends the emoji. `no-commit-to-branch` blocks
-commits directly on `main` — branch, then PR.
+Commits are **plain Conventional Commits** (`cz_conventional_commits`), enforced by a
+`commit-msg` hook — e.g. `feat: …`, `fix(dev-kit): …`, `docs: …`, `chore: …`. **No
+gitmoji / leading emoji**: release-please derives each plugin's version bump from the
+commit type and cannot parse a leading emoji (it reads the emoji as the type and skips the
+commit), so the hook rejects anything that doesn't start with a bare type.
+`no-commit-to-branch` blocks commits directly on `main` — branch, then PR.
 
 ## Licensing (REUSE / SPDX)
 
@@ -78,4 +78,4 @@ Every file needs SPDX info; `reuse lint` must pass.
   `check-plugin-release-wiring` gate hook fails if a plugin isn't wired into both, or if a
   `plugin.json` version drifts from the manifest.
 - commitizen no longer releases — it's now **only** the commit-msg linter (`.cz.toml` is
-  just the `cz_gitmoji` rule).
+  just the `cz_conventional_commits` rule).
