@@ -14,12 +14,12 @@ SPDX-License-Identifier: {{ props["spdxLicenseIdentifier"] }}
 """
 # REUSE-IgnoreEnd
 
-# Markdown stays in hawkeye's built-in default excludes (it skips **/*.md): this is a
-# Claude Code plugin repo, so much of the markdown is frontmatter-first (SKILL.md,
-# agents, commands) where an inline header on line 1 would break the YAML — and
-# hawkeye's excludes can't re-exclude a file once an include (`!`) matches it (includes
-# win). So ALL markdown is covered via REUSE.toml instead. Only .gitignore is un-excluded
-# here so it gets an inline header.
+# Negations cancel hawkeye's built-in default excludes (which skip **/*.md and
+# **/.gitignore) so those get headered too.
+# This project has frontmatter-first markdown (YAML on line 1 — Claude Code skills,
+# Jekyll/Hugo), so markdown stays in hawkeye's default excludes (a line-1 SPDX comment
+# would break the frontmatter) and is licensed via REUSE.toml instead. Note hawkeye
+# can't re-exclude a file once an include (`!`) matches it, so there's no `!**/*.md`.
 excludes = [
   "LICENSE",
   "LICENSES/**",
@@ -28,6 +28,8 @@ excludes = [
   "!**/.gitignore",
   "**/.python-version",
   "**/.vscode/*",
+  # CODEOWNERS has no extension hawkeye maps; it carries its own `#` header (reuse-verified).
+  "**/CODEOWNERS",
 ]
 
 additionalHeaders = ["markdown-header.toml"]

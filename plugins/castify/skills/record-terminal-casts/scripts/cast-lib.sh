@@ -34,15 +34,21 @@ export CAST_SHELL="${CAST_SHELL:-fish}"
 # The pane size is the terminal size baked into the cast — pick what reads well
 # embedded (90–96 cols is a good web default).
 start_rec() { # name cols rows
-  command -v tmux >/dev/null     || { echo "cast-lib: tmux not found" >&2; return 1; }
-  command -v asciinema >/dev/null || { echo "cast-lib: asciinema not found" >&2; return 1; }
+  command -v tmux >/dev/null || {
+    echo "cast-lib: tmux not found" >&2
+    return 1
+  }
+  command -v asciinema >/dev/null || {
+    echo "cast-lib: asciinema not found" >&2
+    return 1
+  }
   mkdir -p "$CAST_OUT"
   local s="cast_$1"
   tmux kill-session -t "$s" 2>/dev/null
   tmux new-session -d -s "$s" -x "$2" -y "$3" -c "$CAST_CWD"
   # Launch the recorder inside the pane. launch.sh picks a clean prompt.
   tmux send-keys -t "$s" "'$CAST_LIB_DIR/launch.sh' '$CAST_OUT/$1.cast'" Enter
-  sleep 3   # let asciinema + the inner shell come up before the first keystroke
+  sleep 3 # let asciinema + the inner shell come up before the first keystroke
 }
 
 # Finalize: exit the recorded shell (asciinema writes the file), then kill the pane.
@@ -70,7 +76,7 @@ type_in() { tmux send-keys -t "cast_$1" -l "$2"; }
 : "${CAST_TYPE_DELAY:=0.045}"
 type_human() { # name text
   local s="cast_$1" text="$2" i
-  for (( i=0; i<${#text}; i++ )); do
+  for ((i = 0; i < ${#text}; i++)); do
     tmux send-keys -t "$s" -l "${text:i:1}"
     sleep "$CAST_TYPE_DELAY"
   done
@@ -79,7 +85,11 @@ type_human() { # name text
 # Type a command with type_human, hold a beat so it's readable, then press Enter.
 # The pause-before-Enter (default 0.5s) is what lets a viewer actually read the
 # command before output scrolls in.
-run_cmd() { type_human "$1" "$2"; sleep "${3:-0.5}"; tmux send-keys -t "cast_$1" Enter; }
+run_cmd() {
+  type_human "$1" "$2"
+  sleep "${3:-0.5}"
+  tmux send-keys -t "cast_$1" Enter
+}
 
 # Send a named key or chord: Enter, Tab, Escape, BSpace, C-c, C-d, Up, Down …
 key() { tmux send-keys -t "cast_$1" "$2"; }

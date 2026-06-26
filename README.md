@@ -66,6 +66,9 @@ asciinema convert -f txt ./casts/fco.cast /dev/stdout   # verify
 See `plugins/castify/skills/record-terminal-casts/reference/embedding.md` to put
 the resulting `.cast` files on a web page.
 
+A few hooks shell out to **system tools** prek can't bootstrap — CI installs them for
+you, but install them locally too (most are in Homebrew): `hawkeye`, `taplo`.
+
 ## License
 
 MIT — see [LICENSE](LICENSE). castify's embedding guide vendors
