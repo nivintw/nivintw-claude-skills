@@ -4,14 +4,14 @@ description: >-
   This skill should be used when the user asks to "track this with an issue", "open an
   issue", "file a bug", "triage the issues", "break this into sub-issues", "what should I
   work on next", "groom the backlog", "link this PR to an issue", or "close out this
-  issue" — or whenever development work is being planned, decomposed, or tracked in a
-  GitHub repo. It defines a repeatable, robust workflow for using GitHub issues as the
-  durable task ledger: capturing work as well-formed issues, triaging with a small
-  status-label set (Projects optional), decomposing via native sub-issues, linking
-  branches and PRs with "Closes #N", keeping issues current, and closing them
-  deliberately. Prefer the GitHub MCP tools, falling back to the gh CLI. Make sure to
-  reach for this skill whenever the user is organizing or tracking development tasks in
-  GitHub, even when they don't say the word "issue".
+  issue". It defines a repeatable, robust workflow for using GitHub issues as the durable
+  task ledger: capturing work as well-formed issues, triaging with a small status-label
+  set (Projects optional), decomposing via native sub-issues, linking branches and PRs
+  with "Closes #N", keeping issues current, and closing them deliberately. Prefer the
+  GitHub MCP tools, falling back to the gh CLI. Reach for it whenever the user is tracking
+  or grooming development tasks as GitHub issues, even when they don't say the word
+  "issue" — but not for actually implementing a change (that hand-off belongs to
+  /dev-kit:ship, which delegates the tracking here).
 ---
 
 # handle-task-tracking
