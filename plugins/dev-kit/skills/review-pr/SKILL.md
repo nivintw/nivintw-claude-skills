@@ -1,15 +1,15 @@
 ---
 name: review-pr
 description: >-
-  Run a thorough, synthesized review of a pull request — your own PR before you hand
-  it off as ready, or a teammate's PR you've been asked to review. Always runs the full
-  battery: /code-review, /security-review, /pr-review-toolkit:review-pr, plus a
-  context-chosen ADVERSARIAL review that actively tries to break the change. This is the
-  single review entry point — it runs and synthesizes /code-review, /security-review, and
-  /pr-review-toolkit:review-pr rather than you invoking them individually. Use when asked
-  to review a PR, review changes before opening/handing off a PR, do a pre-merge or
-  pre-handoff review, sanity-check a diff, or review someone else's PR by number or branch.
-  /dev-kit:ship calls this automatically before opening its PR.
+  This skill should be used when the user asks to "review this PR", "review my changes
+  before I open a PR", "do a pre-merge review", "sanity-check this diff", or "review PR #N"
+  / a teammate's branch. It is the single review entry point: it runs and synthesizes the
+  full battery — /code-review, /security-review, /pr-review-toolkit:review-pr — plus a
+  context-chosen ADVERSARIAL pass that actively tries to break the change, then merges
+  everything into one prioritized report instead of a pile of overlapping outputs. Reach
+  for it on a PR authored in this session (pre-handoff) or a teammate's PR by number or
+  branch, rather than invoking the individual review skills one at a time.
+  /dev-kit:ship calls it automatically before opening its PR.
 ---
 
 # review-pr
@@ -20,10 +20,10 @@ findings into a single prioritized report — instead of a pile of overlapping o
 ## Two modes (detect, don't ask if obvious)
 
 - **Mode A — your own PR, pre-handoff.** Default when reviewing the current branch / a PR
-  you authored. Goal: catch everything *before* a human looks. You may **apply** safe
-  fixes and re-run; for anything judgment-heavy, list it for the author.
-- **Mode B — a teammate's PR.** When given a PR number / branch you didn't author. Goal: a
-  high-signal review *for them*. **Do not push changes to their branch.** Posting review
+  authored in this session. Goal: catch everything *before* a human looks. **Apply** safe
+  fixes and re-run; list anything judgment-heavy for the author.
+- **Mode B — a teammate's PR.** When given a PR number / branch authored by someone else.
+  Goal: a high-signal review *for them*. **Do not push changes to their branch.** Posting review
   comments is an outward-facing action — draft the review, show it, and only post with
   explicit confirmation (`/pr-review-toolkit:review-pr` and `/code-review --comment` can
   post; use them only after the user says to).

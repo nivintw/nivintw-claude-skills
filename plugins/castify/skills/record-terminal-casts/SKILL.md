@@ -1,35 +1,36 @@
 ---
 name: record-terminal-casts
 description: >-
-  Make asciinema recordings scriptable: script every keystroke and pause in a
-  file instead of performing the session live, so casts are reproducible,
-  deterministic, and re-recordable when the CLI changes — and so interactive
-  TUIs like fzf, less, or vim (which can't be driven by piping stdin) can be
-  recorded at all. Uses a tmux keystroke harness, then optionally embeds the
-  casts on a static web page with a vendored asciinema-player. Use when the user
-  wants to demo command-line tools, shell functions, or a TUI as a scrubbable
-  terminal recording for docs, a README, or a docs site, rather than a
-  screenshot or a GIF.
+  This skill should be used when the user asks to "record a terminal cast", "make an
+  asciinema recording", "demo this CLI/TUI as a terminal recording", "record an
+  fzf/less/vim session", or "embed a terminal recording in the docs/README". It makes
+  asciinema recordings scriptable — every keystroke and pause lives in a file instead of
+  being performed live — so casts are reproducible, deterministic, and re-recordable when
+  the CLI changes, and so interactive TUIs like fzf, less, or vim (which can't be driven by
+  piping stdin) can be recorded at all. It uses a tmux keystroke harness, then optionally
+  embeds the casts on a static web page with a vendored asciinema-player. Reach for it to
+  demo command-line tools, shell functions, or a TUI as a scrubbable terminal recording for
+  docs, a README, or a docs site, rather than a screenshot or a GIF.
 ---
 
 # Scriptable terminal casts
 
-`asciinema rec` records a session you perform **live, by hand**. This skill makes
+`asciinema rec` records a session performed **live, by hand**. This skill makes
 that session **scriptable** — every keystroke and pause lives in a file — so a
 cast becomes reproducible (re-record it after a UI change), deterministic (pacing
-is in the script, not your typing), and automatable. The same mechanism is also
-the only way to record **interactive** tools (fzf pickers, pagers, editors),
+lives in the script, not in live typing), and automatable. The same mechanism is
+also the only way to record **interactive** tools (fzf pickers, pagers, editors),
 which the naive `asciinema rec -c "mytool"` can't drive.
 
 ## The core idea
 
-You can't pipe keystrokes to a TUI: it reads the controlling **TTY**, not stdin.
+Keystrokes can't be piped to a TUI: it reads the controlling **TTY**, not stdin.
 The harness solves this with **tmux** — it runs the asciinema recording inside a
 detached tmux pane and injects keystrokes from outside with `tmux send-keys`,
 which writes into the pane's real PTY. asciinema, running inside the pane, records
-an authentic session. Your `sleep`s between keystrokes become the playback pacing,
-because asciinema records wall-clock time. The whole demo is a script you can
-commit, diff, and re-run.
+an authentic session. The `sleep`s between keystrokes become the playback pacing,
+because asciinema records wall-clock time. The whole demo is a script to commit,
+diff, and re-run.
 
 ```text
 tmux pane ── shell ── asciinema rec ── recorded shell ── your CLI/TUI
@@ -39,7 +40,7 @@ tmux pane ── shell ── asciinema rec ── recorded shell ── your CL
 ## Prerequisites
 
 `tmux` and `asciinema` (CLI). On macOS: `brew install tmux asciinema`. For web
-embedding you'll also fetch the asciinema-player (see the reference below).
+embedding, also fetch the asciinema-player (see the reference below).
 
 ## Bundled scripts
 
@@ -99,8 +100,8 @@ In this skill's `scripts/` directory (read them before adapting):
    CAST_OUT=./casts CAST_LAB=/tmp/castlab bash scripts/example-record.sh
    ```
 
-5. **Verify without watching.** You can't eyeball the rendered player from a
-   script, but you can confirm content and pacing from the text render:
+5. **Verify without watching.** The rendered player can't be eyeballed from a
+   script, but content and pacing are confirmable from the text render:
 
    ```bash
    asciinema convert -f txt casts/fco.cast /dev/stdout

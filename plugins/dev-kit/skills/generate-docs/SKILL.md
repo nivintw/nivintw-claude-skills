@@ -1,15 +1,15 @@
 ---
 name: generate-docs
 description: >-
-  Generate a self-contained static documentation site for a Claude Code plugin
-  marketplace or repo — a landing page plus a page per plugin (manifest, skills,
-  commands, agents, rendered README) — that works BOTH opened locally as a file://
-  path AND served from GitHub Pages, with zero build step and no JavaScript or
-  external assets at view time. Use when the user wants to create, build, refresh, or
-  publish documentation for a Claude Code plugin or marketplace repo — a docs site or
-  GitHub Pages site generated from the plugin/marketplace manifests — or wants those
-  plugin docs kept current as part of shipping a change (dev-kit:ship runs this
-  automatically). Not for generating general-purpose project or API docs.
+  This skill should be used when the user asks to "generate the docs", "build the docs
+  site", "refresh the plugin docs", "publish to GitHub Pages", or "make a docs page for
+  this marketplace/plugin". It generates a self-contained static documentation site for a
+  Claude Code plugin marketplace or repo — a landing page plus a page per plugin (manifest,
+  skills, commands, agents, rendered README) — that works BOTH opened locally as a file://
+  path AND served from GitHub Pages, with zero build step and no JavaScript or external
+  assets at view time. Reach for it to create, refresh, or publish docs generated from the
+  plugin/marketplace manifests, or to keep those docs current as part of shipping a change
+  (dev-kit:ship runs it automatically). Not for general-purpose project or API docs.
 ---
 
 # generate-docs

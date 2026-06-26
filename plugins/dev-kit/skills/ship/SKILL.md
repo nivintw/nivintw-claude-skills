@@ -1,15 +1,17 @@
 ---
 name: ship
 description: >-
-  Drive a change from idea to a review-ready pull request through a disciplined Human +
-  AI teaming workflow: an explicit planning step first, work isolated in a dedicated git
-  worktree, implementation that fans out subagents and /workflows (delegating mechanical
-  work to cheaper models to stay token-conscious), then always /simplify, then refresh
+  This skill should be used when the user asks to "ship this", "ship a change/feature/fix",
+  "take this from idea to a PR", "open a PR for this", or "run the full dev workflow on
+  this" — any real change worth a planned, reviewed pull request. It drives a change from
+  idea to a review-ready PR through a disciplined Human + AI teaming workflow: an explicit
+  planning step and sign-off first, work isolated in a dedicated git worktree,
+  implementation that fans out subagents and /workflows (delegating mechanical work to
+  cheaper models to stay token-conscious), task tracking delegated to
+  /dev-kit:handle-task-tracking across the lifecycle, then always /simplify, then refreshed
   docs, then a full /dev-kit:review-pr pass, the local quality gate, and finally a
-  conventional-commit PR handed off for human review. Use when asked to ship, ship a
-  change/feature/fix, take something from idea to PR, or run the full dev workflow on a
-  task — i.e. a real change worth a planned, reviewed PR, not a trivial one-off commit or
-  a bare "push this." Never auto-merges.
+  conventional-commit PR handed off for human review. Not for a trivial one-off commit or a
+  bare "push this". Never auto-merges.
 ---
 
 # ship
@@ -35,6 +37,12 @@ the relevant code, patterns, and prior art — so the main context stays lean. W
 plan + checklist into the progress file: what changes, which files, the approach, risks, and
 how it'll be verified. **Get the user's sign-off on the plan before implementing.** Surface
 genuine decisions now (don't bury them).
+
+Delegate task tracking to **`/dev-kit:handle-task-tracking`** — don't reinvent it here.
+Find or open the GitHub issue that tracks this work, record its number in the progress file,
+and capture the plan's key decisions on the issue. The `.ship/<branch>.md` file tracks
+*this run's* mechanics; the **issue is the durable record of the work itself**, so it
+outlives the branch and the session.
 
 ## Phase 2 — Worktree + branch (always)
 
@@ -64,7 +72,9 @@ afterthought. Match the tool to the job:
   (e.g. one agent per file/module/dimension) when the task decomposes.
 
 Fan out **freely** where work is independent, but report what you delegated and to whom.
-Update the progress file and make **checkpoint commits** as coherent pieces land.
+Update the progress file and make **checkpoint commits** as coherent pieces land. As work
+starts, flip the tracking issue to `status:in-progress` (via
+`/dev-kit:handle-task-tracking`) and log notable decisions on it as they're made.
 
 ## Phase 4 — Simplify (always)
 
@@ -81,7 +91,8 @@ docs site / isn't a marketplace, note that and skip — but default to keeping d
 Run **`/dev-kit:review-pr`** (Mode A — your own change). That runs the full battery
 (`/code-review`, `/security-review`, `/pr-review-toolkit:review-pr`) **plus a context-chosen
 adversarial pass**, then synthesizes one prioritized report. Apply the must-fixes; re-run as
-needed; leave the branch green.
+needed; leave the branch green. Flip the tracking issue to `status:in-review` (via
+`/dev-kit:handle-task-tracking`) once the change is up for review.
 
 ## Phase 7 — Local gate
 
@@ -93,14 +104,18 @@ existing quality bar.
 
 Commit in **Conventional Commit** style (and gitmoji if the repo enforces it — match the
 history). Push the branch and open a PR whose body explains the *why*, the verification done,
-and any flagged trade-offs or decisions. **Do not add AI attribution.** Then **hand off as
-ready for human review** — ship stops here; merging is the human's call (or a later,
-explicitly-authorized step). Finally, tear down the worktree.
+and any flagged trade-offs or decisions. Reference the tracking issue with `Closes #N` so the
+merge closes it (the linking conventions live in `/dev-kit:handle-task-tracking`). **Do not
+add AI attribution.** Then **hand off as ready for human review** — ship stops here; merging
+is the human's call (or a later, explicitly-authorized step). Finally, tear down the worktree.
 
 ## Guardrails
 
-- Plan sign-off (Phase 1) and merge (Phase 8) are the human's; everything between is yours to
-  execute rigorously.
+- Plan sign-off (Phase 1) and merge (Phase 8) are the human's; everything between is ship's
+  to execute rigorously.
+- Task state is GitHub's job — delegate it to **`/dev-kit:handle-task-tracking`** throughout
+  (establish the issue at Phase 1, `in-progress` at Phase 3, `in-review` at Phase 6,
+  `Closes #N` at Phase 8). Don't duplicate that lifecycle inside ship.
 - If real scope turns out much larger than the ask, stop and check in rather than silently
   ballooning or downgrading the change.
 - The phases lean on skills this plugin doesn't ship (`/simplify`, `/dev-kit:generate-docs`,
