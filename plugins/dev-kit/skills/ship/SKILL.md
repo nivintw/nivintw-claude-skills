@@ -8,7 +8,7 @@ description: >-
   planning step and sign-off first, work isolated in a dedicated git worktree,
   implementation that fans out subagents and /workflows (delegating mechanical work to
   cheaper models to stay token-conscious), task tracking delegated to
-  /dev-kit:handle-task-tracking across the lifecycle, then always /simplify, then refreshed
+  /dev-kit:handle-task-tracking across the lifecycle, then always /simplify, then refresh
   docs, then a full /dev-kit:review-pr pass, the local quality gate, a conventional-commit
   PR, and an automated Copilot review iterated to convergence before the change is handed
   off for human review. Not for a trivial one-off commit or a bare "push this". Never
