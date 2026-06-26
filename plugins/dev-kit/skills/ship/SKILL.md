@@ -104,14 +104,15 @@ existing quality bar.
 ## Phase 8 — Commit + PR (hand off, don't merge)
 
 Commit in **Conventional Commit** style (and gitmoji if the repo enforces it — match the
-history). Push the branch and open a PR whose body explains the *why*, the verification done,
-and any flagged trade-offs or decisions. Reference the tracking issue with `Closes #N` so the
-merge closes it (the linking conventions live in `/dev-kit:handle-task-tracking`). **Do not
-add AI attribution.**
+history). Push the branch and open the PR **as a draft** (`gh pr create --draft`) — it stays
+a draft while ship iterates below, so no human reviews it prematurely. Give it a body that
+explains the *why*, the verification done, and any flagged trade-offs or decisions. Reference
+the tracking issue with `Closes #N` so the merge closes it (the linking conventions live in
+`/dev-kit:handle-task-tracking`). **Do not add AI attribution.**
 
 ### Converge an automated review before handing off
 
-With the PR open, request an **automated Copilot review** (GitHub's `request_copilot_review`
+With the draft PR open, request an **automated Copilot review** (GitHub's `request_copilot_review`
 via the GitHub MCP or `gh`) and **iterate to convergence**:
 
 1. Wait for Copilot's review to land on the current PR head.
@@ -129,13 +130,14 @@ green before a person looks. If Copilot review isn't enabled on the repo, note t
 
 ### Hand off
 
-Then **hand off as ready for human review** — ship stops here; merging is the human's call
-(or a later, explicitly-authorized step). Finally, tear down the worktree.
+Once the review has converged, **mark the PR ready for review** (`gh pr ready`) and **hand
+off** — that flip from draft to ready *is* the hand-off signal. Ship stops here; merging is
+the human's call (or a later, explicitly-authorized step). Finally, tear down the worktree.
 
 ## Guardrails
 
-- Plan sign-off (Phase 1) and merge (Phase 8) are the human's; everything between is ship's
-  to execute rigorously.
+- Plan sign-off (Phase 1) and the final merge are the human's; everything between is ship's
+  to execute rigorously. Merge happens *after* hand-off — it is never a ship phase.
 - Task state is GitHub's job — delegate it to **`/dev-kit:handle-task-tracking`** throughout
   (establish the issue at Phase 1, `in-progress` at Phase 3, `in-review` at Phase 6,
   `Closes #N` at Phase 8). Don't duplicate that lifecycle inside ship.
