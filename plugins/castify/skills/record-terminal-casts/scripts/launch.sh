@@ -29,9 +29,9 @@ export DIRENV_LOG_FORMAT=''
 unset DIRENV_DIR DIRENV_FILE DIRENV_DIFF DIRENV_WATCHES 2>/dev/null || true
 
 case "$SHELL_CMD" in
-  fish) CMD="fish -C 'source \"$HERE/recprompt.fish\"'" ;;
-  bash) CMD="bash --rcfile '$HERE/recprompt.bash'" ;;   # provide your own if used
-  *)    CMD="$SHELL_CMD" ;;
+fish) CMD="fish -C 'source \"$HERE/recprompt.fish\"'" ;;
+bash) CMD="bash --rcfile '$HERE/recprompt.bash'" ;; # provide your own if used
+*) CMD="$SHELL_CMD" ;;
 esac
 
 exec asciinema rec -f asciicast-v2 -i 2 --overwrite -c "$CMD" "$1"
