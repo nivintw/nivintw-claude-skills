@@ -71,7 +71,7 @@ afterthought. Match the tool to the job:
   adversarial/verification work. Use `/workflows` to pipeline or fan out independent work
   (e.g. one agent per file/module/dimension) when the task decomposes.
 
-Fan out **freely** where work is independent, but report what you delegated and to whom.
+Fan out **freely** where work is independent, but report what was delegated and to whom.
 Update the progress file and make **checkpoint commits** as coherent pieces land. As work
 starts, flip the tracking issue to `status:in-progress` (via
 `/dev-kit:handle-task-tracking`) and log notable decisions on it as they're made.

@@ -43,7 +43,7 @@ Run these and collect their findings. Prefer running them concurrently (fan them
 subagents, or via `/workflows`) since they're independent; fall back to sequential.
 
 **Right-size, and degrade gracefully.** Scale to the change: a one-file docs/typo PR
-doesn't need the security or adversarial passes — say which you're skipping and why. And
+doesn't need the security or adversarial passes — say which passes are being skipped and why. And
 if an orchestrated skill isn't installed or is denied (e.g. `/security-review`,
 `/pr-review-toolkit:review-pr`), note that the coverage is missing and continue with the
 rest rather than failing the whole review.

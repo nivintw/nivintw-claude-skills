@@ -82,10 +82,9 @@ already-fixed, with a one-line reason). Don't let issues sit in `triage` indefin
 untriaged pile is the first sign the tracker is going stale.
 
 Pick the next task from `status:ready`, highest priority first; flip it to `status:in-progress`
-and self-assign when starting. **Keep the issue current as the work teaches you things** —
-post a comment when a decision is made, an approach changes, or a blocker appears. The issue,
-not the chat, is the durable log; a reader should be able to reconstruct the state from it
-alone.
+and self-assign when starting. **Keep the issue current as the work reveals new information**
+— post a comment when a decision is made, an approach changes, or a blocker appears. The
+issue, not the chat, is the durable log.
 
 **Projects (optional upgrade).** When a board view, cross-repo tracking, or custom fields
 (sprint, estimate) genuinely help, add a GitHub Projects (v2) board whose columns mirror the
@@ -96,18 +95,17 @@ status label stay authoritative so nothing breaks when the board isn't there.
 
 Tie the code to the ledger so they never drift:
 
-- **Branch from the issue** — name the branch for it (`<type>/<issue#>-<slug>`) so the
-  branch, PR, and issue are obviously the same thread. (`/dev-kit:ship` does this.)
-- **Close from the PR** — put `Closes #N` (or `Fixes #N`) in the PR body so merging closes
-  the issue automatically and stamps it with the resolving commit. Use `Refs #N` to link
-  without closing.
-- **Cross-link relationships** — note `Blocked by #X` / `Related to #Y` in the body so
-  dependencies are visible. Decompose a blocker into its own issue rather than burying it in
-  a comment.
+- **Branch from the issue** so the branch, PR, and issue are obviously one thread
+  (`/dev-kit:ship` does this).
+- **Close from the PR** — `Closes #N` in the PR body closes the issue on merge and stamps it
+  with the resolving commit.
+- **Cross-link** blockers and related issues so dependencies are visible; promote a blocker
+  to its own issue rather than burying it in a comment.
 
-`handle-task-tracking` tracks the *what*; `/dev-kit:ship` delivers the *change* that closes
-it. They pair: the issue is the durable record, ship is the worktree-isolated, reviewed PR
-that resolves it.
+The exact branch-name and `Refs` / `Blocked by` / `Related to` forms live in
+[`reference/recipes.md`](reference/recipes.md). `handle-task-tracking` tracks the *what*;
+`/dev-kit:ship` delivers the *change* that closes it — the issue is the durable record, ship
+is the worktree-isolated, reviewed PR that resolves it.
 
 ## Close deliberately
 
@@ -121,15 +119,13 @@ information.
 ## Tooling — MCP first, gh as fallback
 
 Prefer the **GitHub MCP tools** (`mcp__github__*`) for issue operations: they're structured
-and typed, and they expose the primitives this workflow leans on — `issue_write`,
-`sub_issue_write`, `issue_read`, `list_issues`, `add_issue_comment`, `list_issue_types` —
+and typed, and they expose what this workflow leans on — native sub-issues and issue types —
 as first-class calls, which plain `gh issue` handles awkwardly (sub-issues and Projects v2
 otherwise mean verbose `gh api graphql`).
 
-Fall back to the **`gh` CLI** when the MCP server isn't connected — it can be absent in
-headless or cron runs — and whenever a human wants a command to paste into a terminal. The
-recipes file gives both forms. Don't assume the MCP server unconditionally; check, and
-degrade to `gh` rather than failing.
+Fall back to the **`gh` CLI** when the MCP server isn't connected — check first, since it can
+be absent in headless or cron runs — and whenever a human wants a command to paste into a
+terminal. The recipes file gives both forms.
 
 Copy-paste commands, the issue-body template, and the full label taxonomy:
 [`reference/recipes.md`](reference/recipes.md).
