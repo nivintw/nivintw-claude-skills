@@ -9,9 +9,10 @@ description: >-
   implementation that fans out subagents and /workflows (delegating mechanical work to
   cheaper models to stay token-conscious), task tracking delegated to
   /dev-kit:handle-task-tracking across the lifecycle, then always /simplify, then refreshed
-  docs, then a full /dev-kit:review-pr pass, the local quality gate, and finally a
-  conventional-commit PR handed off for human review. Not for a trivial one-off commit or a
-  bare "push this". Never auto-merges.
+  docs, then a full /dev-kit:review-pr pass, the local quality gate, a conventional-commit
+  PR, and an automated Copilot review iterated to convergence before the change is handed
+  off for human review. Not for a trivial one-off commit or a bare "push this". Never
+  auto-merges.
 ---
 
 # ship
@@ -106,8 +107,30 @@ Commit in **Conventional Commit** style (and gitmoji if the repo enforces it —
 history). Push the branch and open a PR whose body explains the *why*, the verification done,
 and any flagged trade-offs or decisions. Reference the tracking issue with `Closes #N` so the
 merge closes it (the linking conventions live in `/dev-kit:handle-task-tracking`). **Do not
-add AI attribution.** Then **hand off as ready for human review** — ship stops here; merging
-is the human's call (or a later, explicitly-authorized step). Finally, tear down the worktree.
+add AI attribution.**
+
+### Converge an automated review before handing off
+
+With the PR open, request an **automated Copilot review** (GitHub's `request_copilot_review`
+via the GitHub MCP or `gh`) and **iterate to convergence**:
+
+1. Wait for Copilot's review to land on the current PR head.
+2. Triage its findings like any reviewer — apply the real ones (commit + push to the same
+   branch) and, for each declined, note why.
+3. **Re-request the review** so Copilot re-runs against the new head.
+4. Repeat until it **converges**: Copilot approves, or its only remaining comments are
+   non-actionable (nits already judged, or false positives). Bound the loop — after ~3
+   rounds with nothing substantive left, stop and summarize the residue for the human
+   rather than chasing nits forever.
+
+This catches what the Phase 6 battery missed on the *actual* PR diff and keeps the branch
+green before a person looks. If Copilot review isn't enabled on the repo, note that and skip
+— don't block the hand-off on it.
+
+### Hand off
+
+Then **hand off as ready for human review** — ship stops here; merging is the human's call
+(or a later, explicitly-authorized step). Finally, tear down the worktree.
 
 ## Guardrails
 
