@@ -2,17 +2,12 @@
 # SPDX-License-Identifier: MIT
 
 # commitizen config — standalone so it's language-agnostic (lives here whether or not
-# the repo is Python). Enforces Conventional Commits + gitmoji, and `cz bump` computes
-# the version + CHANGELOG.md from history and cuts the annotated `v$version` tag.
+# the repo is Python). Its ONLY job here is the commit-msg hook: enforcing Conventional
+# Commits + gitmoji (the `cz_gitmoji` rules) via the commitizen pre-commit hook.
 #
-# version_provider = where the version-of-record lives:
-#   commitizen → the `version` field right here (works on a fresh, tagless repo)
+# Releases are NOT commitizen's job — release-please owns versioning (per-plugin
+# .claude-plugin/plugin.json + .release-please-manifest.json; see main.yml). So no
+# version-of-record / bump / tag config lives here: `name` is all the linter needs.
 
 [tool.commitizen]
 name = "cz_gitmoji"
-version_provider = "commitizen"
-version = "1.0.0"
-update_changelog_on_bump = true
-annotated_tag = true
-tag_format = "v$version"
-bump_message = "🔖 bump: $current_version → $new_version"
