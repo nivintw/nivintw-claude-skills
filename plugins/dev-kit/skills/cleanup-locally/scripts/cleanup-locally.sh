@@ -148,6 +148,12 @@ update_default() {
   if [ -n "$(git -C "$wt" status --porcelain)" ]; then
     if git -C "$wt" stash push --include-untracked -m "cleanup-locally: auto-stash" >/dev/null 2>&1; then
       stashed=1
+    else
+      # Couldn't safely set the tree aside — don't rebase a dirty tree (it would fail for
+      # reasons unrelated to conflicts and misdiagnose). Leave the branch untouched.
+      echo "WARNING: $default_local in $wt has changes that couldn't be stashed; left as-is." >&2
+      had_failure=1
+      return
     fi
   fi
 
@@ -155,7 +161,8 @@ update_default() {
     echo "Updated $default_local (rebased onto $default_ref) in $wt."
   else
     git -C "$wt" rebase --abort >/dev/null 2>&1
-    echo "WARNING: $default_local has commits that conflict with $default_ref; left as-is." >&2
+    echo "WARNING: could not rebase $default_local onto $default_ref (left as-is). Re-run to see why:" >&2
+    echo "         git -C \"$wt\" rebase $default_ref" >&2
     had_failure=1
   fi
 
@@ -253,7 +260,7 @@ while IFS=$'\t' read -r branch track; do
 done < <(git for-each-ref --format '%(refname:short)%09%(upstream:track)' refs/heads)
 
 # Local-only branches that are ancestors of the default branch (no live upstream).
-while read -r branch; do
+while IFS= read -r branch; do
   [ "$branch" = "$default_local" ] && continue
   already_handled "$branch" && continue
   is_checked_out "$branch" && continue
