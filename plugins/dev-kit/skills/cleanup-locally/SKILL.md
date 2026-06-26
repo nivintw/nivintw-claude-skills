@@ -29,8 +29,10 @@ and again once a PR is merged.
 "${CLAUDE_PLUGIN_ROOT}/skills/cleanup-locally/scripts/cleanup-locally.sh" -n     # dry run
 ```
 
-`-n`/`--dry-run` prints exactly what *would* change without touching anything — lead with
-it when the state is unfamiliar, then re-run for real. `-h`/`--help` explains the rest.
+`-n`/`--dry-run` prints exactly what *would* change without performing any cleanup — it
+still runs `git fetch --prune` (refreshing remote-tracking refs) to decide against current
+remote state, but deletes no branches or worktrees and leaves the default branch untouched.
+Lead with it when the state is unfamiliar, then re-run for real. `-h`/`--help` explains the rest.
 
 What it does, in order:
 

@@ -65,7 +65,8 @@ if ! git rev-parse --git-dir >/dev/null 2>&1; then
   exit 1
 fi
 
-[ "$DRY_RUN" = 1 ] && echo "(dry run: nothing will be changed)"
+[ "$DRY_RUN" = 1 ] &&
+  echo "(dry run: still fetches to assess state, but deletes no branches/worktrees and leaves the default branch untouched)"
 
 # All branches currently checked out in any worktree — these can't be deleted, and the
 # default-branch update must happen in the worktree that holds it.
@@ -249,13 +250,13 @@ delete_branch() {
 }
 
 # Branches already deleted in the gone-upstream pass, one per line (so the local-only pass
-# below doesn't reprocess them in --dry-run, where they aren't actually gone yet). Tracked
-# as a newline-delimited set to stay correct for branch names containing spaces.
+# below doesn't reprocess them in --dry-run, where they aren't actually gone yet). A
+# newline-delimited set gives exact-match membership via `already_handled`.
 handled=""
 already_handled() { printf '%s' "$handled" | grep -qxF -- "$1"; }
 
-# Branches whose upstream is gone (PR merged + remote deleted). Tab-delimit the fields so a
-# branch name with spaces can't bleed into the track column (which we match exactly).
+# Branches whose upstream is gone (PR merged + remote deleted). Tab-delimit the two fields so
+# the branch name and the (multi-word) track value split unambiguously.
 while IFS=$'\t' read -r branch track; do
   [ "$track" = "[gone]" ] || continue
   if is_checked_out "$branch"; then
