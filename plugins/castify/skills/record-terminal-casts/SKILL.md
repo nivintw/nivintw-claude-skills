@@ -121,7 +121,7 @@ In this skill's `scripts/` directory (read them before adapting):
 - **asciicast v2, not v3.** asciinema 3.x records v3 by default; `launch.sh`
   forces `-f asciicast-v2` because released asciinema-player builds play v2
   everywhere. (v3 support varies by player version.)
-- **Player is Apache-2.0**, not your repo's license — annotate it if you run
+- **Player is Apache-2.0**, not the repo's license — annotate it when running
   REUSE (see the embedding reference).
 - **`.cast` files are JSON-lines** (first line a JSON header object). They can't
   carry a comment header — annotate them in REUSE config rather than stamping.

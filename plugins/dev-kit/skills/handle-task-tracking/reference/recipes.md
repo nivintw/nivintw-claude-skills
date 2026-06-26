@@ -1,8 +1,7 @@
 # Recipes — issue template, labels, and commands
 
 Copy-paste material for `handle-task-tracking`. Prefer the **GitHub MCP** forms when the
-server is connected; the **`gh` CLI** forms are the portable fallback and the
-human-runnable version.
+server is connected; the **`gh` CLI** forms are the portable, human-runnable fallback.
 
 ## Issue-body template
 
