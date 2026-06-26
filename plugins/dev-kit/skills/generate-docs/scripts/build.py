@@ -41,10 +41,15 @@ import nh3
 # SPDX header templates (guarded by REUSE-IgnoreStart above)
 # ---------------------------------------------------------------------------
 
+# Templates mirror hawkeye's canonical per-style header exactly (HTML: indented,
+# blank-line padded; CSS: trailing blank line) so the license hook leaves docs/
+# untouched on every regeneration instead of reformatting it each time.
 HTML_SPDX_TEMPLATE = """\
 <!--
-SPDX-FileCopyrightText: © {year} {holder}
-SPDX-License-Identifier: {license}
+
+    SPDX-FileCopyrightText: © {year} {holder}
+    SPDX-License-Identifier: {license}
+
 -->
 """
 
@@ -53,6 +58,7 @@ CSS_SPDX_TEMPLATE = """\
  * SPDX-FileCopyrightText: © {year} {holder}
  * SPDX-License-Identifier: {license}
  */
+
 """
 
 # REUSE-IgnoreEnd
