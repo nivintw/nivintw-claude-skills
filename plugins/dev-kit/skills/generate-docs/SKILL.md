@@ -16,10 +16,11 @@ description: >-
 
 Build a **self-contained** static docs site from the repo's own manifests, so the
 output renders identically whether someone double-clicks `docs/index.html` (a `file://`
-URL) or visits the GitHub Pages site. "Self-contained" is the hard requirement: relative
-links only, vendored CSS, markdown pre-rendered to HTML, **no JavaScript and no external
-fonts/CDNs at view time**. It must *just work* from GitHub Pages, and never be unusable
-locally.
+URL) or visits the GitHub Pages site. "Self-contained" is the hard requirement: every
+asset loaded at view time is local — vendored CSS, markdown pre-rendered to HTML, **no
+JavaScript, no external fonts/CDNs**. (External *navigation* links like "View on GitHub"
+are fine — they're clicks, not view-time loads.) It must *just work* from GitHub Pages,
+and never be unusable locally.
 
 ## The generator
 
@@ -50,12 +51,16 @@ Output:
 
    ```bash
    open docs/index.html            # macOS; or xdg-open / just open the file:// path
-   grep -REo 'href="[^"]*"' docs/  # every link must be relative — none start with / or http
-   grep -riE 'https?://(cdn|fonts|unpkg|jsdelivr)' docs/   # must be empty (no external assets)
+   # Nothing is fetched off-site at view time. The only asset is the vendored, relative
+   # style.css — there is no JS or web font. (Absolute <a href> nav links to github.com
+   # are expected — they're clicks, not view-time loads — so don't flag those.)
+   grep -RiE '<script|<link[^>]+stylesheet' docs/   # stylesheet must be relative; no <script>
+   grep -riE 'https?://(cdn|fonts|unpkg|jsdelivr)' docs/   # empty: no external CSS/JS/fonts
    ```
 
-   Click through to a plugin page and back from the `file://` view. If any link 404s
-   locally, it's not self-contained — fix before publishing.
+   Click through to a plugin page and back from the `file://` view — the internal
+   page-to-page links must resolve locally. If one 404s, it's not self-contained — fix
+   before publishing.
 3. **Publish via GitHub Pages** — point Pages at the `docs/` folder on the default branch:
 
    ```bash
