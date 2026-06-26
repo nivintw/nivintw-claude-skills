@@ -21,7 +21,7 @@ findings into a single prioritized report — instead of a pile of overlapping o
 
 - **Mode A — your own PR, pre-handoff.** Default when reviewing the current branch / a PR
   authored in this session. Goal: catch everything *before* a human looks. **Apply** safe
-  fixes and re-run; list anything judgment-heavy for the author.
+  fixes and re-run; surface anything judgment-heavy for the human at hand-off.
 - **Mode B — a teammate's PR.** When given a PR number / branch authored by someone else.
   Goal: a high-signal review *for them*. **Do not push changes to their branch.** Posting review
   comments is an outward-facing action — draft the review, show it, and only post with
