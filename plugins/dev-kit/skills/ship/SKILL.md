@@ -98,20 +98,40 @@ keeping.
 ## Phase 3 — Implement (fan out; delegate by cost)
 
 Do the work. Be **thorough but token-conscious** — that balance is a first-class goal, not an
-afterthought. Match the tool to the job:
+afterthought. **Route each chunk to the cheapest tier that fits**, judged by *stakes ×
+verification-cost × reasoning-depth* — not by file count (a three-file mechanical rename is
+trivial; a one-file safety fix is not). "Keep it on Claude" is not "keep it on the top tier":
 
-- **Haiku** — mechanical, well-specified work: grep/inventory, renames, file moves,
-  formatting, boilerplate, repetitive edits.
-- **Sonnet** — moderate, well-scoped work: a contained implementation, writing tests, a
-  focused refactor, a codegen script with a clear spec.
-- **Opus / `/workflows`** — hard reasoning, design, cross-cutting changes, and the
-  adversarial/verification work. Use `/workflows` to pipeline or fan out independent work
-  (e.g. one agent per file/module/dimension) when the task decomposes.
+- **Cheapest / mechanical** — grep/inventory, renames, file moves, formatting, boilerplate,
+  repetitive edits, running the gate, regenerating docs. A faster tier (e.g. Haiku) or a
+  separate/local model fits; a local model is also a cheap **generation** lane for
+  self-contained scaffolding you'll review anyway.
+- **Mid** — contained, well-specified work: a focused implementation, writing tests, a scoped
+  refactor, a codegen script with a clear spec (e.g. Sonnet).
+- **Top** — hard reasoning, design, cross-cutting changes, and the adversarial/verification +
+  **synthesis** work (e.g. Opus).
 
-Fan out **freely** where work is independent, but report what was delegated and to whom.
+`/workflows` is orthogonal to the tiers: reach for it to pipeline or fan out independent work
+(one agent per file/module/dimension, each at whatever tier fits) whenever the task
+decomposes — not only for the hardest work.
+
+Two rules keep this honest:
+
+- **Delegate the work down, keep the judgment up.** Push mechanical and well-scoped chunks to
+  cheaper tiers, but the final synthesis — what's right, what's done, what to ship — stays
+  with the driver. Don't hand judgment to a weaker tier to save tokens.
+- **Don't atomize.** A subagent round-trip for a two-line edit costs more than it saves; the
+  win is on *chunks*, not every micro-edit. When in doubt, do the small thing inline.
+
+**Surface the routing**: for any non-trivial chunk, say in one line where it went and why
+(e.g. "scaffolding → Sonnet; the safety-critical logic → kept here") rather than silently
+defaulting everything to the driver. And **draw on whatever relevant skills and agents the
+environment offers** — including ones not named in these phases and ones added after this was
+written — at your discretion; survey what's installed rather than following a fixed list.
+
 Update the progress file and make **checkpoint commits** as coherent pieces land. As work
-starts, flip the tracking issue to `status:in-progress` (via
-`/dev-kit:handle-task-tracking`) and log notable decisions on it as they're made.
+starts, flip the tracking issue to `status:in-progress` (via `/dev-kit:handle-task-tracking`)
+and log notable decisions on it as they're made.
 
 ## Phase 4 — Simplify (always)
 
@@ -153,9 +173,13 @@ via the GitHub MCP or `gh`) and **iterate to convergence**:
 
 1. Wait for Copilot's review to land on the current PR head.
 2. Triage its findings like any reviewer — apply the real ones (commit + push to the same
-   branch) and, for each declined, note why.
-3. **Re-request the review** so Copilot re-runs against the new head.
-4. Repeat until it **converges**: Copilot approves, or its only remaining comments are
+   branch).
+3. **Resolve each thread once you've handled it** — reply with how it was addressed (the
+   commit) or, for a declined one, why, then mark the thread resolved (GitHub's
+   `resolveReviewThread`). Leaving handled threads open makes the next round and the human's
+   final pass ambiguous about what's left.
+4. **Re-request the review** so Copilot re-runs against the new head.
+5. Repeat until it **converges**: Copilot approves, or its only remaining comments are
    non-actionable (nits already judged, or false positives). Bound the loop — after ~3
    rounds with nothing substantive left, stop and summarize the residue for the human
    rather than chasing nits forever.

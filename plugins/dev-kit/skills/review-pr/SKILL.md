@@ -37,7 +37,7 @@ Identify exactly what's under review (`git diff <base>...HEAD`, or the PR's file
 files touched, and the change's *intent* — the adversarial pass needs the intent to know
 what "broken" means.
 
-## The battery — default to all four, right-sized
+## The battery — default to the full set, right-sized
 
 Run these and collect their findings. Prefer running them concurrently (fan them out as
 subagents, or via `/workflows`) since they're independent; fall back to sequential.
@@ -46,13 +46,22 @@ subagents, or via `/workflows`) since they're independent; fall back to sequenti
 doesn't need the security or adversarial passes — say which passes are being skipped and why. And
 if an orchestrated skill isn't installed or is denied (e.g. `/security-review`,
 `/pr-review-toolkit:review-pr`), note that the coverage is missing and continue with the
-rest rather than failing the whole review.
+rest rather than failing the whole review. Conversely, **reach for any other relevant skill
+or agent the environment offers** — including ones not listed here and ones added after this
+was written (e.g. a specialized reviewer that fits the kind of change at hand); survey what's
+installed rather than treating this list as exhaustive.
 
 1. **`/code-review`** — correctness bugs + reuse/simplification/efficiency cleanups.
 2. **`/security-review`** — security review of the pending changes.
 3. **`/pr-review-toolkit:review-pr`** — the specialized agent suite (silent-failure,
    type-design, test coverage, comment accuracy, etc.).
 4. **Adversarial review** — see below. This one is bespoke each run.
+5. **Independent second-opinion model** — a *different* model fails differently, so a second
+   read from a cheaper tier or a local model is a genuine extra lens at low cost. Hand it a
+   self-contained artifact (a whole script or tight diff) and ask it to break the change. But
+   **verify its claims**: its failure mode is misreading control flow and low signal on subtle
+   logic, so treat its output as candidate findings to confirm, never as authority. Skip it
+   when the change can't be understood without the whole repo (it has no repo access).
 
 ## Adversarial review (interpret per change, every time)
 
@@ -77,7 +86,7 @@ or concrete path), not hypotheticals.
 
 ## Synthesize
 
-Merge all four sources into ONE report:
+Merge every pass you ran into ONE report:
 
 - **De-duplicate** overlapping findings; keep the clearest statement of each.
 - **Rank by severity** (blocker → major → minor → nit) and label the source.
