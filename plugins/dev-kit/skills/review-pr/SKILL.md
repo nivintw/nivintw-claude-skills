@@ -37,7 +37,7 @@ Identify exactly what's under review (`git diff <base>...HEAD`, or the PR's file
 files touched, and the change's *intent* — the adversarial pass needs the intent to know
 what "broken" means.
 
-## The battery — always all four
+## The battery — default to all four, right-sized
 
 Run these and collect their findings. Prefer running them concurrently (fan them out as
 subagents, or via `/workflows`) since they're independent; fall back to sequential.
