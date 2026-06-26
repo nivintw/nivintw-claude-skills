@@ -63,6 +63,19 @@ Every file needs SPDX info; `reuse lint` must pass.
 ## CI / releases
 
 - `pr.yml` runs the gate on PRs (`ci / lint-and-test` is the required check).
-- `main.yml` runs the gate then a commitizen auto-release on push to `main`. The release
-  job **skips cleanly** until `CI_APP_ID` / `CI_APP_PRIVATE_KEY` (release GitHub App)
-  secrets exist — so merging is always safe; adding the secrets activates releases.
+- `main.yml` runs the gate then **release-please** on push to `main`. Versioning is
+  **per-plugin**: `release-please-config.json` maps each `plugins/<name>` to a package and
+  `.release-please-manifest.json` is the version of record. release-please maintains a
+  per-plugin **Release PR** that bumps that plugin's `.claude-plugin/plugin.json` +
+  `plugins/<name>/CHANGELOG.md`; **merging the Release PR** cuts the `<name>-v<version>` tag
+  and GitHub Release. Changes are attributed by path (which plugin dir a commit touched);
+  commit type sets the bump (`fix`→patch, `feat`→minor, `!`/`BREAKING CHANGE:`→major).
+- The release job **skips cleanly** until `CI_CLIENT_ID` (variable) + `CI_APP_PRIVATE_KEY`
+  (secret) for the release GitHub App exist — so merging is always safe; setting them
+  activates releases. The App needs **Contents** + **Pull requests** write.
+- **Adding a plugin?** Register it in `release-please-config.json` *and*
+  `.release-please-manifest.json` (seed its starting version). The
+  `check-plugin-release-wiring` gate hook fails if a plugin isn't wired into both, or if a
+  `plugin.json` version drifts from the manifest.
+- commitizen no longer releases — it's now **only** the commit-msg linter (`.cz.toml` is
+  just the `cz_gitmoji` rule).

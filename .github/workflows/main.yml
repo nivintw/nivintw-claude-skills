@@ -2,25 +2,26 @@
 # SPDX-License-Identifier: MIT
 
 # Main pipeline: on every push to main, run the SAME quality gate as PRs, then — only
-# here — a commitizen release stage (gated by `needs: ci`).
+# here — release-please (gated by `needs: ci`).
 #
-# RELEASE FLOW (commitizen decides everything; the API just stamps its decision):
-#   1. `cz bump --files-only` computes the next version from the conventional-commit
-#      history and writes the version-of-record (pyproject.toml/.cz.toml, per the
-#      configured version_provider) + lockfile + CHANGELOG.md, WITHOUT committing.
-#   2. The workflow creates a GitHub-SIGNED commit of those files via the GraphQL
-#      createCommitOnBranch mutation, authenticated as a release GitHub App → the
-#      commit is Verified and attributed to the app[bot].
-#   3. An annotated tag v<version> is created; 4. a GitHub Release is cut.
+# RELEASE FLOW (release-please, manifest mode — per-plugin independent versions):
+#   1. On push to main, release-please scans conventional commits per package path
+#      (release-please-config.json) and maintains a per-plugin "Release PR" that bumps
+#      that plugin's .claude-plugin/plugin.json + its CHANGELOG.md. Versions of record
+#      live in .release-please-manifest.json.
+#   2. Merging a Release PR is what publishes: release-please then cuts the annotated
+#      tag `<plugin>-v<version>` and the GitHub Release for that plugin.
+#   3. The action authenticates as the release GitHub App (see below). An App token is a
+#      distinct actor, so — unlike the default GITHUB_TOKEN — the Release PR runs CI and
+#      the merge triggers downstream workflows.
 #
 # REPO SETUP TO ENABLE RELEASES (the release job SKIPS cleanly until these exist, so
 # merging to main is always safe — see the `preflight` job below):
-#   - A release GitHub App with Contents: Read+write, installed on this repo, and in
-#     the bypass list of any ruleset that protects main.
+#   - A release GitHub App with Contents: Read+write AND Pull requests: Read+write,
+#     installed on this repo, and in the bypass list of any ruleset that protects main.
 #   - A repository variable CI_CLIENT_ID (the App's Client ID — non-secret) and a
 #     repository secret CI_APP_PRIVATE_KEY (the App's private key).
-#   - If you don't want signed/app releases, replace this job with a plain
-#     `cz bump && git push` using a PAT, or delete the release job entirely.
+#   - If you don't want app releases, pass a PAT as `token` instead, or delete this job.
 
 name: main
 
@@ -32,7 +33,7 @@ on:
 permissions:
   contents: read
 
-# Serialize release runs so overlapping merges can't race the signed-bump stamping.
+# Serialize release runs so overlapping merges can't race release-please.
 concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: false
@@ -76,104 +77,14 @@ jobs:
         with:
           app-id: ${{ vars.CI_CLIENT_ID }}
           private-key: ${{ secrets.CI_APP_PRIVATE_KEY }}
-          # Scope the token to the minimum the release needs (signed bump commit, tag, ref,
-          # release) instead of inheriting the App's blanket perms (zizmor github-app).
+          # Scope the token to exactly what release-please needs: the bump commit + tag +
+          # release (contents) and the Release PR (pull-requests).
           permission-contents: write
+          permission-pull-requests: write
 
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - name: Run release-please (per-plugin Release PRs, tags, releases)
+        uses: googleapis/release-please-action@5c625bfb5d1ff62eadeeb3772007f7f66fdcf071 # v4.4.1
         with:
-          # Check out the LIVE main tip, not the triggering push SHA, so a prior
-          # release run's bump is seen rather than targeting a stale head.
-          ref: main
-          fetch-depth: 0
           token: ${{ steps.app-token.outputs.token }}
-          # Bump/tag/release go through the API with this token, not `git push`, so the
-          # token needn't be persisted to .git/config (zizmor artipacked).
-          persist-credentials: false
-
-      - name: Set up uv
-        uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6.8.0
-        with:
-          enable-cache: true
-
-      - name: Install commitizen (+ gitmoji plugin)
-        run: |
-          uv tool install commitizen --with cz-conventional-gitmoji
-          echo "$HOME/.local/bin" >>"$GITHUB_PATH"
-
-      - name: Compute the release (commitizen — files only, no commit/tag)
-        id: bump
-        run: |
-          set -euo pipefail
-          old="$(cz version --project)"
-          incr=()
-          if [ -z "$(git tag)" ]; then incr=(--increment MAJOR); fi
-          if cz bump --yes --files-only --changelog-to-stdout "${incr[@]}" \
-               >"$RUNNER_TEMP/release_notes.md" 2>"$RUNNER_TEMP/bump.log"; then
-            new="$(cz version --project)"
-            git status --porcelain | cut -c4- >"$RUNNER_TEMP/changed_files.txt"
-            {
-              echo "released=true"
-              echo "old=$old"
-              echo "new=$new"
-              echo "tag=v$new"
-              echo "head=$(git rev-parse HEAD)"
-            } >>"$GITHUB_OUTPUT"
-          elif [ -z "$(git status --porcelain)" ]; then
-            echo "Nothing to release — no version-bumping commits since the last tag."
-            echo "released=false" >>"$GITHUB_OUTPUT"
-          else
-            echo "cz bump failed:" >&2; cat "$RUNNER_TEMP/bump.log" >&2; exit 1
-          fi
-
-      - name: Create the signed bump commit + annotated tag
-        if: steps.bump.outputs.released == 'true'
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
-        env:
-          OLD: ${{ steps.bump.outputs.old }}
-          NEW: ${{ steps.bump.outputs.new }}
-          TAG: ${{ steps.bump.outputs.tag }}
-          HEAD_OID: ${{ steps.bump.outputs.head }}
-        with:
-          github-token: ${{ steps.app-token.outputs.token }}
-          script: |
-            const fs = require('fs');
-            const { owner, repo } = context.repo;
-            const { OLD, NEW, TAG, HEAD_OID } = process.env;
-            const paths = fs.readFileSync(`${process.env.RUNNER_TEMP}/changed_files.txt`, 'utf8').split('\n').filter(Boolean);
-            const additions = paths.map((path) => ({
-              path,
-              contents: fs.readFileSync(path).toString('base64'),
-            }));
-            const res = await github.graphql(
-              `mutation($input: CreateCommitOnBranchInput!) {
-                 createCommitOnBranch(input: $input) { commit { oid } }
-               }`,
-              {
-                input: {
-                  branch: { repositoryNameWithOwner: `${owner}/${repo}`, branchName: 'main' },
-                  expectedHeadOid: HEAD_OID,
-                  message: { headline: `🔖 bump: ${OLD} → ${NEW} [skip ci]` },
-                  fileChanges: { additions },
-                },
-              },
-            );
-            const oid = res.createCommitOnBranch.commit.oid;
-            core.info(`signed bump commit: ${oid}`);
-            const tag = await github.rest.git.createTag({
-              owner, repo, tag: TAG, message: TAG, object: oid, type: 'commit',
-            });
-            await github.rest.git.createRef({ owner, repo, ref: `refs/tags/${TAG}`, sha: tag.data.sha });
-            core.info(`annotated tag ${TAG} → ${oid}`);
-
-      - name: Publish the GitHub Release
-        if: steps.bump.outputs.released == 'true'
-        env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-          # Route the step output through env, not `${{ }}` in the script, so it can't be
-          # interpreted as shell (zizmor template-injection).
-          TAG: ${{ steps.bump.outputs.tag }}
-        run: |
-          gh release create "$TAG" \
-            --title "$TAG" \
-            --notes-file "$RUNNER_TEMP/release_notes.md"
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json

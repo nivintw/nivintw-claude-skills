@@ -1,0 +1,22 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "bootstrap-sha": "92798d2f234baf87d0bdf336700fa162852581b9",
+  "include-component-in-tag": true,
+  "separate-pull-requests": true,
+  "packages": {
+    "plugins/castify": {
+      "release-type": "simple",
+      "component": "castify",
+      "extra-files": [
+        { "type": "json", "path": ".claude-plugin/plugin.json", "jsonpath": "$.version" }
+      ]
+    },
+    "plugins/dev-kit": {
+      "release-type": "simple",
+      "component": "dev-kit",
+      "extra-files": [
+        { "type": "json", "path": ".claude-plugin/plugin.json", "jsonpath": "$.version" }
+      ]
+    }
+  }
+}

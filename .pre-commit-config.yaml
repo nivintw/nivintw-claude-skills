@@ -171,3 +171,11 @@ repos:
         language: system
         types: [toml]
         pass_filenames: false
+
+      - id: check-plugin-release-wiring
+        name: "🔖 release · Plugins consistently wired to release-please"
+        entry: python3 scripts/check_plugin_release_wiring.py
+        language: system
+        # Re-check whenever a plugin manifest or the release-please wiring changes.
+        files: '^(plugins/.*/\.claude-plugin/plugin\.json|release-please-config\.json|\.release-please-manifest\.json)$'
+        pass_filenames: false
