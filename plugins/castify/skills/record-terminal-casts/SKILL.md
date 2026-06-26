@@ -29,8 +29,8 @@ The harness solves this with **tmux** — it runs the asciinema recording inside
 detached tmux pane and injects keystrokes from outside with `tmux send-keys`,
 which writes into the pane's real PTY. asciinema, running inside the pane, records
 an authentic session. The `sleep`s between keystrokes become the playback pacing,
-because asciinema records wall-clock time. The whole demo is a script to commit,
-diff, and re-run.
+because asciinema records wall-clock time. The whole demo lives in a script —
+commit it, diff it, re-run it.
 
 ```text
 tmux pane ── shell ── asciinema rec ── recorded shell ── your CLI/TUI
