@@ -6,9 +6,10 @@
 [global]
 # Don't enforce a hard line length on prose.
 disable = ["MD013"]
-# License texts aren't prose to lint. (Per-plugin changelogs from release-please start at
-# an H1, so they don't trip MD041 and don't need excluding.)
-exclude = ["LICENSE", "LICENSES/**"]
+# License texts aren't prose to lint, and release-please owns the per-plugin CHANGELOGs —
+# it regenerates them with consecutive blank lines (MD012) every release, so linting them
+# just fails the release PR's CI. Don't lint generated artifacts.
+exclude = ["LICENSE", "LICENSES/**", "**/CHANGELOG.md"]
 
 [MD046]
 # Always use fenced code blocks (```lang), never 4-space-indented.
