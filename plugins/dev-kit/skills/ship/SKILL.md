@@ -5,7 +5,7 @@ description: >-
   "take this from idea to a PR", "open a PR for this", or "run the full dev workflow on
   this" — any real change worth a planned, reviewed pull request. It drives a change from
   idea to a review-ready PR through a disciplined Human + AI teaming workflow: an explicit
-  planning step and sign-off first, work isolated in a dedicated git worktree,
+  planning step and sign-off first, work isolated in a dedicated worktree,
   implementation that fans out subagents and /workflows (delegating mechanical work to
   cheaper models to stay token-conscious), task tracking delegated to
   /dev-kit:handle-task-tracking across the lifecycle, then always /simplify, then refresh
@@ -47,17 +47,19 @@ outlives the branch and the session.
 
 ## Phase 2 — Worktree + branch (always)
 
-Create and work inside a **dedicated git worktree** on a fresh feature branch — never on
-`main` or the user's primary checkout:
+Work inside a **dedicated worktree** on a fresh feature branch — never on `main` or the
+user's primary checkout. Create it with the **EnterWorktree** tool (not a bare
+`git worktree add`): it creates an isolated worktree branched fresh from
+`origin/<default-branch>` and switches the session into it.
 
-```bash
-git worktree add ../<repo>-<branch> -b <type>/<short-name>
+```text
+EnterWorktree({ name: "<type>/<short-name>" })
 ```
 
 This isolates the in-progress change (the user keeps using their main checkout) and lets
 parallel, file-mutating subagents run in **per-agent worktree isolation** without clobbering
-each other. (Worktree teardown happens in Phase 8, or immediately on abort:
-`git worktree remove`.)
+each other. Teardown happens in Phase 8 via **ExitWorktree**; on abort, exit immediately
+with `ExitWorktree({ action: "remove", discard_changes: true })`.
 
 ## Phase 3 — Implement (fan out; delegate by cost)
 
@@ -132,7 +134,10 @@ green before a person looks. If Copilot review isn't enabled on the repo, note t
 
 Once the review has converged, **mark the PR ready for review** (`gh pr ready`) and **hand
 off** — that flip from draft to ready *is* the hand-off signal. Ship stops here; merging is
-the human's call (or a later, explicitly-authorized step). Finally, tear down the worktree.
+the human's call (or a later, explicitly-authorized step). Finally, tear down the worktree
+with **ExitWorktree** (`action: "remove"`). The branch and PR are safe on the remote, so
+pass `discard_changes: true` — that clears ExitWorktree's guard against the local feature
+commits, which (correctly) aren't on the base branch.
 
 ## Guardrails
 
