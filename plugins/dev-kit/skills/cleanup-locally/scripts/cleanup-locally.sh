@@ -284,12 +284,17 @@ while IFS= read -r branch; do
   if [ -n "$(git config --get "branch.$branch.remote" 2>/dev/null)" ]; then
     continue # has a live upstream — leave it alone
   fi
-  delete_branch "$branch" "merged local-only" "-d"
+  # Force-delete (-D), not -d: the `git branch --merged "$default_ref"` filter already proved
+  # the branch is in the default branch. `-d` re-checks against the *current* HEAD, so it
+  # would wrongly refuse when the script runs from a non-default branch/worktree.
+  delete_branch "$branch" "merged local-only" "-D"
 done < <(git branch --merged "$default_ref" --format '%(refname:short)')
 
 # ------------------------------------ Summary ---------------------------------------- #
 if [ "$deleted" = 0 ] && [ "$removed_wt" = 0 ] && [ "$skipped" = 0 ] && [ "$kept" = 0 ]; then
   echo "Nothing to clean up."
+elif [ "$DRY_RUN" = 1 ]; then
+  echo "Dry run complete: would delete $deleted branch(es), would remove $removed_wt worktree(s), skipped $skipped (need review), kept $kept."
 else
   echo "Cleanup complete: deleted $deleted branch(es), removed $removed_wt worktree(s), skipped $skipped (need review), kept $kept."
 fi

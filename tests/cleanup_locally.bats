@@ -143,6 +143,21 @@ merged_gone_branch() {
   [ "$status" -ne 0 ]
 }
 
+@test "deletes a merged local-only branch when run from a non-default branch" {
+  git checkout -q -b lo3 main
+  commit_on "$REPO" lo3.txt lo3 "lo3 work"
+  git checkout -q -b side main # 'side' forks off base, before lo3 merges → does not contain lo3
+  git checkout -q main
+  git merge -q --no-ff lo3
+  git push -q origin main
+  git checkout -q side # current HEAD does NOT contain lo3
+
+  run "$SCRIPT"
+  [ "$status" -eq 0 ] # with plain -d this would fail (lo3 not merged into 'side')
+  run git rev-parse --verify --quiet refs/heads/lo3
+  [ "$status" -ne 0 ] # deleted regardless of which branch is checked out
+}
+
 @test "keeps a merged branch that still has a live upstream" {
   git checkout -q -b feat-live main
   commit_on "$REPO" live.txt v "live work"
