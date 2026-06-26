@@ -14,8 +14,8 @@ SPDX-License-Identifier: {{ props["spdxLicenseIdentifier"] }}
 """
 # REUSE-IgnoreEnd
 
-# Negations cancel hawkeye's built-in default excludes (which skip **/*.md and
-# **/.gitignore) so those get headered too.
+# The `!**/.gitignore` negation below cancels hawkeye's built-in default exclude for
+# .gitignore, so .gitignore gets an inline header.
 # This project has frontmatter-first markdown (YAML on line 1 — Claude Code skills,
 # Jekyll/Hugo), so markdown stays in hawkeye's default excludes (a line-1 SPDX comment
 # would break the frontmatter) and is licensed via REUSE.toml instead. Note hawkeye

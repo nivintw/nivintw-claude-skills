@@ -31,6 +31,11 @@ context is discarded, (b) keeps this file + checkpoint commits as durable state,
 long phase boundaries, *advises* the user "good moment to /compact — state is saved in
 .ship/<branch>.md." After any compaction, re-read this file to resume losslessly.
 
+Mind the CWD switch: Phase 2's EnterWorktree moves the session into a fresh worktree, and
+`.ship/` is gitignored so it does **not** travel there. Re-create this file inside the
+worktree right after entering, keying its name off the actual branch
+(`git branch --show-current`); until then it lives in the original checkout.
+
 ## Phase 1 — Plan (explicit, required)
 
 Never skip this. Understand the ask, then **fan out `Explore` subagents** (read-only) to map
@@ -49,17 +54,34 @@ outlives the branch and the session.
 
 Work inside a **dedicated worktree** on a fresh feature branch — never on `main` or the
 user's primary checkout. Create it with the **EnterWorktree** tool (not a bare
-`git worktree add`): it creates an isolated worktree branched fresh from
-`origin/<default-branch>` and switches the session into it.
+`git worktree add`):
 
 ```text
 EnterWorktree({ name: "<type>/<short-name>" })
 ```
 
-This isolates the in-progress change (the user keeps using their main checkout) and lets
-parallel, file-mutating subagents run in **per-agent worktree isolation** without clobbering
-each other. Teardown happens in Phase 8 via **ExitWorktree**; on abort, exit immediately
-with `ExitWorktree({ action: "remove", discard_changes: true })`.
+EnterWorktree is *not* a drop-in for `git worktree add` — account for each difference:
+
+- **It switches the session's CWD** into the new worktree (a fresh checkout). Anything
+  written before this — including the Phase 0/1 `.ship/` progress file — stays in the
+  *original* checkout and is **absent** here. Re-establish the progress file in the worktree
+  right after entering (see Phase 0), and use worktree paths from now on.
+- **It names the branch itself** — typically a sanitized, `worktree-`-prefixed form of
+  `name`, not literally `<type>/<short-name>`. Never assume the branch name: read the real
+  one with `git branch --show-current`, and key the `.ship/<branch>.md` filename and the PR
+  off *that*.
+- **The base ref is config-governed** (`worktree.baseRef`: `fresh` → `origin/<default-branch>`
+  by default, `head` → local HEAD). If the work depends on unpushed local commits, push them
+  first or confirm the base includes them — don't assume a clean origin base.
+- **It refuses to nest** — if the session is *already* in a worktree, EnterWorktree errors.
+  Then don't create a new one: continue in the current worktree, or `ExitWorktree` out first
+  and re-enter.
+
+This isolates the in-progress change (the user keeps their main checkout) and lets parallel,
+file-mutating subagents run in **per-agent worktree isolation** without clobbering each
+other. Teardown is in Phase 8 via **ExitWorktree**; on abort, `ExitWorktree({ action:
+"remove", discard_changes: true })` — but only once you've confirmed nothing in the worktree
+is worth keeping (Phase 8 covers the `discard_changes` guard).
 
 ## Phase 3 — Implement (fan out; delegate by cost)
 
@@ -135,9 +157,18 @@ green before a person looks. If Copilot review isn't enabled on the repo, note t
 Once the review has converged, **mark the PR ready for review** (`gh pr ready`) and **hand
 off** — that flip from draft to ready *is* the hand-off signal. Ship stops here; merging is
 the human's call (or a later, explicitly-authorized step). Finally, tear down the worktree
-with **ExitWorktree** (`action: "remove"`). The branch and PR are safe on the remote, so
-pass `discard_changes: true` — that clears ExitWorktree's guard against the local feature
-commits, which (correctly) aren't on the base branch.
+with **ExitWorktree** (`action: "remove"`) — but first confirm the working tree is clean and
+everything is pushed (the PR holds all the work). ExitWorktree refuses to remove a worktree
+that has *either* uncommitted files *or* local commits not on the base branch:
+
+- **Commits not on base** is expected here — they're safely on the pushed PR branch — so
+  passing `discard_changes: true` to clear *that* is safe.
+- **Uncommitted files** means unsaved work. Do **not** blindly pass `discard_changes: true`
+  to steamroll it: stop, inspect, and commit/push or deliberately drop it first. (Or use
+  `action: "keep"` to leave the worktree on disk.)
+
+`discard_changes: true` is only safe once you've verified the sole reason ExitWorktree
+balked is the on-the-remote feature commits — never as a reflex.
 
 ## Guardrails
 
