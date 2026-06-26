@@ -72,9 +72,10 @@ acceptance criteria; each sub-issue holds one concrete deliverable.
 Drive status with a **small status-label set** so it works in any repo with zero setup:
 
 `status:triage` → `status:ready` → `status:in-progress` → `status:in-review`, plus
-`status:blocked` as an orthogonal flag. An issue holds exactly one status label; moving work
-forward means swapping the label. Keep the set small — more states than the team actually
-uses become noise nobody updates.
+`status:blocked` as an orthogonal flag. An issue carries exactly one of those four
+*progression* labels — moving work forward means swapping it — with `status:blocked` layered
+on top when the work is stuck. Keep the set small — more states than the team actually uses
+become noise nobody updates.
 
 Triage means turning raw `status:triage` issues into either `status:ready` (clear enough to
 start: acceptance criteria, priority, and area all set) or closed (won't-do / duplicate /
