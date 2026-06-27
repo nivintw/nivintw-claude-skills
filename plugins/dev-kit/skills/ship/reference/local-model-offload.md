@@ -45,8 +45,7 @@ ollama list   # inspect installed models + sizes at runtime
 Choose by stakes and latency — a smaller model for fast, high-volume work; a larger one for
 quality-sensitive first passes. Honor a user-stated preference first: if `CLAUDE.local.md`
 names which local model to use for which role, follow it. Never assume a specific model is
-present. (Running against a remote Ollama with no local CLI? Read the model list from
-`"$OLLAMA/api/tags"` instead.)
+present.
 
 ## 3. Shell out (JSON-encode the content — don't interpolate)
 
