@@ -1,59 +1,69 @@
 # Local-model offload — detect and shell out
 
 Copy-paste mechanic for routing eligible mechanical work to a **local Ollama** model, off the
-Claude token budget. ship's Phase 3 decides *what* to offload; this file is *how*. The skill
-stays portable: it hardcodes no endpoint or model names — discover them at runtime and honor
-whatever the user documents in `CLAUDE.local.md` or their environment.
+Claude token budget. ship's Phase 3 decides *what* to offload; this file is *how*. (The
+detect-and-shell-out steps below are also how `review-pr` gets a local second opinion.) The
+skill stays portable: it hardcodes no model names — discover them at runtime — and honors a
+custom endpoint via `$OLLAMA_HOST`.
+
+## 0. Resolve the endpoint
+
+```bash
+OLLAMA="${OLLAMA_HOST:-localhost:11434}"                       # honor a documented override
+case "$OLLAMA" in http*) ;; *) OLLAMA="http://$OLLAMA" ;; esac  # $OLLAMA_HOST is often scheme-less
+```
+
+Use `"$OLLAMA"` in every call below so the endpoint stays in one place.
 
 ## 1. Detect (degrade silently if absent)
 
-Run all three checks; if any fails, skip offload and use the normal tiers — never hard-depend
-on a local model, since it's absent in CI, on a work machine, and so on:
+Guard, don't abort: detection must signal "absent → use the normal tiers," never kill the
+caller. Make it a function that **returns** non-zero — not a script that `exit`s:
 
 ```bash
-command -v ollama >/dev/null || exit 1                          # CLI present
-curl -sf http://localhost:11434/api/tags >/dev/null || exit 1   # server up (default port)
-ollama list | tail -n +2 | grep -q . || exit 1                  # at least one model pulled
+local_offload_available() {
+  command -v ollama >/dev/null || return 1             # CLI present (used for model discovery)
+  curl -sf "$OLLAMA/api/tags" >/dev/null || return 1   # server reachable
+  ollama list | tail -n +2 | grep -q . || return 1     # at least one model pulled
+}
+local_offload_available || echo "no local model — use the normal tiers"
 ```
 
-The endpoint defaults to `localhost:11434`; if the user documents a different host/port in
-`CLAUDE.local.md` or `$OLLAMA_HOST`, use that instead.
+Never hard-depend on it — it's absent in CI, on a work machine, and so on.
 
 ## 2. Pick a model (discover, don't hardcode)
 
-List what's actually installed and choose by stakes and latency — a smaller model for fast,
-high-volume work; a larger one for quality-sensitive first passes:
-
 ```bash
-ollama list   # inspect available models + sizes at runtime
+ollama list   # inspect installed models + sizes at runtime
 ```
 
-Honor a user-stated preference first: if `CLAUDE.local.md` names which local models to use for
-which role, follow it. Otherwise infer from `ollama list` (fewer parameters → the fast/cheap
-lane; larger → the quality lane). Never assume a specific model is present.
+Choose by stakes and latency — a smaller model for fast, high-volume work; a larger one for
+quality-sensitive first passes. Honor a user-stated preference first: if `CLAUDE.local.md`
+names which local model to use for which role, follow it. Never assume a specific model is
+present. (Running against a remote Ollama with no local CLI? Read the model list from
+`"$OLLAMA/api/tags"` instead.)
 
-## 3. Shell out
+## 3. Shell out (JSON-encode the content — don't interpolate)
 
-The OpenAI-compatible chat endpoint is simplest for one-shot tasks:
+File content, diffs, and logs contain quotes, backslashes, and newlines that break a
+hand-built JSON string. **Always build the payload with `jq`** so the content is encoded —
+never paste raw text into the JSON:
 
 ```bash
-curl -sf http://localhost:11434/v1/chat/completions \
-  -H 'Content-Type: application/json' \
-  -d @- <<'JSON'
-{
-  "model": "<model-from-step-2>",
-  "messages": [
-    {"role": "system", "content": "<tight instructions>"},
-    {"role": "user", "content": "<the batch to process>"}
-  ],
-  "stream": false
-}
-JSON
+MODEL="<model-from-step-2>"
+SYS="<tight instructions>"
+CONTENT="<the batch to process>"    # may contain quotes/newlines — jq encodes it safely
+
+jq -nc --arg m "$MODEL" --arg sys "$SYS" --arg usr "$CONTENT" \
+  '{model:$m, messages:[{role:"system",content:$sys},{role:"user",content:$usr}], stream:false}' \
+| curl -s --max-time 120 --fail-with-body \
+    "$OLLAMA/v1/chat/completions" -H 'Content-Type: application/json' -d @-
 ```
 
-`/api/generate` is the native alternative for a single prompt. The local model has **no repo
-access and no tools** — paste the full context it needs into the request; it can't go read a
-file.
+`--fail-with-body` surfaces the error body on a bad request so the agent can self-correct, and
+`--max-time` stops a hung model from blocking. `/api/generate` is the native single-prompt
+alternative. The local model has **no repo access and no tools** — put everything it needs in
+the request; it can't read a file.
 
 ## 4. Verify and log
 
@@ -65,8 +75,7 @@ file.
 
 ## What's eligible
 
-Good local offload is batchable, low-stakes, and cheap to verify: bulk summarization across
-many files, diff/log triage, first-pass boilerplate or scaffolding, classification/tagging.
-Keep on Claude anything agentic, multi-file, or high-stakes, and reserve the Opus driver for
-correctness-critical work. Local generation is throughput-limited, so only offload genuinely
-**batchable** work — never anything on the interactive path.
+Offload only **batchable, low-stakes** work that's cheap to verify: bulk summarization across
+many files, diff/log triage, first-pass boilerplate, classification/tagging. Keep on Claude
+anything agentic, multi-file, or high-stakes, reserve the Opus driver for correctness-critical
+work, and never put anything on the interactive path through a local model.
