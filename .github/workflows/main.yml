@@ -9,10 +9,13 @@
 #      (release-please-config.json) and maintains a per-plugin "Release PR" that bumps
 #      that plugin's .claude-plugin/plugin.json + its CHANGELOG.md. Versions of record
 #      live in .release-please-manifest.json.
-#   2. Merging a Release PR is what publishes: release-please then cuts the annotated
-#      tag `<plugin>-v<version>` and the GitHub Release for that plugin.
+#   2. Each per-plugin Release PR is auto-merged (`--auto --rebase`) once its required
+#      check (`ci / lint-and-test`) passes, so releases are continuous AND independent per
+#      plugin — a fix to one plugin doesn't drag the others. Merging a Release PR is what
+#      publishes: release-please then cuts the annotated tag `<plugin>-v<version>` and the
+#      GitHub Release for that plugin.
 #   3. The action authenticates as the release GitHub App (see below). An App token is a
-#      distinct actor, so — unlike the default GITHUB_TOKEN — the Release PR runs CI and
+#      distinct actor, so — unlike the default GITHUB_TOKEN — the Release PRs run CI and
 #      the merge triggers downstream workflows.
 #
 # REPO SETUP TO ENABLE RELEASES (the release job SKIPS cleanly until these exist, so
@@ -21,7 +24,11 @@
 #     installed on this repo, and in the bypass list of any ruleset that protects main.
 #   - A repository variable CI_CLIENT_ID (the App's Client ID — non-secret) and a
 #     repository secret CI_APP_PRIVATE_KEY (the App's private key).
+#   - "Allow auto-merge" + "Allow rebase merging" enabled, and main gated on REQUIRED
+#     STATUS CHECKS with 0 required approvals (the App can't approve its own Release PR;
+#     `--auto` also needs >=1 required check). The auto-merge step uses `--rebase`.
 #   - If you don't want app releases, pass a PAT as `token` instead, or delete this job.
+#     For Release PRs you'd rather merge by hand, drop the "Auto-merge" step below.
 
 name: main
 
@@ -83,8 +90,36 @@ jobs:
           permission-pull-requests: write
 
       - name: Run release-please (per-plugin Release PRs, tags, releases)
+        id: release
         uses: googleapis/release-please-action@5c625bfb5d1ff62eadeeb3772007f7f66fdcf071 # v4.4.1
         with:
           token: ${{ steps.app-token.outputs.token }}
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
+
+      # Continuous releases: enable auto-merge (rebase) on EVERY open per-plugin Release PR,
+      # so each lands on its own once `ci / lint-and-test` passes. Because this repo uses
+      # separate-pull-requests, release-please emits `prs` (a JSON ARRAY of all the open
+      # Release PRs) — iterate it; the single-`pr` output would only cover one of N. When
+      # there are no Release PRs (a run that only cut releases) `prs` is empty — depending on
+      # the action it's either unset or the string `[]`, so the `if:` skips on BOTH. The PR
+      # JSON travels via env, never inline `${{ }}`, to dodge script injection. GH_REPO tells
+      # gh which repo to act on: this job has no checkout, so without it `gh pr merge` would
+      # probe the working dir for a git remote and die. gh reads GH_REPO natively, so no
+      # checkout is needed.
+      - name: Auto-merge the Release PRs
+        if: ${{ steps.release.outputs.prs && steps.release.outputs.prs != '[]' }}
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_PRS: ${{ steps.release.outputs.prs }}
+        run: |
+          set -euo pipefail
+          # Capture jq's output first (not `jq | while`): under `set -e` a jq failure (null /
+          # non-array `prs`) aborts the step loudly instead of being swallowed by the pipe and
+          # silently enabling auto-merge on nothing. A defensive empty `prs` still loops zero
+          # times even though the `if:` already skips that case.
+          numbers="$(printf '%s' "$RELEASE_PRS" | jq -r '.[].number')"
+          for n in $numbers; do
+            gh pr merge "$n" --auto --rebase
+          done
