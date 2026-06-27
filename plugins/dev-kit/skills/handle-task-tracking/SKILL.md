@@ -2,9 +2,9 @@
 name: handle-task-tracking
 description: >-
   This skill should be used when the user asks to "track this with an issue", "open an
-  issue", "file a bug", "triage the issues", "break this into sub-issues", "what should I
-  work on next", "groom the backlog", "link this PR to an issue", or "close out this
-  issue". It defines a repeatable, robust workflow for using GitHub issues as the durable
+  issue", "file a bug", "triage the issues", "break this into sub-issues", "groom the
+  backlog", "link this PR to an issue", or "close out this issue". It defines a repeatable,
+  robust workflow for using GitHub issues as the durable
   task ledger: capturing work as well-formed issues, triaging with a small status-label
   set (Projects optional), decomposing via native sub-issues, linking branches and PRs
   with "Closes #N", keeping issues current, and closing them deliberately. Prefer the
@@ -82,10 +82,11 @@ start: acceptance criteria, priority, and area all set) or closed (won't-do / du
 already-fixed, with a one-line reason). Don't let issues sit in `triage` indefinitely — an
 untriaged pile is the first sign the tracker is going stale.
 
-Pick the next task from `status:ready`, highest priority first; flip it to `status:in-progress`
-and self-assign when starting. **Keep the issue current as the work reveals new information**
-— post a comment when a decision is made, an approach changes, or a blocker appears. The
-issue, not the chat, is the durable log.
+Selecting *which* `status:ready` task to start — ranking them and explaining the pick — is
+`/dev-kit:open-work`'s job; this skill defines the labels that ranking reads. When you start
+one, flip it to `status:in-progress` and self-assign. **Keep the issue current as the work
+reveals new information** — post a comment when a decision is made, an approach changes, or a
+blocker appears. The issue, not the chat, is the durable log.
 
 **Projects (optional upgrade).** When a board view, cross-repo tracking, or custom fields
 (sprint, estimate) genuinely help, add a GitHub Projects (v2) board whose columns mirror the
