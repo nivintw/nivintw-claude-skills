@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.4.0](https://github.com/nivintw/nivintw-claude-skills/compare/dev-kit-v0.3.0...dev-kit-v0.4.0) (2026-06-27)
+
+
+### Features
+
+* **dev-kit:** teach /ship to shell out to a local Ollama model ([b348cc3](https://github.com/nivintw/nivintw-claude-skills/commit/b348cc3a353f0d9ba9bf1eb2c4cdd81446d7fed9))
+
+
+### Bug Fixes
+
+* **dev-kit:** drop the CLI-less aside that contradicted detection ([eff680a](https://github.com/nivintw/nivintw-claude-skills/commit/eff680a5822480a059c7943fb3865e8f987d0068))
+* **dev-kit:** guard jq and add detection timeout in offload recipe ([4bdb17a](https://github.com/nivintw/nivintw-claude-skills/commit/4bdb17a14e6dbceac1668566bbb493850134ad0f))
+* **dev-kit:** make the offload detection example degrade silently ([40b642a](https://github.com/nivintw/nivintw-claude-skills/commit/40b642ac1a00cae130c40ab8cc27a80cbf528398))
+* **dev-kit:** make the Ollama offload recipe actually runnable ([e36f9f6](https://github.com/nivintw/nivintw-claude-skills/commit/e36f9f6edede4cf07549fb26fde93978db95dbac))
+
 ## [0.3.0](https://github.com/nivintw/nivintw-claude-skills/compare/dev-kit-v0.2.0...dev-kit-v0.3.0) (2026-06-27)
 
 
