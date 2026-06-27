@@ -2,12 +2,12 @@
 name: open-work
 description: >-
   This skill should be used when the user asks "what should I work on next", "what should I
-  pick up next", "what's next", "pick my next task", "rank my issues", "triage my backlog
-  into a shortlist", or otherwise wants a recommendation of which open work to start. It
-  reads the repo's open GitHub issues (the durable task ledger) and returns a short, ranked
-  "pick up next" shortlist with a one-line rationale per item — not a full dump — ranking
-  status:ready work by priority, readiness, staleness, and dependencies, surfacing blocked
-  items, and flagging an untriaged pile. It selects from the ledger but neither grooms it
+  pick up next", "what's next", "pick my next task", "rank my issues", "shortlist my ready
+  work", or otherwise wants a recommendation of which open work to start. It reads the repo's
+  open GitHub issues (the durable task ledger) and returns a short, ranked "pick up next"
+  shortlist with a one-line rationale per item — not a full dump — ranking status:ready work
+  by priority, staleness, and dependencies, surfacing blocked items, and flagging an
+  untriaged pile. It selects from the ledger but neither grooms it
   (that's /dev-kit:handle-task-tracking, whose status-label model it reuses) nor does the
   work (that's /dev-kit:ship). Prefer the GitHub MCP tools, falling back to the gh CLI.
 ---
@@ -44,7 +44,7 @@ to` references), and parent/sub-issue links. Prefer the GitHub MCP tools; fall b
 (see Tooling). Read the issue *bodies* for the candidates you're about to recommend — a
 rationale needs more than a title.
 
-## Rank — priority × readiness × staleness × dependencies
+## Rank — readiness gate, then priority × staleness × dependencies
 
 Rank using `handle-task-tracking`'s model, in this order:
 
@@ -55,11 +55,15 @@ Rank using `handle-task-tracking`'s model, in this order:
     `updated_at`, no assignee), don't recommend starting fresh.
   - `status:in-review` — awaiting review, effectively in-flight; exclude from "start next".
   - `status:blocked` — exclude from the shortlist; surface separately with its blocker.
+- **Ownership.** A `status:ready` issue already assigned to someone else isn't yours to
+  start — exclude it from the shortlist (or surface it separately); prefer unassigned or
+  self-assigned ready work.
 - **Priority (primary sort)** among ready items: `priority:high` > `medium` > `low` >
   unlabeled.
 - **Dependencies.** An issue still blocked by an open dependency is **not** ready regardless
-  of its label — treat it as blocked. An issue that *unblocks* others (a blocker for several)
-  earns a bump up.
+  of its label — resolve its `Blocked by` reference and confirm that blocker is still open,
+  then treat it as blocked. An issue that *unblocks* others (a blocker for several) earns a
+  bump up.
 - **Staleness (tie-breaker).** Among equal priority, surface long-sitting `ready` items first
   (older `updated_at`) so they don't rot — but call it out when age signals the issue itself
   may be going stale and want a re-triage.
