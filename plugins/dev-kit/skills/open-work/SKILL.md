@@ -2,8 +2,9 @@
 name: open-work
 description: >-
   This skill should be used when the user asks "what should I work on next", "what should I
-  pick up next", "what's next", "pick my next task", "rank my issues", "shortlist my ready
-  work", or otherwise wants a recommendation of which open work to start. It reads the repo's
+  pick up next", "what's next in the backlog", "pick my next task", "rank my issues",
+  "shortlist my ready work", or otherwise wants a recommendation of which open work to start.
+  It reads the repo's
   open GitHub issues (the durable task ledger) and returns a short, ranked "pick up next"
   shortlist with a one-line rationale per item — not a full dump — ranking status:ready work
   by priority, staleness, and dependencies, surfacing blocked items, and flagging an
