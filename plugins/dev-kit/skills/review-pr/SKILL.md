@@ -57,7 +57,10 @@ installed rather than treating this list as exhaustive.
    type-design, test coverage, comment accuracy, etc.).
 4. **Adversarial review** — see below. This one is bespoke each run.
 5. **Independent second-opinion model** — a *different* model fails differently, so a second
-   read from a cheaper tier or a local model is a genuine extra lens at low cost. Hand it a
+   read from a cheaper tier or a local model is a genuine extra lens at low cost (for a local
+   Ollama model, the detect-and-shell-out recipe in
+   [`../ship/reference/local-model-offload.md`](../ship/reference/local-model-offload.md)
+   applies here too). Hand it a
    self-contained artifact (a whole script or tight diff) and ask it to break the change. But
    **verify its claims**: its failure mode is misreading control flow and low signal on subtle
    logic, so treat its output as candidate findings to confirm, never as authority. Skip it
