@@ -22,9 +22,10 @@ caller. Make it a function that **returns** non-zero — not a script that `exit
 
 ```bash
 local_offload_available() {
-  command -v ollama >/dev/null || return 1             # CLI present (used for model discovery)
-  curl -sf "$OLLAMA/api/tags" >/dev/null || return 1   # server reachable
-  ollama list | tail -n +2 | grep -q . || return 1     # at least one model pulled
+  command -v ollama >/dev/null || return 1                       # CLI present (model discovery)
+  command -v jq >/dev/null || return 1                           # jq builds the payload (step 3)
+  curl -sf --max-time 5 "$OLLAMA/api/tags" >/dev/null || return 1  # server reachable (don't hang)
+  ollama list | tail -n +2 | grep -q . || return 1              # at least one model pulled
 }
 local_offload_available || echo "no local model — use the normal tiers"
 ```
@@ -71,7 +72,7 @@ the request; it can't read a file.
   subagent's, and never let it reach the PR unchecked. Subtle logic, multi-file reasoning, and
   anything correctness-critical stay with Claude.
 - **Log the routing.** Note in one line when a sub-step went local vs. to Claude (per Phase
-  3's "surface the routing" rule) so the token saving — and any quality trade-off — is visible.
+  3's "surface the routing" rule) so the token savings — and any quality trade-off — are visible.
 
 ## What's eligible
 
