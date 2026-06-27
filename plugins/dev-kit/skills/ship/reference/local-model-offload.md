@@ -27,7 +27,11 @@ local_offload_available() {
   curl -sf --max-time 5 "$OLLAMA/api/tags" >/dev/null || return 1  # server reachable (don't hang)
   ollama list | tail -n +2 | grep -q . || return 1              # at least one model pulled
 }
-local_offload_available || echo "no local model — use the normal tiers"
+
+if local_offload_available; then
+  : # offload eligible work (steps 2–3)
+fi
+# otherwise fall through to the normal tiers — no output, nothing to clean up
 ```
 
 Never hard-depend on it — it's absent in CI, on a work machine, and so on.
