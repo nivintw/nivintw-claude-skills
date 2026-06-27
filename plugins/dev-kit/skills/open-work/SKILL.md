@@ -59,8 +59,8 @@ Rank using `handle-task-tracking`'s model, in this order:
 - **Ownership.** A `status:ready` issue already assigned to someone else isn't yours to
   start — exclude it from the shortlist (or surface it separately); prefer unassigned or
   self-assigned ready work.
-- **Priority (primary sort)** among ready items: `priority:high` > `medium` > `low` >
-  unlabeled.
+- **Priority (primary sort)** among ready items: `priority:high` > `priority:medium` >
+  `priority:low` > unlabeled.
 - **Dependencies.** An issue still blocked by an open dependency is **not** ready regardless
   of its label — resolve its `Blocked by` reference and confirm that blocker is still open,
   then treat it as blocked. An issue that *unblocks* others (a blocker for several) earns a
