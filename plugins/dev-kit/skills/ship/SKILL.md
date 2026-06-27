@@ -105,7 +105,11 @@ trivial; a one-file safety fix is not). "Keep it on Claude" is not "keep it on t
 - **Cheapest / mechanical** — grep/inventory, renames, file moves, formatting, boilerplate,
   repetitive edits, running the gate, regenerating docs. A faster tier (e.g. Haiku) or a
   separate/local model fits; a local model is also a cheap **generation** lane for
-  self-contained scaffolding you'll review anyway.
+  self-contained scaffolding you'll review anyway. When a local model (Ollama) is available,
+  **shell out to it** for batchable mechanical work to keep that work off the token budget
+  entirely — detect it, route, verify, and log the routing per
+  [`reference/local-model-offload.md`](reference/local-model-offload.md); it degrades silently
+  to the tiers above when absent.
 - **Mid** — contained, well-specified work: a focused implementation, writing tests, a scoped
   refactor, a codegen script with a clear spec (e.g. Sonnet).
 - **Top** — hard reasoning, design, cross-cutting changes, and the adversarial/verification +
