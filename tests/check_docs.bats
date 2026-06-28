@@ -76,6 +76,12 @@ run_check() {
   [ "$status" -eq 0 ]
 }
 
+@test "same-page anchor tolerates a trailing query" {
+  printf '<a href="#sec?v=1">x</a><h2 id="sec">S</h2>' >"$SITE/index.html"
+  run_check
+  [ "$status" -eq 0 ]
+}
+
 @test "missing cross-page anchor fails" {
   printf '<a href="other.html#gone">x</a>' >"$SITE/index.html"
   printf '<h2 id="here">H</h2>' >"$SITE/other.html"
@@ -119,6 +125,14 @@ run_check() {
   run_check
   [ "$status" -eq 1 ]
   [[ "$output" == *"absolute path"* ]]
+}
+
+@test "link escaping the docs root fails (would 404 on Pages)" {
+  printf 'outside' >"$SANDBOX/outside.html"
+  printf '<a href="../outside.html">x</a>' >"$SITE/index.html"
+  run_check
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"escapes docs root"* ]]
 }
 
 @test "case-mismatched link fails (portable to case-sensitive Pages)" {

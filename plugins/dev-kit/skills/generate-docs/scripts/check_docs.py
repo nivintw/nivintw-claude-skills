@@ -63,6 +63,15 @@ def split_ref(value: str) -> tuple[str, str]:
     return unquote(rest.split("?", 1)[0]), frag
 
 
+def within_root(target: Path, root: Path) -> bool:
+    """True if target stays inside the docs root — links must not escape it (Pages serves /docs)."""
+    try:
+        target.resolve().relative_to(root.resolve())
+        return True
+    except (ValueError, OSError):
+        return False
+
+
 def exists_cs(target: Path, root: Path) -> bool:
     """Existence check that is case-sensitive even on a case-insensitive filesystem."""
     if not target.exists():
@@ -70,11 +79,7 @@ def exists_cs(target: Path, root: Path) -> bool:
     try:
         rel = target.resolve().relative_to(root.resolve())
     except (ValueError, OSError):
-        # outside root — fall back to confirming the leaf's exact case
-        try:
-            return target.name in (e.name for e in target.parent.iterdir())
-        except OSError:
-            return False
+        return False  # outside the docs root is never a valid in-site target
     cur = root.resolve()
     for part in rel.parts:
         try:
@@ -125,7 +130,7 @@ def main(argv: list[str]) -> int:
             if not v or is_external(v):
                 continue
             if v.startswith("#"):  # same-page anchor
-                frag = v[1:]
+                frag = v[1:].split("?", 1)[0]
                 if frag and frag not in page.ids:
                     violations.append(f"{hp}: missing anchor #{frag}: <{tag} {attr}={value!r}>")
                 continue
@@ -138,6 +143,11 @@ def main(argv: list[str]) -> int:
             if not ref:
                 continue
             target = hp.parent / ref
+            if not within_root(target, root):
+                violations.append(
+                    f"{hp}: link escapes docs root (404s on Pages): <{tag} {attr}={value!r}>"
+                )
+                continue
             if not exists_cs(target, root):
                 violations.append(f"{hp}: broken internal link: <{tag} {attr}={value!r}>")
                 continue
@@ -162,6 +172,9 @@ def main(argv: list[str]) -> int:
                 continue
             ref, frag = split_ref(u)
             target = root / ref
+            if not within_root(target, root):
+                violations.append(f"{idx}: search url escapes docs root: {u!r}")
+                continue
             if not exists_cs(target, root):
                 violations.append(f"{idx}: broken search url: {u!r}")
                 continue
