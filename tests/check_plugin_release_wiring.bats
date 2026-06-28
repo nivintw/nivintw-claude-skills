@@ -116,6 +116,7 @@ EOF
   run python3 "$SCRIPT"
   [ "$status" -eq 1 ]
   [[ "$output" == *"plugins/dev-kit: version drift"* ]]
+  [[ "$output" == *"but .config/.release-please-manifest.json="* ]]
 }
 
 @test "fails when a registered plugin lacks the plugin.json extra-files wiring" {
@@ -177,7 +178,7 @@ EOF
   [[ "$output" == *"'version' must be a non-empty string"* ]]
 }
 
-@test "fails on malformed release-please-config.json" {
+@test "fails on malformed .config/release-please-config.json" {
   good_repo
   echo 'not json' >"$SANDBOX/.config/release-please-config.json"
   run python3 "$SCRIPT"

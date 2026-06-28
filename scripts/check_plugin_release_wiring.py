@@ -84,7 +84,7 @@ def main() -> int:
         if disk[path] != manifest[path]:
             problems.append(
                 f"{path}: version drift — plugin.json={disk[path]} "
-                f"but .release-please-manifest.json={manifest[path]}"
+                f"but .config/.release-please-manifest.json={manifest[path]}"
             )
 
     # The wiring that actually bumps plugin.json: each package must carry the extra-files
