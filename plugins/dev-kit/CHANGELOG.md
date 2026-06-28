@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.5.1](https://github.com/nivintw/nivintw-claude-skills/compare/dev-kit-v0.5.0...dev-kit-v0.5.1) (2026-06-28)
+
+
+### Bug Fixes
+
+* **dev-kit:** keep ship/review-pr from halting after a sub-skill hands back ([1841e59](https://github.com/nivintw/nivintw-claude-skills/commit/1841e599b330d13e1968933b628fb8bad26bd128)), closes [#27](https://github.com/nivintw/nivintw-claude-skills/issues/27)
+* **dev-kit:** store ship run state under the git dir, not the working tree ([fd64443](https://github.com/nivintw/nivintw-claude-skills/commit/fd64443fcff230d0f5c51f1bb84ecc1af5489819)), closes [#25](https://github.com/nivintw/nivintw-claude-skills/issues/25)
+
 ## [0.5.0](https://github.com/nivintw/nivintw-claude-skills/compare/dev-kit-v0.4.0...dev-kit-v0.5.0) (2026-06-28)
 
 
