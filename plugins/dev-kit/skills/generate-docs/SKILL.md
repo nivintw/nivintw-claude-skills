@@ -8,9 +8,9 @@ description: >-
   (code with no docs) — and authors a bespoke, human-first static documentation site (a
   landing page plus per-topic pages) shaped to whatever the repo is: a Claude Code plugin
   marketplace, a Copier template, a library or CLI, or a generic project. Code is the source
-  of truth and Claude authors the prose. Reach for it to create, refresh, or reconcile a
-  repo's docs site, including as part of shipping a change (dev-kit:ship runs it
-  automatically).
+  of truth and Claude authors the prose; the site renders identically from a local file://
+  path and from GitHub Pages. Reach for it to create, refresh, or reconcile a repo's docs
+  site, including as part of shipping a change (dev-kit:ship runs it automatically).
 ---
 
 # generate-docs

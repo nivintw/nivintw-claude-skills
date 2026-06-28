@@ -54,7 +54,9 @@ class PageParser(HTMLParser):
 
 
 def is_external(url: str) -> bool:
-    return url.startswith("//") or bool(urlparse(url).scheme)
+    # Only an explicit scheme (https/mailto/data/…) counts as external. Protocol-relative
+    # "//host" refs are NOT skipped — they break from file:// and get flagged as non-portable.
+    return bool(urlparse(url).scheme)
 
 
 def split_ref(value: str) -> tuple[str, str]:
@@ -147,9 +149,10 @@ def main(argv: list[str]) -> int:
                 if frag and frag not in page.ids:
                     violations.append(f"{hp}: missing anchor #{frag}: <{tag} {attr}={value!r}>")
                 continue
-            if v.startswith("/"):
+            if v.startswith("/"):  # absolute (/x) or protocol-relative (//host)
                 violations.append(
-                    f"{hp}: absolute path not portable to file://: <{tag} {attr}={value!r}>"
+                    f"{hp}: absolute or protocol-relative path not portable to file://: "
+                    f"<{tag} {attr}={value!r}>"
                 )
                 continue
             ref, frag = split_ref(v)
@@ -183,8 +186,8 @@ def main(argv: list[str]) -> int:
                 continue
             if is_external(u):
                 continue
-            if u.startswith("/"):
-                violations.append(f"{idx}: absolute path not portable: {u!r}")
+            if u.startswith("/"):  # absolute or protocol-relative
+                violations.append(f"{idx}: absolute or protocol-relative path not portable: {u!r}")
                 continue
             ref, frag = split_ref(u)
             target = root / ref
