@@ -55,11 +55,14 @@ def is_external(url: str) -> bool:
 
 
 def split_ref(value: str) -> tuple[str, str]:
-    """Return (path, fragment) from a ref, tolerating ?query and #frag in either order."""
+    """Return (decoded path, decoded fragment), tolerating ?query and #frag in either order.
+
+    Both parts are percent-decoded so they match the on-disk name and the id/name the
+    browser resolves (e.g. "page.html#my%20id" → fragment "my id")."""
     rest, frag = value, ""
     if "#" in rest:
         rest, frag = rest.split("#", 1)
-        frag = frag.split("?", 1)[0]
+        frag = unquote(frag.split("?", 1)[0])
     return unquote(rest.split("?", 1)[0]), frag
 
 
@@ -129,8 +132,8 @@ def main(argv: list[str]) -> int:
             v = value.strip()
             if not v or is_external(v):
                 continue
-            if v.startswith("#"):  # same-page anchor
-                frag = v[1:].split("?", 1)[0]
+            if v.startswith("#"):  # same-page anchor — reuse split_ref for query/percent handling
+                _, frag = split_ref(v)
                 if frag and frag not in page.ids:
                     violations.append(f"{hp}: missing anchor #{frag}: <{tag} {attr}={value!r}>")
                 continue

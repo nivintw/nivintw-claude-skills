@@ -82,6 +82,12 @@ run_check() {
   [ "$status" -eq 0 ]
 }
 
+@test "anchor fragment is percent-decoded before matching the id" {
+  printf '<a href="#my%%20id">x</a><h2 id="my id">S</h2>' >"$SITE/index.html"
+  run_check
+  [ "$status" -eq 0 ]
+}
+
 @test "missing cross-page anchor fails" {
   printf '<a href="other.html#gone">x</a>' >"$SITE/index.html"
   printf '<h2 id="here">H</h2>' >"$SITE/other.html"
