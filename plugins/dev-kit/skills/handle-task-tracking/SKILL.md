@@ -73,10 +73,11 @@ acceptance criteria; each sub-issue holds one concrete deliverable.
 Drive status with a **small status-label set** so it works in any repo with zero setup:
 
 `status:triage` → `status:ready` → `status:in-progress` → `status:in-review`, plus
-`status:blocked` as an orthogonal flag. An issue carries exactly one of those four
-*progression* labels — moving work forward means swapping it — with `status:blocked` layered
-on top when the work is stuck. Keep the set small — more states than the team actually uses
-become noise nobody updates.
+`status:blocked` as an orthogonal flag. While open, an issue carries exactly one of those
+four *progression* labels — moving work forward means swapping it — with `status:blocked`
+layered on top when the work is stuck; **closing clears it** (closed is terminal — see
+*Close deliberately*). Keep the set small — more states than the team actually uses become
+noise nobody updates.
 
 Triage means turning raw `status:triage` issues into either `status:ready` (clear enough to
 start: acceptance criteria, priority, and area all set) or closed (won't-do / duplicate /
@@ -120,6 +121,16 @@ later should learn the outcome from the closed issue without opening anything el
 PR with `Closes #N` does this when the PR body is good; otherwise add the closing comment by
 hand. Never silently close to clear the count — an unexplained closed issue is lost
 information.
+
+**Closing is terminal — clear the progression label.** Closed *is* the terminal state, so a
+closed issue must not still wear `status:in-progress` or `status:in-review` (nor a leftover
+`status:blocked`): that's a label that no longer matches reality. On close, **remove the
+`status:in-*` progression label**. And confirm the close actually happened — `Closes #N`
+fires only when the merge reaches the default branch with the keyword intact, so a squash
+that drops it, a typo'd reference, or an epic with no direct PR can leave the issue **open
+and stuck in `status:in-review`**. That stale label is exactly what makes a downstream
+reader — or `/dev-kit:open-work` — mistake done work for live work. When it happens, close
+the issue by hand (with the resolution) and clear the label.
 
 ## Tooling — MCP first, gh as fallback
 

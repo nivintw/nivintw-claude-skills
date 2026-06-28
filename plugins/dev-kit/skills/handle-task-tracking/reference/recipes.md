@@ -36,7 +36,7 @@ Three orthogonal axes. Keep each set small — labels nobody maintains are noise
 
 | Axis | Labels | Rule |
 | --- | --- | --- |
-| **status** | `status:triage` `status:ready` `status:in-progress` `status:in-review` `status:blocked` | Exactly one of the first four at a time; `status:blocked` is an orthogonal flag layered on top. |
+| **status** | `status:triage` `status:ready` `status:in-progress` `status:in-review` `status:blocked` | Exactly one of the first four while the issue is open (a closed issue carries none — closing clears it); `status:blocked` is an orthogonal flag layered on top. |
 | **type** | `type:bug` `type:feature` `type:chore` `type:docs` | One per issue. Mirrors the commit type. |
 | **priority** | `priority:high` `priority:medium` `priority:low` | One per issue. Drives "what's next" from `status:ready`. |
 
@@ -141,11 +141,21 @@ gh issue close 42 --comment "Fixed in #57 — refresh now preserves the TOTP win
 
 # won't-do, with the reason
 gh issue close 99 --reason "not planned" --comment "Superseded by the new auth flow in #80."
+
+# clear the now-stale progression label on close (closed is terminal)
+gh issue edit 42 --remove-label "status:in-review" --remove-label "status:in-progress" --remove-label "status:blocked"
+
+# post-merge reconcile: did Closes #N actually fire? if still open, it didn't —
+# close it by hand with the resolution, then clear the label as above.
+gh issue view 42 --json state,labels -q '{state: .state, labels: [.labels[].name]}'
 ```
 
 **MCP:** `mcp__github__issue_write` (`method: "update"`, `state: "closed"`, optional
 `state_reason` — one of `completed` / `not_planned` / `duplicate`) after an
-`add_issue_comment` carrying the resolution.
+`add_issue_comment` carrying the resolution. To clear the label, send the desired label
+set **without** the `status:in-*` entry (remember `labels` *replaces* the whole set — keep
+`type:`/`priority:`). Read back state + labels with `mcp__github__issue_read` to confirm the
+close landed before trusting `Closes #N`.
 
 ## Projects (optional)
 
