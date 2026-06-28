@@ -16,13 +16,15 @@ A marketplace of Claude Code plugins. Two registries to keep in sync:
 - `.claude-plugin/marketplace.json` — lists every plugin (name, `source`, description).
 - `plugins/<name>/.claude-plugin/plugin.json` — each plugin's own manifest.
 
-A plugin holds `skills/<skill>/SKILL.md` (and optionally `commands/`, `agents/`,
+A plugin holds at least one component — usually `skills/<skill>/SKILL.md`, but a plugin can
+ship only `hooks/` (e.g. `worktree-guard`), `commands/`, or `agents/` instead (and optionally
 `scripts/`, `reference/`). Plugin skills are invoked **namespaced**: `/<plugin>:<skill>`
 (e.g. `/castify:record-terminal-casts`), not bare.
 
 ### Adding a plugin
 
-1. `plugins/<name>/.claude-plugin/plugin.json` + at least one `skills/<skill>/SKILL.md`.
+1. `plugins/<name>/.claude-plugin/plugin.json` + at least one component (a
+   `skills/<skill>/SKILL.md`, or a `hooks/`/`commands/`/`agents/` component).
 2. Register it in `.claude-plugin/marketplace.json`.
 3. SPDX + gate (below). Validate with `plugin-dev` (`plugin-validator`, `skill-reviewer`).
 
