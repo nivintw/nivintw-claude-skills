@@ -9,54 +9,138 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>dev-kit</title>
+  <title>dev-kit — nivintw-claude-skills</title>
+  <meta name="description" content="A human + AI teaming development workflow for Claude Code: ship, review-pr, generate-docs, handle-task-tracking, open-work, and cleanup-locally.">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div class="container">
-<div class="breadcrumb">
-  <a href="index.html">← Marketplace</a>
-</div>
-<header>
-  <h1>dev-kit</h1>
-  <p class="subtitle">A Human + AI teaming development workflow. Ship orchestrates a change end to end (plan in a worktree, implement with tiered subagent delegation, simplify, refresh docs, review, PR); review-pr runs a full review battery (code-review, security-review, pr-review-toolkit, and a context-chosen adversarial pass) on your own or a teammate&#x27;s PR; generate-docs builds a self-contained docs site that works from file:// and GitHub Pages; handle-task-tracking defines a repeatable workflow for tracking work as GitHub issues (the durable task ledger ship delegates to); open-work reads those open issues and returns a ranked &quot;pick up next&quot; shortlist with rationale (the select step between tracking and ship); cleanup-locally prunes merged branches and worktrees and brings the default branch up to date without clobbering local work (ship runs it at the start of a run and again after a merge).</p>
-  <div class="meta-row"><span class="version-badge">v0.4.0</span> <span class="keyword-tag">workflow</span> <span class="keyword-tag">pull-request</span> <span class="keyword-tag">code-review</span> <span class="keyword-tag">security-review</span> <span class="keyword-tag">documentation</span> <span class="keyword-tag">github-pages</span> <span class="keyword-tag">subagents</span> <span class="keyword-tag">ci</span> <span class="keyword-tag">issues</span> <span class="keyword-tag">task-tracking</span> <span class="keyword-tag">git</span> <span class="keyword-tag">worktrees</span></div>
-  <p><a href="https://github.com/nivintw/nivintw-claude-skills/tree/main/plugins/dev-kit">View source on GitHub →</a></p>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="index.html"><span class="sigil">/</span>nivintw-claude-skills</a>
+    <div class="header-search">
+      <input type="search" placeholder="Search commands  ( / )" aria-label="Search commands" autocomplete="off">
+      <div class="palette" role="listbox" aria-label="Command search results"></div>
+    </div>
+    <button class="theme-toggle" type="button" aria-label="Switch theme">☾ dark</button>
+  </div>
 </header>
 
-<h2>Components</h2>
+<main id="main" class="wrap">
+  <p class="breadcrumb"><a href="index.html">← all plugins</a></p>
 
-<h2>Skills</h2>
-<ul class="component-list">
-  <li class="component-item">
-    <div class="comp-name">cleanup-locally</div>
-    <div class="comp-desc">This skill should be used when the user asks to &quot;clean up local branches&quot;, &quot;prune merged branches&quot;, &quot;prune worktrees&quot;, &quot;tidy up after a merge&quot;, &quot;update main&quot;, &quot;pull main&quot;, &quot;sync main&quot;, or otherwise wants their local clone reconciled with the remote after PRs land. It fetches, brings the default branch up to date (stashing dirty work and rebasing unpushed commits forward, never clobbering), removes merged worktrees under .claude/worktrees/, and deletes local branches whose commits are already in the default branch — including squash merges. It is deliberately conservative: anything unmerged, dirty, or currently checked out is kept and reported. /dev-kit:ship calls it at the start of a run and again after the user reports a merge. Reach for it whenever local branches/worktrees have drifted from the remote.</div>
-  </li>
-  <li class="component-item">
-    <div class="comp-name">generate-docs</div>
-    <div class="comp-desc">This skill should be used when the user asks to &quot;generate the docs&quot;, &quot;build the docs site&quot;, &quot;refresh the plugin docs&quot;, &quot;publish to GitHub Pages&quot;, or &quot;make a docs page for this marketplace/plugin&quot;. It generates a self-contained static documentation site for a Claude Code plugin marketplace or repo — a landing page plus a page per plugin (manifest, skills, commands, agents, rendered README) — that works BOTH opened locally as a file:// path AND served from GitHub Pages, with zero build step and no JavaScript or external assets at view time. Reach for it to create, refresh, or publish docs generated from the plugin/marketplace manifests, or to keep those docs current as part of shipping a change (dev-kit:ship runs it automatically). Not for general-purpose project or API docs.</div>
-  </li>
-  <li class="component-item">
-    <div class="comp-name">handle-task-tracking</div>
-    <div class="comp-desc">This skill should be used when the user asks to &quot;track this with an issue&quot;, &quot;open an issue&quot;, &quot;file a bug&quot;, &quot;triage the issues&quot;, &quot;break this into sub-issues&quot;, &quot;groom the backlog&quot;, &quot;link this PR to an issue&quot;, or &quot;close out this issue&quot;. It defines a repeatable, robust workflow for using GitHub issues as the durable task ledger: capturing work as well-formed issues, triaging with a small status-label set (Projects optional), decomposing via native sub-issues, linking branches and PRs with &quot;Closes #N&quot;, keeping issues current, and closing them deliberately. Prefer the GitHub MCP tools, falling back to the gh CLI. Reach for it whenever the user is tracking or grooming development tasks as GitHub issues, even when they don&#x27;t say the word &quot;issue&quot; — but not for actually implementing a change (that hand-off belongs to /dev-kit:ship, which delegates the tracking here).</div>
-  </li>
-  <li class="component-item">
-    <div class="comp-name">open-work</div>
-    <div class="comp-desc">This skill should be used when the user asks &quot;what should I work on next&quot;, &quot;what should I pick up next&quot;, &quot;what&#x27;s next in the backlog&quot;, &quot;pick my next task&quot;, &quot;rank my issues&quot;, &quot;shortlist my ready work&quot;, or otherwise wants a recommendation of which open work to start. It reads the repo&#x27;s open GitHub issues (the durable task ledger) and returns a short, ranked &quot;pick up next&quot; shortlist with a one-line rationale per item — not a full dump — ranking status:ready work by priority, staleness, and dependencies, surfacing blocked items, and flagging an untriaged pile. It selects from the ledger but neither grooms it (that&#x27;s /dev-kit:handle-task-tracking, whose status-label model it reuses) nor does the work (that&#x27;s /dev-kit:ship). Prefer the GitHub MCP tools, falling back to the gh CLI.</div>
-  </li>
-  <li class="component-item">
-    <div class="comp-name">review-pr</div>
-    <div class="comp-desc">This skill should be used when the user asks to &quot;review this PR&quot;, &quot;review my changes before I open a PR&quot;, &quot;do a pre-merge review&quot;, &quot;sanity-check this diff&quot;, or &quot;review PR #N&quot; / a teammate&#x27;s branch. It is the single review entry point: it runs and synthesizes the full battery — /code-review, /security-review, /pr-review-toolkit:review-pr — plus a context-chosen ADVERSARIAL pass that actively tries to break the change, then merges everything into one prioritized report instead of a pile of overlapping outputs. Reach for it on a PR authored in this session (pre-handoff) or a teammate&#x27;s PR by number or branch, rather than invoking the individual review skills one at a time. /dev-kit:ship calls it automatically before opening its PR.</div>
-  </li>
-  <li class="component-item">
-    <div class="comp-name">ship</div>
-    <div class="comp-desc">This skill should be used when the user asks to &quot;ship this&quot;, &quot;ship a change/feature/fix&quot;, &quot;take this from idea to a PR&quot;, &quot;open a PR for this&quot;, or &quot;run the full dev workflow on this&quot; — any real change worth a planned, reviewed pull request. It drives a change from idea to a review-ready PR through a disciplined Human + AI teaming workflow: an explicit planning step and sign-off first, work isolated in a dedicated worktree, implementation that fans out subagents and /workflows (delegating mechanical work to cheaper models to stay token-conscious), task tracking delegated to /dev-kit:handle-task-tracking across the lifecycle, then always /simplify, then refresh docs, then a full /dev-kit:review-pr pass, the local quality gate, a conventional-commit PR, and an automated Copilot review iterated to convergence before the change is handed off for human review. Not for a trivial one-off commit or a bare &quot;push this&quot;. Never auto-merges.</div>
-  </li>
-</ul>
+  <section class="hero" style="padding-top:1.5rem">
+    <p class="eyebrow">dev-kit · workflow</p>
+    <h1 class="hero-title">A human&nbsp;+&nbsp;AI development workflow.</h1>
+    <p class="lede">Take a change from idea to a reviewed pull request — planned, isolated,
+      implemented with tiered subagent delegation, simplified, documented, and reviewed. The
+      human stays in control at the ends; the rigorous work happens in the middle. It never
+      auto-merges.</p>
+    <div class="badge-row">
+      <span class="badge">v0.4.0</span>
+      <span class="badge badge-cat">workflow</span>
+      <span class="badge">pull-request</span>
+      <span class="badge">code-review</span>
+      <span class="badge">github-issues</span>
+      <span class="badge">worktrees</span>
+      <a class="badge" href="https://github.com/nivintw/nivintw-claude-skills/tree/main/plugins/dev-kit">source ↗</a>
+    </div>
+  </section>
 
+  <section class="section">
+    <h2>The loop</h2>
+    <p class="section-note">Six commands that compose. <code class="cmd">/dev-kit:ship</code>
+      is the orchestrator and calls the others; each also stands alone.</p>
+    <p>Track work as issues with <code class="cmd">/dev-kit:handle-task-tracking</code>, pick
+      what's next with <code class="cmd">/dev-kit:open-work</code>, then
+      <code class="cmd">/dev-kit:ship</code> it — which reviews with
+      <code class="cmd">/dev-kit:review-pr</code>, refreshes docs with
+      <code class="cmd">/dev-kit:generate-docs</code>, and tidies up with
+      <code class="cmd">/dev-kit:cleanup-locally</code>.</p>
+  </section>
 
-<footer>Generated by <code>generate-docs</code> &mdash; 2026-06-27</footer>
+  <section class="section" id="commands">
+    <h2>Commands</h2>
+    <div class="cmd-list">
 
-</div>
+      <article class="cmd-row" id="ship">
+        <code class="cmd">/dev-kit:ship</code>
+        <p class="cmd-summary">The orchestrator. Drives a change from idea to a review-ready PR:
+          plan and get sign-off, work in a dedicated worktree, implement with work routed to
+          the cheapest fitting model tier, then simplify, refresh docs, run the full review
+          battery, open the PR, and converge an automated review. Hands off — never merges.</p>
+        <p class="cmd-eg"><span class="cmd-eg-label">try</span> "ship this fix" · "take this from idea to a PR" · "run the full dev workflow on this"</p>
+      </article>
+
+      <article class="cmd-row" id="review-pr">
+        <code class="cmd">/dev-kit:review-pr</code>
+        <p class="cmd-summary">The single review entry point. Runs and synthesizes the whole
+          battery — code review, security review, and the pr-review-toolkit — plus a
+          context-chosen adversarial pass that actively tries to break the change, then merges
+          everything into one prioritized report. Works on your own diff or a teammate's PR.</p>
+        <p class="cmd-eg"><span class="cmd-eg-label">try</span> "review this PR" · "review my changes before I open a PR" · "review PR #42"</p>
+      </article>
+
+      <article class="cmd-row" id="generate-docs">
+        <code class="cmd">/dev-kit:generate-docs</code>
+        <p class="cmd-summary">Reconcile the whole documentation set against the whole codebase
+          every run — catching both drift (docs that no longer match the code) and omission
+          (code with no docs) — and author a bespoke static docs site shaped to the repo,
+          whatever kind it is. Humans first; renders from a <code>file://</code> path and from
+          GitHub Pages. (This page was authored by it.)</p>
+        <p class="cmd-eg"><span class="cmd-eg-label">try</span> "generate the docs" · "refresh the docs" · "reconcile the docs"</p>
+      </article>
+
+      <article class="cmd-row" id="handle-task-tracking">
+        <code class="cmd">/dev-kit:handle-task-tracking</code>
+        <p class="cmd-summary">A repeatable workflow for using GitHub issues as the durable task
+          ledger: capture work as well-formed issues, triage with a small status-label set,
+          decompose into native sub-issues, link branches and PRs with <code>Closes #N</code>,
+          and close out deliberately. The ledger that <code class="cmd">/dev-kit:ship</code>
+          delegates to across the lifecycle.</p>
+        <p class="cmd-eg"><span class="cmd-eg-label">try</span> "open an issue for this" · "triage the issues" · "break this into sub-issues"</p>
+      </article>
+
+      <article class="cmd-row" id="open-work">
+        <code class="cmd">/dev-kit:open-work</code>
+        <p class="cmd-summary">Reads the repo's open issues and returns a short, ranked
+          "pick up next" shortlist — each with a one-line rationale — instead of you eyeballing
+          the whole list. Ranks ready work by priority, staleness, and dependencies, surfaces
+          blocked items, and flags the untriaged pile. The select step between tracking and
+          shipping.</p>
+        <p class="cmd-eg"><span class="cmd-eg-label">try</span> "what should I work on next" · "shortlist my ready work" · "rank my issues"</p>
+      </article>
+
+      <article class="cmd-row" id="cleanup-locally">
+        <code class="cmd">/dev-kit:cleanup-locally</code>
+        <p class="cmd-summary">Reconcile your local clone with the remote after PRs land: bring
+          the default branch up to date, prune merged worktrees, and delete local branches
+          whose commits already merged — squash merges included. Deliberately conservative:
+          anything unmerged, dirty, or checked out is kept and reported, never clobbered.</p>
+        <p class="cmd-eg"><span class="cmd-eg-label">try</span> "clean up local branches" · "prune merged worktrees" · "update main"</p>
+      </article>
+
+    </div>
+  </section>
+
+  <section class="section" id="install">
+    <h2>Install</h2>
+    <code class="snippet"><span class="sigil">/</span>plugin marketplace add nivintw/nivintw-claude-skills
+<span class="sigil">/</span>plugin install dev-kit@nivintw-claude-skills</code>
+  </section>
+
+</main>
+
+<footer class="footer">
+  <div class="wrap">
+    By <a href="https://github.com/nivintw">Tyler Nivin</a> ·
+    <a href="https://github.com/nivintw/nivintw-claude-skills">source on GitHub</a> ·
+    MIT · authored by <code class="cmd">/dev-kit:generate-docs</code>
+  </div>
+</footer>
+
+<script src="search-index.js"></script>
+<script src="app.js"></script>
 </body>
 </html>
