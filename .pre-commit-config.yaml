@@ -50,6 +50,9 @@ repos:
       - id: check-json
         name: "🗂️ config · Validate JSON"
         files: '\.json$'
+        # VS Code's .vscode/*.json are JSONC (comments + trailing commas) — valid for VS Code
+        # but not strict JSON, so check-json can't parse them. Match .vscode/ at any depth.
+        exclude: '(^|/)\.vscode/'
       - id: check-toml
         name: "🗂️ config · Validate TOML"
 
@@ -91,10 +94,11 @@ repos:
     hooks:
       - id: zizmor
         name: "🔒 ci · Audit workflows for security issues (zizmor)"
-        # --offline keeps the gate deterministic and token-free: the AST audits (template
-        # injection, excessive permissions, artipacked, …) run offline, while the network
-        # audits (known-vulnerable-actions, ref-confusion) need a GH token and are skipped
-        # here — run zizmor online in CI for those. Overriding args drops the upstream
+        # --offline keeps THIS hook deterministic and token-free: the AST audits (template
+        # injection, excessive permissions, artipacked, …) run offline everywhere. The
+        # network audits (known-vulnerable-actions, ref-confusion) need a GH token, so they
+        # don't run in this hook — CI runs the FULL zizmor audit (online) as a dedicated
+        # step that SKIPs this hook (see ci.yml). Overriding args drops the upstream
         # default, so re-add --no-progress.
         args: ["--no-progress", "--offline"]
 
@@ -106,13 +110,17 @@ repos:
         name: "🔒 security · Detect secrets with gitleaks"
 
   # --------------------------- ⚖️ Licensing & Compliance ---------------------------- #
-  # hawkeye maintains the SPDX headers (config: licenserc.toml); reuse verifies overall
-  # REUSE compliance. hawkeye is system (the Brewfile/release binary) so CI/local match.
+  # hawkeye maintains the SPDX headers (config: .config/licenserc.toml); reuse verifies overall
+  # REUSE compliance. hawkeye is a system release binary (like taplo/osv-scanner/trivy).
+  # SYSTEM TOOLS: this template emits NO Brewfile — CI installs these binaries per run, but
+  # install them locally too so `prek run --all-files` matches CI (the README "Quality gate"
+  # section lists them). The canonical nivintw setup provides them via the Brewfile in the
+  # https://github.com/nivintw/dotfiles repo; a generic adopter supplies their own equivalent.
   - repo: local
     hooks:
       - id: hawkeye-format
         name: "⚖️ license · Add/format SPDX headers with hawkeye"
-        entry: hawkeye format
+        entry: hawkeye format --config .config/licenserc.toml
         language: system
         pass_filenames: false
         require_serial: true
@@ -130,8 +138,21 @@ repos:
       - id: typos
         name: "✨ language · Check spelling with typos"
         # CHECK-ONLY: drop the hook default --write-changes; keep --force-exclude.
-        args: ["--force-exclude"]
+        # Scan `.` plus `.config` explicitly: typos skips hidden dirs by default, so the
+        # configs relocated under .config/ go unchecked unless named (an explicit path
+        # overrides the hidden-skip). .git/.venv stay unscanned — they aren't listed.
+        args: ["--force-exclude", "--config", ".config/typos.toml", ".", ".config"]
         pass_filenames: false
+
+  # --------------------------------- 📐 YAML ---------------------------------------- #
+  # check-yaml (above) only checks that YAML *parses*; yamllint enforces style — indentation,
+  # key duplicates, truthy values, … (config: .config/yamllint.yaml). pip-backed → self-bootstraps.
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.38.0
+    hooks:
+      - id: yamllint
+        name: "📐 yaml · Lint YAML style with yamllint"
+        args: ["-c", ".config/yamllint.yaml"]
 
   # -------------------------------- 📝 Markdown ------------------------------------- #
   - repo: https://github.com/rvben/rumdl-pre-commit
@@ -139,7 +160,7 @@ repos:
     hooks:
       - id: rumdl
         name: "📝 markdown · Lint/format with rumdl"
-        args: [--fix]
+        args: [--fix, --config, .config/rumdl.toml]
 
   # ------------------------------ ✨ Commit Messages -------------------------------- #
   # Plain Conventional Commits (no gitmoji): release-please derives per-plugin version
@@ -174,5 +195,5 @@ repos:
         entry: python3 scripts/check_plugin_release_wiring.py
         language: system
         # Re-check whenever a plugin manifest or the release-please wiring changes.
-        files: '^(plugins/.*/\.claude-plugin/plugin\.json|release-please-config\.json|\.release-please-manifest\.json)$'
+        files: '^(plugins/.*/\.claude-plugin/plugin\.json|\.config/release-please-config\.json|\.config/\.release-please-manifest\.json)$'
         pass_filenames: false
