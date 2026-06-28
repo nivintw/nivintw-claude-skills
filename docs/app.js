@@ -45,6 +45,58 @@
   var initialBtn = document.querySelector(".theme-toggle");
   if (initialBtn) { apply(current()); }
 
+  /* ---- copy buttons ---------------------------------------------------- */
+  function legacyCopy(text) {
+    var ta = document.createElement("textarea");
+    ta.value = text;
+    ta.setAttribute("readonly", "");
+    ta.style.position = "absolute";
+    ta.style.left = "-9999px";
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand("copy"); } catch (e) { /* ignore */ }
+    document.body.removeChild(ta);
+  }
+  function flash(btn) {
+    btn.classList.add("copied");
+    btn.textContent = "copied ✓";
+    setTimeout(function () {
+      btn.classList.remove("copied");
+      btn.textContent = "copy";
+    }, 1500);
+  }
+  function copyText(text, btn) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(
+        function () { flash(btn); },
+        function () { legacyCopy(text); flash(btn); }
+      );
+    } else {
+      legacyCopy(text);
+      flash(btn);
+    }
+  }
+  function addCopy(el, getText, variant) {
+    var wrap = document.createElement("div");
+    wrap.className = "copy-wrap" + (variant ? " copy-wrap--" + variant : "");
+    el.parentNode.insertBefore(wrap, el);
+    wrap.appendChild(el);
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "copy-btn";
+    btn.textContent = "copy";
+    btn.setAttribute("aria-label", "Copy to clipboard");
+    btn.addEventListener("click", function () { copyText(getText(), btn); });
+    wrap.appendChild(btn);
+  }
+  Array.prototype.forEach.call(document.querySelectorAll(".snippet"), function (snip) {
+    addCopy(snip, function () { return snip.innerText.trim(); });
+  });
+  var termCmd = document.querySelector(".terminal .term-cmd");
+  if (termCmd) {
+    addCopy(termCmd.closest(".terminal"), function () { return termCmd.innerText.trim(); }, "term");
+  }
+
   /* ---- command palette ------------------------------------------------- */
   var input = document.querySelector(".header-search input");
   var panel = document.querySelector(".palette");
