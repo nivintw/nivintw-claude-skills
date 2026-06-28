@@ -33,18 +33,46 @@ run first. If it isn't installed, note the gap and continue.
 
 ## Phase 0 — Continuity setup (do this first, maintain throughout)
 
-Create a durable progress file — `.ship/<branch>.md` (gitignore `.ship/`) — and update it
-at **every phase boundary**: the plan, decisions made, what's done, what's next. This is
-what makes ship robust to context compaction: ship cannot trigger `/compact` itself and
-cannot measure its own context, so instead it (a) pushes heavy work into subagents whose
-context is discarded, (b) keeps this file + checkpoint commits as durable state, and (c) at
-long phase boundaries, *advises* the user "good moment to /compact — state is saved in
-.ship/<branch>.md." After any compaction, re-read this file to resume losslessly.
+Create a durable progress file at **`"$(git rev-parse --git-dir)/ship/progress.md"`** and
+update it at **every phase boundary**: the plan, decisions made, what's done, what's next.
+Keeping it under the git dir (not in the working tree) is deliberate — it's **uncommittable
+by construction**: never in a working tree, never swept up by `git add -A`, never tripping
+the repo's markdown/lint hooks, and needing **no `.gitignore` entry**, so nothing the change
+under ship does to `.gitignore` can expose it. This is also what makes ship robust to context
+compaction: ship cannot trigger `/compact` itself and cannot measure its own context, so
+instead it (a) pushes heavy work into subagents whose context is discarded, (b) keeps this
+file + checkpoint commits as durable state, and (c) at long phase boundaries, *advises* the
+user "good moment to /compact — state is saved under the ship dir." After any compaction,
+re-read this file to resume losslessly.
 
-Mind the CWD switch: Phase 2's EnterWorktree moves the session into a fresh worktree, and
-`.ship/` is gitignored so it does **not** travel there. Re-create this file inside the
-worktree right after entering, keying its name off the actual branch
-(`git branch --show-current`); until then it lives in the original checkout.
+Alongside it, maintain a one-line **`state`** file in the same dir
+(`"$(git rev-parse --git-dir)/ship/state"`) — a tiny state machine the dev-kit **Stop hook**
+reads to keep ship from yielding mid-run after a delegated sub-skill hands back. It holds one
+of:
+
+- an **active-phase** token that **must start with `phase-`** (e.g. `phase-3-implement`,
+  `phase-6-review`) while a phase is *executing* — bump it as you cross each boundary, the
+  same moment you update the progress file. Set active tokens **only inside the worktree**
+  (Phase 2 onward): the premature-halt this guards against happens once sub-skills run
+  (Phases 4–6), all of which are inside the worktree.
+- `gate:plan-signoff` while *parked* awaiting the user's sign-off (Phase 1) — the only `state`
+  the primary checkout ever holds before the worktree exists.
+- `done` once the change is *handed off* (Phase 8).
+
+The hook blocks a stop **only** while `state` is a `phase-*` token; **every** other value —
+`gate:*`, `done`, blank, a stale token, or a typo — lets the stop through. That default-allow
+is deliberate: it can never trap you at a human gate, and a forgotten or stale `state` fails
+safe instead of nagging. And because active tokens live only in the worktree's git dir, they
+are torn down with the worktree and never orphaned in your primary checkout. So `gate:plan-signoff`
+and `done` are the only points where a ship run legitimately stops (plan sign-off and hand-off);
+keep `state` current as a courtesy to the backstop, but continuing past a hand-back is *your*
+discipline — the hook is only a net.
+
+Mind the CWD switch: Phase 2's EnterWorktree moves the session into a fresh worktree.
+`$(git rev-parse --git-dir)` then resolves to **that worktree's own git dir**, so the path
+above stays correct automatically and the filename never needs keying off the branch — but
+the progress/state written *before* entering live under the original checkout's git dir, so
+re-establish both in the worktree's ship dir right after entering.
 
 ## Phase 1 — Plan (explicit, required)
 
@@ -56,9 +84,11 @@ genuine decisions now (don't bury them).
 
 Delegate task tracking to **`/dev-kit:handle-task-tracking`** — don't reinvent it here.
 Find or open the GitHub issue that tracks this work, record its number in the progress file,
-and capture the plan's key decisions on the issue. The `.ship/<branch>.md` file tracks
+and capture the plan's key decisions on the issue. The ship progress file tracks
 *this run's* mechanics; the **issue is the durable record of the work itself**, so it
-outlives the branch and the session.
+outlives the branch and the session. Before you yield for sign-off, set `state` to
+`gate:plan-signoff` (the hook never blocks a gate, so the session rests here); you arm the
+first active `phase-*` token from *inside* the worktree in Phase 2, not before.
 
 ## Phase 2 — Worktree + branch (always)
 
@@ -73,13 +103,15 @@ EnterWorktree({ name: "<type>/<short-name>" })
 EnterWorktree is *not* a drop-in for `git worktree add` — account for each difference:
 
 - **It switches the session's CWD** into the new worktree (a fresh checkout). Anything
-  written before this — including the Phase 0/1 `.ship/` progress file — stays in the
-  *original* checkout and is **absent** here. Re-establish the progress file in the worktree
-  right after entering (see Phase 0), and use worktree paths from now on.
+  written before this — including the Phase 0/1 ship progress/state files — lives under the
+  *original* checkout's git dir and is **absent** from this worktree's git dir. Re-establish
+  them in the worktree's ship dir right after entering (see Phase 0), and use worktree paths
+  from now on. This is where you first arm an active `phase-*` token (e.g. `phase-2-worktree`)
+  — active state belongs to the worktree's git dir, never the primary checkout's.
 - **It names the branch itself** — typically a sanitized, `worktree-`-prefixed form of
   `name`, not literally `<type>/<short-name>`. Never assume the branch name: read the real
-  one with `git branch --show-current`, and key the `.ship/<branch>.md` filename and the PR
-  off *that*.
+  one with `git branch --show-current`, and key the PR off *that* (the ship progress/state
+  filenames no longer depend on it — the per-worktree git dir already isolates them).
 - **The base ref is config-governed** (`worktree.baseRef`: `fresh` → `origin/<default-branch>`
   by default, `head` → local HEAD). If the work depends on unpushed local commits, push them
   first or confirm the base includes them — don't assume a clean origin base.
@@ -220,6 +252,10 @@ landed (e.g. "merged", "I merged it"), reconcile local state via **`/dev-kit:cle
    squash-merge included), removes this change's now-merged worktree, and prunes the merged
    local branch.
 
+Ship's progress/state files lived under the worktree's git dir, so removing the worktree
+takes them with it — there's no separate ship-state teardown, and nothing was ever in the
+working tree to untrack.
+
 Running keep-then-cleanup — rather than `ExitWorktree({ action: "remove" })` — is what makes
 the order work: cleanup-locally refreshes the default branch *before* judging the worktree, so
 a squash-merged branch is correctly recognized as merged and torn down. If cleanup-locally
@@ -239,4 +275,6 @@ handles it on merge); close it explicitly if not.
 - The phases lean on skills this plugin doesn't ship (`/simplify`, `/dev-kit:generate-docs`,
   `/dev-kit:review-pr`, and the reviewers it calls). If one isn't installed or is denied,
   note the gap and continue — don't fail the whole ship over a missing optional step.
-- Keep `.ship/<branch>.md` current — it's the resume point if context is compacted.
+- Keep the ship progress file (`"$(git rev-parse --git-dir)/ship/progress.md"`) and its
+  `state` sibling current — the progress file is the resume point if context is compacted,
+  and `state` is what the Stop hook reads to tell an active phase from a human gate.
