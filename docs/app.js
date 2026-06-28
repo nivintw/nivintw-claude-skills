@@ -4,34 +4,39 @@
  */
 
 /* Interactivity for the nivintw-claude-skills docs site. Vanilla, no framework,
-   no build step. Two features: a theme toggle (light/dark, persisted), and a
-   command-palette search over the site-wide index in search-index.js. */
+   no build step. Three features: a theme toggle (light/dark, persisted), copy
+   buttons on command blocks, and a command-palette search over the site-wide
+   index in search-index.js. */
 (function () {
   "use strict";
 
   /* ---- theme toggle ---------------------------------------------------- */
   var root = document.documentElement;
   var STORE = "ncs-theme";
+  var darkMQ = window.matchMedia("(prefers-color-scheme: dark)");
 
-  function systemTheme() {
-    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-  }
-  function current() {
-    return root.getAttribute("data-theme") || systemTheme();
+  function systemTheme() { return darkMQ.matches ? "dark" : "light"; }
+  function current() { return root.getAttribute("data-theme") || systemTheme(); }
+
+  function setToggleLabel(theme) {
+    var btn = document.querySelector(".theme-toggle");
+    if (!btn) { return; }
+    var dark = theme === "dark";
+    btn.textContent = dark ? "☀ light" : "☾ dark";
+    btn.setAttribute("aria-label", "Switch to " + (dark ? "light" : "dark") + " theme");
   }
   function apply(theme) {
     root.setAttribute("data-theme", theme);
-    var btn = document.querySelector(".theme-toggle");
-    if (btn) {
-      var dark = theme === "dark";
-      btn.textContent = dark ? "☀ light" : "☾ dark";
-      btn.setAttribute("aria-label", "Switch to " + (dark ? "light" : "dark") + " theme");
-    }
+    setToggleLabel(theme);
   }
-  try {
-    var saved = localStorage.getItem(STORE);
-    if (saved === "dark" || saved === "light") { apply(saved); }
-  } catch (e) { /* private mode — fall back to system */ }
+
+  var saved = null;
+  try { saved = localStorage.getItem(STORE); } catch (e) { /* private mode */ }
+  if (saved === "dark" || saved === "light") {
+    apply(saved); // an explicit choice wins over the CSS prefers-color-scheme rule
+  } else {
+    setToggleLabel(current()); // no choice: let CSS drive colors, just label the toggle
+  }
 
   document.addEventListener("click", function (e) {
     var btn = e.target.closest && e.target.closest(".theme-toggle");
@@ -41,9 +46,10 @@
     try { localStorage.setItem(STORE, next); } catch (e2) { /* ignore */ }
   });
 
-  // Reflect the active theme on the toggle's label at load.
-  var initialBtn = document.querySelector(".theme-toggle");
-  if (initialBtn) { apply(current()); }
+  // Keep the toggle label honest if the OS theme flips and no explicit choice is set.
+  darkMQ.addEventListener("change", function () {
+    if (!root.getAttribute("data-theme")) { setToggleLabel(current()); }
+  });
 
   /* ---- copy buttons ---------------------------------------------------- */
   function legacyCopy(text) {
@@ -89,24 +95,28 @@
     btn.addEventListener("click", function () { copyText(getText(), btn); });
     wrap.appendChild(btn);
   }
-  Array.prototype.forEach.call(document.querySelectorAll(".snippet"), function (snip) {
+  document.querySelectorAll(".snippet").forEach(function (snip) {
     addCopy(snip, function () { return snip.innerText.trim(); });
   });
-  var termCmd = document.querySelector(".terminal .term-cmd");
-  if (termCmd) {
-    addCopy(termCmd.closest(".terminal"), function () { return termCmd.innerText.trim(); }, "term");
-  }
+  document.querySelectorAll(".terminal").forEach(function (term) {
+    var cmd = term.querySelector(".term-cmd");
+    if (cmd) { addCopy(term, function () { return cmd.innerText.trim(); }, "term"); }
+  });
 
   /* ---- command palette ------------------------------------------------- */
+  var ESC = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" };
   var input = document.querySelector(".header-search input");
   var panel = document.querySelector(".palette");
   var index = window.SEARCH_INDEX || [];
   if (!input || !panel) { return; }
 
+  // Precompute one lowercased haystack per command so search doesn't rebuild it per keystroke.
+  index.forEach(function (m) {
+    m.haystack = (m.cmd + " " + m.plugin + " " + m.summary).toLowerCase();
+  });
+
   function esc(s) {
-    return s.replace(/[&<>"]/g, function (c) {
-      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
-    });
+    return s.replace(/[&<>"]/g, function (c) { return ESC[c]; });
   }
 
   function render(matches) {
@@ -126,9 +136,7 @@
   function search(q) {
     q = q.trim().toLowerCase();
     if (!q) { panel.classList.remove("open"); panel.innerHTML = ""; return; }
-    var hits = index.filter(function (m) {
-      return (m.cmd + " " + m.plugin + " " + m.summary).toLowerCase().indexOf(q) !== -1;
-    });
+    var hits = index.filter(function (m) { return m.haystack.indexOf(q) !== -1; });
     render(hits);
   }
 

@@ -19,6 +19,10 @@
   --term-bg: #1f1d1a;
   --term-fg: #f3f1ec;
   --term-prompt: #d98a5b;
+  /* overlays for controls on the always-dark terminal — theme-independent */
+  --term-overlay: rgba(255, 255, 255, 0.08);
+  --term-overlay-border: rgba(255, 255, 255, 0.22);
+  --term-overlay-hover: rgba(255, 255, 255, 0.16);
 
   --mono: ui-monospace, "SF Mono", "JetBrains Mono", "Cascadia Code", Menlo, Consolas, monospace;
   --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -44,6 +48,8 @@
   }
 }
 
+/* Explicit dark toggle. Values mirror the @media block above — keep them in sync
+   (vanilla CSS can't share a declaration across a media query and an attribute rule). */
 :root[data-theme="dark"] {
   --paper: #16151a;
   --paper-2: #201e25;
@@ -159,8 +165,7 @@ a:hover { text-decoration: underline; }
   color: var(--ink);
 }
 .palette a:last-child { border-bottom: 0; }
-.palette a:hover,
-.palette a.active { background: var(--accent-soft); text-decoration: none; }
+.palette a:hover { background: var(--accent-soft); text-decoration: none; }
 .palette .p-cmd { font-family: var(--mono); font-size: 0.85rem; color: var(--accent); }
 .palette .p-sum { display: block; font-size: 0.82rem; color: var(--ink-2); margin-top: 0.1rem; }
 .palette .p-empty { padding: 0.85rem; color: var(--ink-2); font-size: 0.85rem; }
@@ -181,6 +186,7 @@ a:hover { text-decoration: underline; }
 /* ---- hero --------------------------------------------------------------- */
 
 .hero { padding: 4rem 0 2.5rem; }
+.hero--sub { padding-top: 1.5rem; } /* sub-pages carry a breadcrumb above the hero */
 .eyebrow {
   font-family: var(--mono);
   font-size: 0.78rem;
@@ -336,10 +342,10 @@ a.cmd:hover { text-decoration: none; filter: brightness(0.97); }
 .copy-btn.copied { color: var(--accent); border-color: var(--accent); opacity: 1; }
 .copy-wrap--term .copy-btn {
   color: var(--term-fg);
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.22);
+  background: var(--term-overlay);
+  border-color: var(--term-overlay-border);
 }
-.copy-wrap--term .copy-btn:hover { background: rgba(255, 255, 255, 0.16); }
+.copy-wrap--term .copy-btn:hover { background: var(--term-overlay-hover); }
 
 /* ---- callout ------------------------------------------------------------ */
 
@@ -366,9 +372,7 @@ a.cmd:hover { text-decoration: none; filter: brightness(0.97); }
 }
 .footer .cmd { font-size: 0.78rem; }
 
-/* ---- utilities ---------------------------------------------------------- */
-
-.hidden { display: none !important; }
+/* ---- responsive --------------------------------------------------------- */
 
 @media (min-width: 40rem) {
   .plugin-grid { grid-template-columns: 1fr 1fr; }
