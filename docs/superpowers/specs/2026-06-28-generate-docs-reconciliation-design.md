@@ -124,8 +124,8 @@ Licensing, linting, formatting, markdown, TOML, secrets → left to the existing
 
 Emit a human-facing **reconciliation report**: what drifted, what was missing, what was
 restructured and *why*. This is the review aid that makes noisy HTML/README diffs tractable.
-Printed in the run and saved to a predictable, non-published location (e.g. under `.ship/`
-or alongside the run); it is **not** part of the published site.
+Printed in the run and saved to a predictable, non-published location (e.g. under ship's run
+dir, `"$(git rev-parse --git-dir)/ship/"`); it is **not** part of the published site.
 
 **Cost posture:** whole-codebase *analysis* every run; cheap-tier mapping +
 only-rewrite-what-drifted + parallelism keep cost bounded. Tiering matches `dev-kit:ship`.

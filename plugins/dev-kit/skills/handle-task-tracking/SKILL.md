@@ -20,8 +20,9 @@ GitHub issues are the **durable task ledger** — the single source of truth for
 work that outlives any one session, branch, or person. A *healthy* tracker keeps one issue
 per outcome, each well-formed and current. A *robust* one keeps the state in GitHub rather
 than in a head or a chat scrollback, so the work survives context loss and hand-offs. This
-is the same principle `/dev-kit:ship` applies with its `.ship/` progress file — externalize
-the plan so it can't evaporate — applied to the whole stream of work instead of one change.
+is the same principle `/dev-kit:ship` applies with its progress file under the git dir —
+externalize the plan so it can't evaporate — applied to the whole stream of work instead of
+one change.
 
 Apply the loop below: **capture → decompose → triage → link → close.** Scale the ceremony
 to the team. Solo or a small team is the default here: self-assign, triage lightly, skip

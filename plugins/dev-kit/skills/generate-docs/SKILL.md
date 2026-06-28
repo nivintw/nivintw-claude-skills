@@ -105,8 +105,9 @@ linting, formatting, markdown, TOML, and secrets are **the repo's existing gate'
 
 Emit a human-facing **reconciliation report**: what drifted, what was missing, what you
 restructured and *why*. This is the review aid that makes an HTML/README diff tractable.
-Print it in the run; when running inside `dev-kit:ship`, also save it under `.ship/` so it
-survives for the human's review. It is **not** part of the published site.
+Print it in the run; when running inside `dev-kit:ship`, also save it under ship's run dir
+(`"$(git rev-parse --git-dir)/ship/"`) so it survives for the human's review without ever
+landing in the working tree. It is **not** part of the published site.
 
 ## Repo-kind shaping (zero-config)
 
