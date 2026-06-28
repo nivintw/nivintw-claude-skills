@@ -53,14 +53,21 @@ run_check() {
   printf '<link rel="stylesheet" href="/style.css">' >"$SITE/index.html"
   run_check
   [ "$status" -eq 1 ]
-  [[ "$output" == *"absolute path"* ]]
+  [[ "$output" == *"not portable to file://"* ]]
 }
 
-@test "external, mailto, data and protocol-relative refs are ignored" {
+@test "external https, mailto and data refs are ignored" {
   printf '<a href="https://example.com">e</a><a href="mailto:a@b.c">m</a>' >"$SITE/index.html"
-  printf '<a href="//cdn.example/x.js">p</a><img src="data:image/png;base64,AAAA">' >>"$SITE/index.html"
+  printf '<img src="data:image/png;base64,AAAA">' >>"$SITE/index.html"
   run_check
   [ "$status" -eq 0 ]
+}
+
+@test "protocol-relative ref fails (breaks from file://)" {
+  printf '<a href="//cdn.example/x.js">p</a>' >"$SITE/index.html"
+  run_check
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"not portable to file://"* ]]
 }
 
 @test "unsafe javascript: and file: schemes are rejected" {
@@ -137,7 +144,7 @@ run_check() {
   printf '<img srcset="/abs-2x.png 2x">' >"$SITE/index.html"
   run_check
   [ "$status" -eq 1 ]
-  [[ "$output" == *"absolute path"* ]]
+  [[ "$output" == *"not portable to file://"* ]]
 }
 
 @test "link escaping the docs root fails (would 404 on Pages)" {
