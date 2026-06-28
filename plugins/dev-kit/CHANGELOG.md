@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.6.0](https://github.com/nivintw/nivintw-claude-skills/compare/dev-kit-v0.5.1...dev-kit-v0.6.0) (2026-06-28)
+
+
+### Features
+
+* **dev-kit:** lead open-work output with in-progress work ([5e83714](https://github.com/nivintw/nivintw-claude-skills/commit/5e837149a2469cbf4e749b5a31ac4d1d6487651f))
+
+
+### Bug Fixes
+
+* **dev-kit:** reconcile issue status label on close so the ledger stops going stale ([20772bc](https://github.com/nivintw/nivintw-claude-skills/commit/20772bc1b75deb8909eaa2212cfe166c714cd896)), closes [#31](https://github.com/nivintw/nivintw-claude-skills/issues/31)
+
 ## [0.5.1](https://github.com/nivintw/nivintw-claude-skills/compare/dev-kit-v0.5.0...dev-kit-v0.5.1) (2026-06-28)
 
 
