@@ -267,8 +267,14 @@ Running keep-then-cleanup — rather than `ExitWorktree({ action: "remove" })` �
 the order work: cleanup-locally refreshes the default branch *before* judging the worktree, so
 a squash-merged branch is correctly recognized as merged and torn down. If cleanup-locally
 **keeps** the worktree or branch (reports it unmerged, dirty, or still checked out), don't
-force it: surface *why* it was kept. Confirm the tracking issue closed (`Closes #N` usually
-handles it on merge); close it explicitly if not.
+force it: surface *why* it was kept.
+
+Then **reconcile the tracking issue via `/dev-kit:handle-task-tracking`** — don't assume
+`Closes #N` did it. Verify the issue actually closed (a squash that drops the keyword, a
+typo'd reference, or an epic with no direct PR can leave it open), close it with a resolution
+if not, and **clear its now-stale `status:in-*` progression label** so a closed or
+just-merged issue isn't left wearing `status:in-review`. That leftover label is the stale
+state that makes `/dev-kit:open-work` misread finished work as still in flight.
 
 ## Guardrails
 
@@ -282,7 +288,8 @@ handles it on merge); close it explicitly if not.
   (`done`); keep `state` current so the dev-kit Stop hook can backstop a slip.
 - Task state is GitHub's job — delegate it to **`/dev-kit:handle-task-tracking`** throughout
   (establish the issue at Phase 1, `in-progress` at Phase 3, `in-review` at Phase 6,
-  `Closes #N` at Phase 8). Don't duplicate that lifecycle inside ship.
+  `Closes #N` at Phase 8, and **reconcile to closed with the `status:in-*` label cleared
+  post-merge**). Don't duplicate that lifecycle inside ship.
 - If real scope turns out much larger than the ask, stop and check in rather than silently
   ballooning or downgrading the change.
 - The phases lean on skills this plugin doesn't ship (`/simplify`, `/dev-kit:generate-docs`,

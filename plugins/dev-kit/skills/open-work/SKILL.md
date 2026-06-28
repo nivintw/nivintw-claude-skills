@@ -45,7 +45,9 @@ Pull all **open** issues with enough signal to rank: status / priority / type la
 `updated_at` (staleness), assignee, dependency links in the body (`Blocked by` / `Related
 to` references), and parent/sub-issue links. Prefer the GitHub MCP tools; fall back to `gh`
 (see Tooling). Read the issue *bodies* for the candidates you're about to recommend — a
-rationale needs more than a title.
+rationale needs more than a title. For `status:in-progress` / `status:in-review` candidates,
+also check the **linked PR's state** — a *merged* PR on a still-open issue means the work is
+done and the label is stale (needs closing), not in flight.
 
 ## Rank — readiness gate, then priority × staleness × dependencies
 
@@ -60,6 +62,10 @@ Rank using `handle-task-tracking`'s model, in this order:
     stalled ones).
   - `status:in-review` — awaiting review, effectively in-flight; exclude from "start next".
   - `status:blocked` — exclude from the shortlist; surface separately with its blocker.
+  - **Done-but-open (either `status:in-*`).** If an in-progress *or* in-review issue's
+    **linked PR has already merged**, it's *done, not in flight* — the label is stale;
+    surface it separately as **needs closing** (point at `/dev-kit:handle-task-tracking` to
+    close it and clear the label), never as resumable or in-review work.
 - **Ownership.** A `status:ready` issue already assigned to someone else isn't yours to
   start — exclude it from the shortlist (or surface it separately); prefer unassigned or
   self-assigned ready work.
@@ -105,8 +111,10 @@ referencing it** — and lead with that, flagged best-effort.
 - Then a **ranked shortlist** of ~3 (up to ~5) recommendable items **to start**. For each,
   give the issue number and title and a **one-line rationale** that ties the signals together
   (e.g. "highest priority, ready, and unblocks the API work").
-- Then, briefly and separately: the **untriaged count** (needs `handle-task-tracking`) and any
-  **blocked** items with their blockers.
+- Then, briefly and separately: the **untriaged count** (needs `handle-task-tracking`), any
+  **blocked** items with their blockers, and any **done-but-open** issues (linked PR merged
+  but the issue is still open / still labeled `status:in-*`) that just need closing via
+  `handle-task-tracking`.
 - If there are many more ready (or in-progress) items than shown, **say so and show the top
   slice** — never silently truncate, and never dump the full list.
 - End with the **next action**: point at the single best next move. If one of **your**
@@ -119,8 +127,13 @@ referencing it** — and lead with that, flagged best-effort.
 
 Prefer the **GitHub MCP tools**: `mcp__github__list_issues` (filter `state: OPEN`, read
 `labels`) and `mcp__github__issue_read` for a candidate's body, comments, labels, and
-sub-issues. Fall back to the **`gh` CLI** when the MCP server isn't connected — check first,
-since it can be absent in headless or cron runs — or when a human wants a command to paste.
+sub-issues. For **done-but-open** / degraded-mode in-flight detection, resolve a candidate's
+linked PR and its merge state: find the PR that references the issue
+(`mcp__github__search_pull_requests`, or `gh pr list --search "<issue#>" --state all`) and
+read its `state` / `mergedAt` (`mcp__github__pull_request_read`, or
+`gh pr view <pr#> --json state,mergedAt`); the `issue_read` timeline also surfaces a
+linked/closing PR. Fall back to the **`gh` CLI** when the MCP server isn't connected — check
+first, since it can be absent in headless or cron runs — or when a human wants a command to paste.
 The label and query command forms live in `handle-task-tracking`'s
 [`reference/recipes.md`](../handle-task-tracking/reference/recipes.md) (e.g. `gh issue list
 --label "status:ready" --label "priority:high" --state open`) — reuse them rather than
