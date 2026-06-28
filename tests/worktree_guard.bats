@@ -12,6 +12,11 @@ setup() {
   HOOK="$BATS_TEST_DIRNAME/../plugins/worktree-guard/hooks/block-write-outside-worktree.py"
   SANDBOX="$(mktemp -d)"
   REPO="$SANDBOX/repo"
+  # Hermetic git identity + config (CI runners have none) so `commit`/`worktree add` work.
+  export GIT_AUTHOR_NAME=test GIT_AUTHOR_EMAIL=test@example.com
+  export GIT_COMMITTER_NAME=test GIT_COMMITTER_EMAIL=test@example.com
+  export GIT_CONFIG_GLOBAL="$SANDBOX/gitconfig" GIT_CONFIG_SYSTEM=/dev/null
+  git config --file "$GIT_CONFIG_GLOBAL" init.defaultBranch main
   git init -q "$REPO"
   git -C "$REPO" commit --allow-empty -qm init
   WT="$REPO/.claude/worktrees/feat+x"
