@@ -307,6 +307,9 @@ a.cmd:hover { text-decoration: none; filter: brightness(0.97); }
 }
 .badge-cat { color: var(--accent); border-color: var(--accent); }
 .badge-row { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.75rem 0 0; }
+/* A [data-version] badge is empty until app.js fills it from the versions/*.js shims;
+   hide the empty pill so no-JS (or a missing version) shows nothing rather than a blank. */
+.badge:empty { display: none; }
 
 /* ---- install block ------------------------------------------------------ */
 

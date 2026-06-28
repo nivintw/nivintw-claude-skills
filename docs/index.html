@@ -10,7 +10,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>nivintw-claude-skills — Claude Code plugins</title>
-  <meta name="description" content="Tyler Nivin's Claude Code plugin marketplace: castify (scriptable terminal recordings) and dev-kit (a human + AI development workflow).">
+  <meta name="description" content="Tyler Nivin's Claude Code plugin marketplace: castify (scriptable terminal recordings), dev-kit (a human + AI development workflow), and worktree-guard (a git-worktree safety hook).">
   <link rel="stylesheet" href="style.css">
   <script>
     // Pre-paint: apply a saved theme (no flash-of-wrong-theme) and mark JS available
@@ -53,13 +53,13 @@
 
   <section class="section" id="plugins">
     <h2>Plugins</h2>
-    <p class="section-note">Two plugins, seven commands. Search above, or browse below.</p>
+    <p class="section-note">Three plugins — seven commands and a worktree-safety hook. Search above, or browse below.</p>
     <div class="plugin-grid">
 
       <article class="plugin-card">
         <div class="plugin-card-head">
           <h3><a href="castify.html">castify</a></h3>
-          <span class="badge">v0.2.0</span>
+          <span class="badge" data-version="castify"></span>
           <span class="badge badge-cat">documentation</span>
         </div>
         <p>Scriptable asciinema recordings. Script every keystroke and pause instead of
@@ -74,7 +74,7 @@
       <article class="plugin-card">
         <div class="plugin-card-head">
           <h3><a href="dev-kit.html">dev-kit</a></h3>
-          <span class="badge">v0.4.0</span>
+          <span class="badge" data-version="dev-kit"></span>
           <span class="badge badge-cat">workflow</span>
         </div>
         <p>A human&nbsp;+&nbsp;AI teaming development workflow. Take a change from idea to a
@@ -84,6 +84,21 @@
           <a class="cmd" href="dev-kit.html#ship">/dev-kit:ship</a>
           <a class="cmd" href="dev-kit.html#review-pr">/dev-kit:review-pr</a>
           <a class="cmd" href="dev-kit.html#generate-docs">/dev-kit:generate-docs</a>
+        </div>
+      </article>
+
+      <article class="plugin-card">
+        <div class="plugin-card-head">
+          <h3><a href="worktree-guard.html">worktree-guard</a></h3>
+          <span class="badge" data-version="worktree-guard"></span>
+          <span class="badge badge-cat">workflow</span>
+        </div>
+        <p>A safety net for git-worktree work. One <code>PreToolUse</code> hook that blocks an
+          accidental write to the <strong>parent checkout</strong> while you're in a worktree —
+          editing main's copy instead of the worktree's. Inert outside a worktree; fail-open on
+          any error.</p>
+        <div class="plugin-card-cmds">
+          <a class="cmd" href="worktree-guard.html">worktree-guard ↗</a>
         </div>
       </article>
 
@@ -98,7 +113,8 @@
 <span class="sigil">/</span>plugin marketplace add nivintw/nivintw-claude-skills
 <span class="c"># install a plugin</span>
 <span class="sigil">/</span>plugin install castify@nivintw-claude-skills
-<span class="sigil">/</span>plugin install dev-kit@nivintw-claude-skills</code>
+<span class="sigil">/</span>plugin install dev-kit@nivintw-claude-skills
+<span class="sigil">/</span>plugin install worktree-guard@nivintw-claude-skills</code>
       <p class="callout">From a local clone, point the marketplace at the directory instead:
         <code>/plugin marketplace add ~/workspace/nivintw-claude-skills</code>. Then ask
         Claude Code for what you want — the skills activate on their own.</p>
@@ -116,6 +132,9 @@
 </footer>
 
 <script src="search-index.js"></script>
+<script src="versions/castify.js"></script>
+<script src="versions/dev-kit.js"></script>
+<script src="versions/worktree-guard.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

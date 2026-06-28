@@ -48,5 +48,11 @@ window.SEARCH_INDEX = [
     plugin: "dev-kit",
     url: "dev-kit.html#cleanup-locally",
     summary: "Reconcile your local clone after PRs land: prune merged branches and worktrees, update the default branch, never clobber local work."
+  },
+  {
+    cmd: "worktree-guard",
+    plugin: "worktree-guard",
+    url: "worktree-guard.html",
+    summary: "A PreToolUse hook that blocks writes to the parent checkout while you're in a .claude/worktrees/ worktree — catching the footgun of editing main's copy instead of the worktree's. Inert outside a worktree; fail-open."
   }
 ];
