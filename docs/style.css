@@ -313,6 +313,34 @@ a.cmd:hover { text-decoration: none; filter: brightness(0.97); }
 .snippet .c { color: var(--ink-2); }
 .snippet .sigil { color: var(--accent); }
 
+/* ---- copy button (injected by app.js) ----------------------------------- */
+
+.copy-wrap { position: relative; }
+.copy-btn {
+  position: absolute;
+  top: 0.45rem;
+  right: 0.45rem;
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--ink-2);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 0.25rem 0.5rem;
+  opacity: 0.85;
+  transition: opacity 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+.copy-btn:hover { opacity: 1; color: var(--ink); border-color: var(--ink-2); }
+.copy-btn.copied { color: var(--accent); border-color: var(--accent); opacity: 1; }
+.copy-wrap--term .copy-btn {
+  color: var(--term-fg);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.22);
+}
+.copy-wrap--term .copy-btn:hover { background: rgba(255, 255, 255, 0.16); }
+
 /* ---- callout ------------------------------------------------------------ */
 
 .callout {
