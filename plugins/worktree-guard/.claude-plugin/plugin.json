@@ -1,0 +1,10 @@
+{
+  "name": "worktree-guard",
+  "version": "0.1.0",
+  "description": "A PreToolUse safety hook that stops the classic git-worktree footgun: when your session is inside a .claude/worktrees/<name>/ worktree, it blocks Write/Edit/MultiEdit that targets the parent checkout by absolute path (the main copy you didn't mean to touch) while leaving the worktree's own files — and its own git dir, where tools like /dev-kit:ship keep run state — writable. Inert outside a worktree, and fail-open on any error.",
+  "author": {
+    "name": "Tyler Nivin"
+  },
+  "homepage": "https://github.com/nivintw/nivintw-claude-skills/tree/main/plugins/worktree-guard",
+  "keywords": ["worktree", "git", "hook", "safety", "guard", "pretooluse"]
+}
