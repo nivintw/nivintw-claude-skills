@@ -26,6 +26,9 @@ from pathlib import Path
 from urllib.parse import unquote, urlparse
 
 REF_ATTRS = {"href", "src"}
+# Schemes that are unsafe (script execution) or non-portable (local file paths) in a
+# shipped docs site — flagged rather than silently skipped as "external".
+DANGEROUS_SCHEMES = ("javascript:", "vbscript:", "file:")
 
 
 class PageParser(HTMLParser):
@@ -130,7 +133,14 @@ def main(argv: list[str]) -> int:
             continue
         for tag, attr, value in page.refs:
             v = value.strip()
-            if not v or is_external(v):
+            if not v:
+                continue
+            if v.lower().startswith(DANGEROUS_SCHEMES):
+                violations.append(
+                    f"{hp}: unsafe or non-portable URL scheme: <{tag} {attr}={value!r}>"
+                )
+                continue
+            if is_external(v):
                 continue
             if v.startswith("#"):  # same-page anchor — reuse split_ref for query/percent handling
                 _, frag = split_ref(v)
@@ -168,6 +178,9 @@ def main(argv: list[str]) -> int:
             text = ""
         for m in re.finditer(r'url\s*:\s*"([^"]+)"', text):
             u = m.group(1)
+            if u.lower().startswith(DANGEROUS_SCHEMES):
+                violations.append(f"{idx}: unsafe or non-portable URL scheme: {u!r}")
+                continue
             if is_external(u):
                 continue
             if u.startswith("/"):
