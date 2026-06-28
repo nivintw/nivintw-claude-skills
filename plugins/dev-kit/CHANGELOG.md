@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.5.0](https://github.com/nivintw/nivintw-claude-skills/compare/dev-kit-v0.4.0...dev-kit-v0.5.0) (2026-06-28)
+
+
+### Features
+
+* **dev-kit:** add docs-site validator for generate-docs ([49adcab](https://github.com/nivintw/nivintw-claude-skills/commit/49adcab75bd48f646eb8ed0d09059e02b7cd575a))
+* **dev-kit:** rewrite generate-docs as docs reconciliation skill ([ec0480b](https://github.com/nivintw/nivintw-claude-skills/commit/ec0480bf70dc2b5dadb19a1c4f4d350f7264b377))
+
+
+### Bug Fixes
+
+* address Copilot review on docs validator and site ([a998217](https://github.com/nivintw/nivintw-claude-skills/commit/a9982170c9f85ff067682af324141a2cf519bcf4))
+* address review — harden docs validator and JS robustness ([90da16c](https://github.com/nivintw/nivintw-claude-skills/commit/90da16c6b128abbb4cc57734131d5d9d54ff1428))
+* flag protocol-relative refs as non-portable; restore dual-target in skill desc ([e6e16cd](https://github.com/nivintw/nivintw-claude-skills/commit/e6e16cd6befb787a0a715bf8858eae4151714dea))
+* flag unsafe/non-portable URL schemes in docs validator ([a61c860](https://github.com/nivintw/nivintw-claude-skills/commit/a61c86072719fd241b0717006722eb4c56d518df))
+* percent-decode anchor fragments and unify anchor parsing ([1fcfb75](https://github.com/nivintw/nivintw-claude-skills/commit/1fcfb75dfa50cfa7ca2f74edc525ff5f756b2742))
+
 ## [0.4.0](https://github.com/nivintw/nivintw-claude-skills/compare/dev-kit-v0.3.0...dev-kit-v0.4.0) (2026-06-27)
 
 
