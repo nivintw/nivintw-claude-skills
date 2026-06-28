@@ -12,6 +12,17 @@
   <title>dev-kit — nivintw-claude-skills</title>
   <meta name="description" content="A human + AI teaming development workflow for Claude Code: ship, review-pr, generate-docs, handle-task-tracking, open-work, and cleanup-locally.">
   <link rel="stylesheet" href="style.css">
+  <script>
+    // Pre-paint: apply a saved theme (no flash-of-wrong-theme) and mark JS available
+    // so JS-only controls (search, theme toggle) only show when they actually work.
+    (function () {
+      try {
+        var t = localStorage.getItem("ncs-theme");
+        if (t === "dark" || t === "light") { document.documentElement.setAttribute("data-theme", t); }
+      } catch (e) { /* private mode */ }
+      document.documentElement.classList.add("js");
+    })();
+  </script>
 </head>
 <body>
 <a class="skip-link" href="#main">Skip to content</a>
