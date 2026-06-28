@@ -42,6 +42,12 @@ what "broken" means.
 Run these and collect their findings. Prefer running them concurrently (fan them out as
 subagents, or via `/workflows`) since they're independent; fall back to sequential.
 
+**Each reviewer's return is a hand-back, not a stopping point.** A sub-skill like
+`/security-review` returns a self-contained report that *looks* terminal — do not yield when
+it comes back. Collect its findings and move on to the next pass, then to synthesis. The
+review isn't done until you've merged every pass into the one report below (and, in Mode A
+under `/dev-kit:ship`, continued into the gate and PR phases).
+
 **Right-size, and degrade gracefully.** Scale to the change: a one-file docs/typo PR
 doesn't need the security or adversarial passes — say which passes are being skipped and why. And
 if an orchestrated skill isn't installed or is denied (e.g. `/security-review`,

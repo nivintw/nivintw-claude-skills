@@ -189,6 +189,13 @@ adversarial pass**, then synthesizes one prioritized report. Apply the must-fixe
 needed; leave the branch green. Flip the tracking issue to `status:in-review` (via
 `/dev-kit:handle-task-tracking`) once the change is up for review.
 
+**`/dev-kit:review-pr` and the reviewers under it return *hand-backs*, not stopping points.**
+`/security-review` is the most frequent trap: it returns a self-contained markdown report
+that *looks* like a terminal deliverable, so the pull is to yield. Don't. When the review pass
+returns, synthesize it and continue straight to Phase 7 — the only stops in a ship run are
+plan sign-off (Phase 1) and hand-off (Phase 8). The dev-kit Stop hook backstops this while
+`state` names an active phase, but the discipline is yours.
+
 ## Phase 7 — Local gate
 
 Infer the repo's checks from its config (pre-commit/prek, test runner, linters, type
@@ -228,9 +235,9 @@ green before a person looks. If Copilot review isn't enabled on the repo, note t
 
 ### Hand off
 
-Once the review has converged, **mark the PR ready for review** (`gh pr ready`) and **hand
-off** — that flip from draft to ready *is* the hand-off signal. Ship stops here; merging is
-the human's call (or a later, explicitly-authorized step).
+Once the review has converged, **mark the PR ready for review** (`gh pr ready`), set `state`
+to `done`, and **hand off** — that flip from draft to ready *is* the hand-off signal. Ship
+stops here; merging is the human's call (or a later, explicitly-authorized step).
 
 **Leave the worktree in place at hand-off.** The change isn't done until it merges: review
 feedback may land, and addressing it means more commits *in this worktree*. Tearing it down
@@ -267,6 +274,12 @@ handles it on merge); close it explicitly if not.
 
 - Plan sign-off (Phase 1) and the final merge are the human's; everything between is ship's
   to execute rigorously. Merge happens *after* hand-off — it is never a ship phase.
+- **A delegated sub-skill's return is a hand-back, not a stop.** When `/simplify`,
+  `/dev-kit:generate-docs`, `/dev-kit:review-pr`, or any reviewer under it (`/code-review`,
+  `/security-review`, `/pr-review-toolkit:review-pr`) returns, that output reads like
+  end-of-turn but is **not** — synthesize it and proceed to the next phase instead of
+  yielding. The only stops in a ship run are plan sign-off (`gate:plan-signoff`) and hand-off
+  (`done`); keep `state` current so the dev-kit Stop hook can backstop a slip.
 - Task state is GitHub's job — delegate it to **`/dev-kit:handle-task-tracking`** throughout
   (establish the issue at Phase 1, `in-progress` at Phase 3, `in-review` at Phase 6,
   `Closes #N` at Phase 8). Don't duplicate that lifecycle inside ship.

@@ -1,0 +1,17 @@
+{
+  "description": "dev-kit ship continuity. A Stop hook that keeps a /dev-kit:ship run from yielding mid-flight after a delegated sub-skill (e.g. /security-review) hands back. Inert and fail-open unless ship's per-run state file names an active phase; never blocks at a human gate (plan sign-off / hand-off).",
+  "hooks": {
+    "Stop": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/ship-continue.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}
