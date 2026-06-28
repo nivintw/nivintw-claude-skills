@@ -1,5 +1,5 @@
 {
-  "description": "worktree-guard. A PreToolUse hook that blocks Write/Edit/MultiEdit targeting the parent checkout (by absolute path) when the session is inside a .claude/worktrees/<name>/ worktree — the classic footgun of editing the main copy instead of the worktree copy. Inert unless cwd is in a worktree; allows the worktree's own tree and its own git dir; fail-open on any error.",
+  "description": "worktree-guard. A PreToolUse hook that blocks Write/Edit/MultiEdit whose path resolves into the parent checkout outside the worktree, when the session is inside a .claude/worktrees/<name>/ worktree — the classic footgun of editing the main copy instead of the worktree copy. Inert unless cwd is in a worktree; allows the worktree's own tree and its own git dir; fail-open on any error.",
   "hooks": {
     "PreToolUse": [
       {
