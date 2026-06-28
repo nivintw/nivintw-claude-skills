@@ -110,6 +110,17 @@
     if (cmd) { addCopy(term, function () { return cmd.innerText.trim(); }, "term"); }
   });
 
+  /* ---- version badges -------------------------------------------------- */
+  // Version numbers are never hard-coded in the pages. Each plugin ships a tiny
+  // versions/<name>.js shim that release-please bumps on release; here we fill every
+  // [data-version] badge from the merged window.PLUGIN_VERSIONS map. Loading the shims as
+  // <script> (not fetch) is what keeps this working from a file:// path with no server.
+  var versions = window.PLUGIN_VERSIONS || {};
+  document.querySelectorAll("[data-version]").forEach(function (el) {
+    var v = versions[el.getAttribute("data-version")];
+    if (v) { el.textContent = "v" + v; }
+  });
+
   /* ---- command palette ------------------------------------------------- */
   var ESC = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" };
   var input = document.querySelector(".header-search input");

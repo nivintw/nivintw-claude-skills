@@ -8,21 +8,24 @@
       "release-type": "simple",
       "component": "castify",
       "extra-files": [
-        { "type": "json", "path": ".claude-plugin/plugin.json", "jsonpath": "$.version" }
+        { "type": "json", "path": ".claude-plugin/plugin.json", "jsonpath": "$.version" },
+        { "type": "generic", "path": "/docs/versions/castify.js" }
       ]
     },
     "plugins/dev-kit": {
       "release-type": "simple",
       "component": "dev-kit",
       "extra-files": [
-        { "type": "json", "path": ".claude-plugin/plugin.json", "jsonpath": "$.version" }
+        { "type": "json", "path": ".claude-plugin/plugin.json", "jsonpath": "$.version" },
+        { "type": "generic", "path": "/docs/versions/dev-kit.js" }
       ]
     },
     "plugins/worktree-guard": {
       "release-type": "simple",
       "component": "worktree-guard",
       "extra-files": [
-        { "type": "json", "path": ".claude-plugin/plugin.json", "jsonpath": "$.version" }
+        { "type": "json", "path": ".claude-plugin/plugin.json", "jsonpath": "$.version" },
+        { "type": "generic", "path": "/docs/versions/worktree-guard.js" }
       ]
     }
   }
