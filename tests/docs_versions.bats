@@ -11,7 +11,7 @@
 
 setup() {
   ROOT="$BATS_TEST_DIRNAME/.."
-  MANIFEST="$ROOT/.release-please-manifest.json"
+  MANIFEST="$ROOT/.config/.release-please-manifest.json"
 }
 
 @test "manifest exists and is valid JSON" {

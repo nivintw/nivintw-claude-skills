@@ -53,7 +53,7 @@ commit), so the hook rejects anything that doesn't start with a bare type.
 
 Every file needs SPDX info; `reuse lint` must pass.
 
-- Most files get an inline header from `hawkeye format` (config: `licenserc.toml`).
+- Most files get an inline header from `hawkeye format` (config: `.config/licenserc.toml`).
 - **JSON and Markdown are licensed via `REUSE.toml`, not inline.** Markdown is excluded
   from hawkeye on purpose: skill/agent/command markdown is **frontmatter-first** (YAML on
   line 1), and an inline SPDX comment above it breaks the frontmatter. So never let
@@ -66,8 +66,8 @@ Every file needs SPDX info; `reuse lint` must pass.
 
 - `pr.yml` runs the gate on PRs (`ci / lint-and-test` is the required check).
 - `main.yml` runs the gate then **release-please** on push to `main`. Versioning is
-  **per-plugin**: `release-please-config.json` maps each `plugins/<name>` to a package and
-  `.release-please-manifest.json` is the version of record. release-please maintains a
+  **per-plugin**: `.config/release-please-config.json` maps each `plugins/<name>` to a package
+  and `.config/.release-please-manifest.json` is the version of record. release-please maintains a
   per-plugin **Release PR** that bumps that plugin's `.claude-plugin/plugin.json` +
   `plugins/<name>/CHANGELOG.md`; **merging the Release PR** cuts the `<name>-v<version>` tag
   and GitHub Release. Changes are attributed by path (which plugin dir a commit touched);
@@ -75,8 +75,8 @@ Every file needs SPDX info; `reuse lint` must pass.
 - The release job **skips cleanly** until `CI_CLIENT_ID` (variable) + `CI_APP_PRIVATE_KEY`
   (secret) for the release GitHub App exist — so merging is always safe; setting them
   activates releases. The App needs **Contents** + **Pull requests** write.
-- **Adding a plugin?** Register it in `release-please-config.json` *and*
-  `.release-please-manifest.json` (seed its starting version). The
+- **Adding a plugin?** Register it in `.config/release-please-config.json` *and*
+  `.config/.release-please-manifest.json` (seed its starting version). The
   `check-plugin-release-wiring` gate hook fails if a plugin isn't wired into both, or if a
   `plugin.json` version drifts from the manifest.
 - commitizen no longer releases — it's now **only** the commit-msg linter (`.cz.toml` is

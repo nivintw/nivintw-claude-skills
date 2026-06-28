@@ -11,11 +11,11 @@ version bump" check would block every feature PR. This guards the same failure c
 of the release wiring instead:
 
   1. Every plugin on disk (plugins/<name>/.claude-plugin/plugin.json) is registered in
-     BOTH release-please-config.json and .release-please-manifest.json — so release-please
-     actually versions it. A new plugin that's never wired in would otherwise release
-     never, reproducing the original bug.
+     BOTH .config/release-please-config.json and .config/.release-please-manifest.json — so
+     release-please actually versions it. A new plugin that's never wired in would otherwise
+     release never, reproducing the original bug.
   2. There are no orphan config/manifest entries pointing at a plugin that doesn't exist.
-  3. Each plugin.json `version` equals its .release-please-manifest.json entry — catching
+  3. Each plugin.json `version` equals its .config/.release-please-manifest.json entry — catching
      manual drift or a half-applied bump (manifest and plugin.json must agree).
   4. Each config package carries the extra-files entry that points release-please at
      plugin.json `$.version` — the wiring that actually performs the bump. A package added
@@ -33,8 +33,8 @@ import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-CONFIG = REPO_ROOT / "release-please-config.json"
-MANIFEST = REPO_ROOT / ".release-please-manifest.json"
+CONFIG = REPO_ROOT / ".config" / "release-please-config.json"
+MANIFEST = REPO_ROOT / ".config" / ".release-please-manifest.json"
 PLUGINS_DIR = REPO_ROOT / "plugins"
 
 
@@ -71,10 +71,10 @@ def main() -> int:
     problems: list[str] = []
 
     membership_checks = [
-        (disk_paths - config_paths, "on disk but missing from release-please-config.json packages"),
-        (disk_paths - manifest_paths, "on disk but missing from .release-please-manifest.json"),
-        (config_paths - disk_paths, "in release-please-config.json but no plugin exists on disk"),
-        (manifest_paths - disk_paths, "in .release-please-manifest.json but no plugin exists on disk"),
+        (disk_paths - config_paths, "on disk but missing from .config/release-please-config.json packages"),
+        (disk_paths - manifest_paths, "on disk but missing from .config/.release-please-manifest.json"),
+        (config_paths - disk_paths, "in .config/release-please-config.json but no plugin exists on disk"),
+        (manifest_paths - disk_paths, "in .config/.release-please-manifest.json but no plugin exists on disk"),
     ]
     for paths, reason in membership_checks:
         problems.extend(f"{path}: {reason}" for path in sorted(paths))
@@ -101,7 +101,7 @@ def main() -> int:
             for entry in extra_files
         ):
             problems.append(
-                f"{path}: release-please-config.json package is missing the extra-files entry "
+                f"{path}: .config/release-please-config.json package is missing the extra-files entry "
                 "{type:json, path:.claude-plugin/plugin.json, jsonpath:$.version} that bumps plugin.json"
             )
 
@@ -110,8 +110,8 @@ def main() -> int:
         for problem in problems:
             print(f"  - {problem}", file=sys.stderr)
         print(
-            "\nFix: register every plugin in release-please-config.json + "
-            ".release-please-manifest.json, and keep plugin.json versions in sync with "
+            "\nFix: register every plugin in .config/release-please-config.json + "
+            ".config/.release-please-manifest.json, and keep plugin.json versions in sync with "
             "the manifest (release-please maintains these via Release PRs).",
             file=sys.stderr,
         )

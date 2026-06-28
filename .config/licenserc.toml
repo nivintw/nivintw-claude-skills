@@ -14,12 +14,14 @@ SPDX-License-Identifier: {{ props["spdxLicenseIdentifier"] }}
 """
 # REUSE-IgnoreEnd
 
-# The `!**/.gitignore` negation below cancels hawkeye's built-in default exclude for
-# .gitignore, so .gitignore gets an inline header.
+# Negations cancel hawkeye's built-in default excludes (which skip **/*.md and
+# **/.gitignore) so those get headered too.
 # This project has frontmatter-first markdown (YAML on line 1 — Claude Code skills,
 # Jekyll/Hugo), so markdown stays in hawkeye's default excludes (a line-1 SPDX comment
 # would break the frontmatter) and is licensed via REUSE.toml instead. Note hawkeye
 # can't re-exclude a file once an include (`!`) matches it, so there's no `!**/*.md`.
+# For the same reason the markdown-header mapping (additionalHeaders + MARKDOWN_CUSTOM)
+# is omitted below — it would never fire — and markdown-header.toml isn't shipped.
 excludes = [
   "LICENSE",
   "LICENSES/**",
@@ -31,11 +33,6 @@ excludes = [
   # CODEOWNERS has no extension hawkeye maps; it carries its own `#` header (reuse-verified).
   "**/CODEOWNERS",
 ]
-
-additionalHeaders = ["markdown-header.toml"]
-
-[mapping.MARKDOWN_CUSTOM]
-extensions = ["md"]
 
 # '#'-comment files hawkeye doesn't map by default.
 [mapping.SCRIPT_STYLE]

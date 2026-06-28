@@ -9,8 +9,9 @@
 # commit types and cannot parse a leading emoji, so commits must start with the bare type.
 #
 # Releases are NOT commitizen's job — release-please owns versioning (per-plugin
-# .claude-plugin/plugin.json + .release-please-manifest.json; see main.yml). So no
-# version-of-record / bump / tag config lives here: `name` is all the linter needs.
+# .claude-plugin/plugin.json + .config/.release-please-manifest.json; see
+# .github/workflows/main.yml). So no version-of-record / bump / tag config lives here:
+# `name` is all the linter needs.
 
 [tool.commitizen]
 name = "cz_conventional_commits"

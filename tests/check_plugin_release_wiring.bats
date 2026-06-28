@@ -9,7 +9,7 @@
 
 setup() {
   SANDBOX="$(mktemp -d)"
-  mkdir -p "$SANDBOX/scripts"
+  mkdir -p "$SANDBOX/scripts" "$SANDBOX/.config"
   cp "$BATS_TEST_DIRNAME/../scripts/check_plugin_release_wiring.py" "$SANDBOX/scripts/"
   SCRIPT="$SANDBOX/scripts/check_plugin_release_wiring.py"
 }
@@ -30,7 +30,7 @@ mkplugin() {
 good_repo() {
   mkplugin castify 0.2.0
   mkplugin dev-kit 0.1.0
-  cat >"$SANDBOX/release-please-config.json" <<'EOF'
+  cat >"$SANDBOX/.config/release-please-config.json" <<'EOF'
 {
   "packages": {
     "plugins/castify": {
@@ -44,7 +44,7 @@ good_repo() {
   }
 }
 EOF
-  cat >"$SANDBOX/.release-please-manifest.json" <<'EOF'
+  cat >"$SANDBOX/.config/.release-please-manifest.json" <<'EOF'
 { "plugins/castify": "0.2.0", "plugins/dev-kit": "0.1.0" }
 EOF
 }
@@ -58,7 +58,7 @@ EOF
 
 @test "fails when a plugin on disk is missing from the config" {
   good_repo
-  cat >"$SANDBOX/release-please-config.json" <<'EOF'
+  cat >"$SANDBOX/.config/release-please-config.json" <<'EOF'
 {
   "packages": {
     "plugins/castify": {
@@ -70,22 +70,22 @@ EOF
 EOF
   run python3 "$SCRIPT"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"plugins/dev-kit: on disk but missing from release-please-config.json"* ]]
+  [[ "$output" == *"plugins/dev-kit: on disk but missing from .config/release-please-config.json"* ]]
 }
 
 @test "fails when a plugin on disk is missing from the manifest" {
   good_repo
-  cat >"$SANDBOX/.release-please-manifest.json" <<'EOF'
+  cat >"$SANDBOX/.config/.release-please-manifest.json" <<'EOF'
 { "plugins/castify": "0.2.0" }
 EOF
   run python3 "$SCRIPT"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"plugins/dev-kit: on disk but missing from .release-please-manifest.json"* ]]
+  [[ "$output" == *"plugins/dev-kit: on disk but missing from .config/.release-please-manifest.json"* ]]
 }
 
 @test "fails on an orphan config entry with no plugin on disk" {
   good_repo
-  cat >"$SANDBOX/release-please-config.json" <<'EOF'
+  cat >"$SANDBOX/.config/release-please-config.json" <<'EOF'
 {
   "packages": {
     "plugins/castify": {
@@ -105,12 +105,12 @@ EOF
 EOF
   run python3 "$SCRIPT"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"plugins/ghost: in release-please-config.json but no plugin exists on disk"* ]]
+  [[ "$output" == *"plugins/ghost: in .config/release-please-config.json but no plugin exists on disk"* ]]
 }
 
 @test "fails on version drift between plugin.json and the manifest" {
   good_repo
-  cat >"$SANDBOX/.release-please-manifest.json" <<'EOF'
+  cat >"$SANDBOX/.config/.release-please-manifest.json" <<'EOF'
 { "plugins/castify": "0.2.0", "plugins/dev-kit": "9.9.9" }
 EOF
   run python3 "$SCRIPT"
@@ -121,7 +121,7 @@ EOF
 @test "fails when a registered plugin lacks the plugin.json extra-files wiring" {
   good_repo
   # dev-kit is registered but missing the extra-files entry that bumps its plugin.json.
-  cat >"$SANDBOX/release-please-config.json" <<'EOF'
+  cat >"$SANDBOX/.config/release-please-config.json" <<'EOF'
 {
   "packages": {
     "plugins/castify": {
@@ -134,22 +134,22 @@ EOF
 EOF
   run python3 "$SCRIPT"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"plugins/dev-kit: release-please-config.json package is missing the extra-files entry"* ]]
+  [[ "$output" == *"plugins/dev-kit: .config/release-please-config.json package is missing the extra-files entry"* ]]
 }
 
 @test "fails on an orphan manifest entry with no plugin on disk" {
   good_repo
-  cat >"$SANDBOX/.release-please-manifest.json" <<'EOF'
+  cat >"$SANDBOX/.config/.release-please-manifest.json" <<'EOF'
 { "plugins/castify": "0.2.0", "plugins/dev-kit": "0.1.0", "plugins/ghost": "0.0.1" }
 EOF
   run python3 "$SCRIPT"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"plugins/ghost: in .release-please-manifest.json but no plugin exists on disk"* ]]
+  [[ "$output" == *"plugins/ghost: in .config/.release-please-manifest.json but no plugin exists on disk"* ]]
 }
 
 @test "fails when a plugin's extra-files entry has the wrong type" {
   good_repo
-  cat >"$SANDBOX/release-please-config.json" <<'EOF'
+  cat >"$SANDBOX/.config/release-please-config.json" <<'EOF'
 {
   "packages": {
     "plugins/castify": {
@@ -165,7 +165,7 @@ EOF
 EOF
   run python3 "$SCRIPT"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"plugins/dev-kit: release-please-config.json package is missing the extra-files entry"* ]]
+  [[ "$output" == *"plugins/dev-kit: .config/release-please-config.json package is missing the extra-files entry"* ]]
 }
 
 @test "fails when a plugin.json has no string version field" {
@@ -179,7 +179,7 @@ EOF
 
 @test "fails on malformed release-please-config.json" {
   good_repo
-  echo 'not json' >"$SANDBOX/release-please-config.json"
+  echo 'not json' >"$SANDBOX/.config/release-please-config.json"
   run python3 "$SCRIPT"
   [ "$status" -eq 1 ]
   [[ "$output" == *"is not valid JSON"* ]]
