@@ -41,7 +41,7 @@ window.SEARCH_INDEX = [
     cmd: "/dev-kit:open-work",
     plugin: "dev-kit",
     url: "dev-kit.html#open-work",
-    summary: "Read the open issues and return a short, ranked \"pick up next\" shortlist with a one-line rationale each."
+    summary: "Read the open issues, call out any in-progress work to resume, then return a short, ranked \"pick up next\" shortlist with a one-line rationale each."
   },
   {
     cmd: "/dev-kit:cleanup-locally",
