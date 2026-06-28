@@ -47,9 +47,14 @@
   });
 
   // Keep the toggle label honest if the OS theme flips and no explicit choice is set.
-  darkMQ.addEventListener("change", function () {
+  function onSystemThemeChange() {
     if (!root.getAttribute("data-theme")) { setToggleLabel(current()); }
-  });
+  }
+  if (darkMQ.addEventListener) {
+    darkMQ.addEventListener("change", onSystemThemeChange);
+  } else if (darkMQ.addListener) {
+    darkMQ.addListener(onSystemThemeChange); // Safari < 14 has no addEventListener here
+  }
 
   /* ---- copy buttons ---------------------------------------------------- */
   function legacyCopy(text) {
@@ -60,26 +65,28 @@
     ta.style.left = "-9999px";
     document.body.appendChild(ta);
     ta.select();
-    try { document.execCommand("copy"); } catch (e) { /* ignore */ }
+    var ok = false;
+    try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
     document.body.removeChild(ta);
+    return ok;
   }
-  function flash(btn) {
-    btn.classList.add("copied");
-    btn.textContent = "copied ✓";
+  function flash(btn, ok) {
+    btn.classList.toggle("copied", ok);
+    btn.textContent = ok ? "copied ✓" : "copy failed";
     setTimeout(function () {
       btn.classList.remove("copied");
       btn.textContent = "copy";
     }, 1500);
   }
   function copyText(text, btn) {
+    // Only show success when the copy actually happened — never a false "copied ✓".
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(text).then(
-        function () { flash(btn); },
-        function () { legacyCopy(text); flash(btn); }
+        function () { flash(btn, true); },
+        function () { flash(btn, legacyCopy(text)); }
       );
     } else {
-      legacyCopy(text);
-      flash(btn);
+      flash(btn, legacyCopy(text));
     }
   }
   function addCopy(el, getText, variant) {

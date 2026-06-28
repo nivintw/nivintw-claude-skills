@@ -183,6 +183,11 @@ a:hover { text-decoration: underline; }
 }
 .theme-toggle:hover { color: var(--ink); border-color: var(--ink-2); }
 
+/* Search and theme toggle need JS — hide them when it's unavailable so there are no
+   dead controls. The inline head script adds .js before paint, so there's no flash. */
+html:not(.js) .header-search,
+html:not(.js) .theme-toggle { display: none; }
+
 /* ---- hero --------------------------------------------------------------- */
 
 .hero { padding: 4rem 0 2.5rem; }

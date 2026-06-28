@@ -12,6 +12,17 @@
   <title>nivintw-claude-skills — Claude Code plugins</title>
   <meta name="description" content="Tyler Nivin's Claude Code plugin marketplace: castify (scriptable terminal recordings) and dev-kit (a human + AI development workflow).">
   <link rel="stylesheet" href="style.css">
+  <script>
+    // Pre-paint: apply a saved theme (no flash-of-wrong-theme) and mark JS available
+    // so JS-only controls (search, theme toggle) only show when they actually work.
+    (function () {
+      try {
+        var t = localStorage.getItem("ncs-theme");
+        if (t === "dark" || t === "light") { document.documentElement.setAttribute("data-theme", t); }
+      } catch (e) { /* private mode */ }
+      document.documentElement.classList.add("js");
+    })();
+  </script>
 </head>
 <body>
 <a class="skip-link" href="#main">Skip to content</a>
