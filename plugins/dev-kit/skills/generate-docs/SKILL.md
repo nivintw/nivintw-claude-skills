@@ -2,83 +2,189 @@
 name: generate-docs
 description: >-
   This skill should be used when the user asks to "generate the docs", "build the docs
-  site", "refresh the plugin docs", "publish to GitHub Pages", or "make a docs page for
-  this marketplace/plugin". It generates a self-contained static documentation site for a
-  Claude Code plugin marketplace or repo — a landing page plus a page per plugin (manifest,
-  skills, commands, agents, rendered README) — that works BOTH opened locally as a file://
-  path AND served from GitHub Pages, with zero build step and no JavaScript or external
-  assets at view time. Reach for it to create, refresh, or publish docs generated from the
-  plugin/marketplace manifests, or to keep those docs current as part of shipping a change
-  (dev-kit:ship runs it automatically). Not for general-purpose project or API docs.
+  site", "refresh the docs", "reconcile the docs", "publish to GitHub Pages", or "make a
+  docs page" for a repo. It reconciles the WHOLE documentation set against the WHOLE
+  codebase every run — catching both drift (docs that no longer match the code) and omission
+  (code with no docs) — and authors a bespoke, human-first static documentation site (a
+  landing page plus per-topic pages) shaped to whatever the repo is: a Claude Code plugin
+  marketplace, a Copier template, a library or CLI, or a generic project. Code is the source
+  of truth and Claude authors the prose. Reach for it to create, refresh, or reconcile a
+  repo's docs site, including as part of shipping a change (dev-kit:ship runs it
+  automatically).
 ---
 
 # generate-docs
 
-Build a **self-contained** static docs site from the repo's own manifests, so the
-output renders identically whether someone double-clicks `docs/index.html` (a `file://`
-URL) or visits the GitHub Pages site. "Self-contained" is the hard requirement: every
-asset loaded at view time is local — vendored CSS, markdown pre-rendered to HTML, **no
-JavaScript, no external fonts/CDNs**. (External *navigation* links like "View on GitHub"
-are fine — they're clicks, not view-time loads.) It must *just work* from GitHub Pages,
-and never be unusable locally.
+**Reconcile the entire documentation set against the entire codebase, then author the docs
+that are wrong, missing, or badly communicated.** This skill is not a template engine that
+prints manifests — *you* are the author. Every run reads the whole repo and the whole
+existing docs set, decides what no longer tells the truth and what was never told at all,
+and writes a bespoke static site (plus the `README.md`) shaped to that specific repo.
 
-## The generator
+It runs as Phase 5 of `dev-kit:ship`, and stands alone whenever docs need to catch up to
+code.
 
-`scripts/build.py` reads the marketplace and plugin manifests (and each skill's `SKILL.md`
-frontmatter) and writes a static site into `docs/`. It's a self-contained Python script
-with PEP 723 inline dependencies — run it with `uv`, **from the repo root** (the verify
-and publish steps below use repo-root-relative paths):
+## Core philosophy
+
+1. **Whole-against-whole, every run.** Reconcile the *entire* docs set against the *whole*
+   codebase. Never diff "what changed since last time" — re-derive the truth from the code
+   each run, so nothing escapes the check.
+2. **Catch drift and omission.** Stale prose (docs say X, code does Y) and undocumented
+   surface (code with no docs) are *both* first-class findings.
+3. **Humans first, LLMs second.** Optimize every page for human comprehension; machine
+   readability is secondary.
+4. **Always ask "is this the best way to communicate this?"** You have editorial authority
+   to restructure, re-level, and re-present — a table, a diagram, a callout, a worked
+   example — whatever communicates best.
+5. **Code is the single source of truth.** Where prose and code disagree, the prose is
+   wrong. Fix the prose; never invent behavior the code doesn't have.
+6. **Analyze the whole, rewrite only what's wrong.** Whole-codebase *analysis* every run,
+   but only drifted / missing / poorly-communicated content gets *rewritten*. Accurate,
+   well-communicated pages are left **byte-identical** — that is what keeps the diff small
+   and reviewable. "Reconcile whole" means *evaluate* whole, not *regenerate* whole.
+
+## The reconciliation pipeline
+
+One run = one pass through these stages. For a small repo, collapse them into a single
+inline pass; for anything larger, fan out so the whole codebase is actually covered without
+blowing context. Route mechanical mapping to a cheap tier, keep the reconciliation judgment
+and the final synthesis with the driver.
+
+### Stage 0 — Inventory & classify
+
+Find the repo root (`.git`). Walk the tree and **classify the repo kind** by sentinel files
+— this *seeds* the site shape, it never gates:
+
+- `.claude-plugin/marketplace.json` → **marketplace**
+- `copier.yml` → **Copier template**
+- a package manifest (`pyproject.toml`, `package.json`, …) → **library / CLI**
+- otherwise → **generic**
+
+Locate the existing docs surface to reconcile against: a `docs/` site (if any), `README.md`,
+hand-written guides, and the per-repo design system (`docs/style.css` + `docs/app.js`) if
+present.
+
+### Stage 1 — Map the codebase (cheap tier, parallel)
+
+Fan out read-only mapper subagents (e.g. `Explore`), one per subsystem/slice. Each returns
+a **structured facts model** for its slice: the public surface (commands, APIs, skills,
+config keys, flags), behavior, examples, and what *should* be documented. This is how the
+whole codebase gets covered when it doesn't fit one context.
+
+### Stage 2 — Reconcile → work-list (keep with the driver)
+
+Diff the facts model against the current site + `README.md`. Produce a **work-list**:
+
+- **Drift** — docs/README contradict the code → rewrite.
+- **Omission** — code surface with no coverage → author.
+- **Communication** — covered but poorly (wrong altitude, buried, better as a table/diagram)
+  → restructure.
+- **Design-system needs** — components the changed pages will require.
+- Everything accurate and well-said → **leave byte-identical**.
+
+### Stage 3 — Author (mid tier, parallel)
+
+One author per work-listed page: write/update **semantic HTML composed against the per-repo
+design system** (see below), choosing the best structure for that topic. Reconcile
+`README.md` **as a concise entry point** — keep it the tight GitHub landing, not a dump of
+the whole site.
+
+### Stage 4 — Validate
+
+Run the docs validator on the output (broken internal links + non-portable absolute refs):
 
 ```bash
-uv run "${CLAUDE_PLUGIN_ROOT}/skills/generate-docs/scripts/build.py" --repo-root .
+uv run "${CLAUDE_PLUGIN_ROOT}/skills/generate-docs/scripts/check_docs.py" docs
 ```
 
-Flags: `--repo-root PATH` (default: walks up to find `.claude-plugin/marketplace.json`),
-`--out docs`, `--holder "Name"` (default: marketplace `owner.name`), `--license MIT`.
+Exit 0 = clean; 1 = violations (one per line); fix and re-run until clean. Licensing,
+linting, formatting, markdown, TOML, and secrets are **the repo's existing gate's job** (see
+*Licensing & tooling*) — don't re-implement them here.
 
-Output:
+### Stage 5 — Synthesize + reconciliation report
 
-- `docs/index.html` — marketplace landing: name, description, owner, install snippet, a
-  card per plugin linking to its page.
-- `docs/<plugin>.html` — per-plugin page: version, description, keywords, rendered README,
-  and each skill/command/agent with its description.
-- `docs/style.css` — vendored, responsive, light/dark via `prefers-color-scheme`.
+Emit a human-facing **reconciliation report**: what drifted, what was missing, what you
+restructured and *why*. This is the review aid that makes an HTML/README diff tractable.
+Print it in the run; when running inside `dev-kit:ship`, also save it under `.ship/` so it
+survives for the human's review. It is **not** part of the published site.
 
-## Process
+## Repo-kind shaping (zero-config)
 
-1. **Run the generator** (command above). Re-running cleanly overwrites `docs/`.
-2. **Verify it works offline** — this is the acceptance test, do it every time:
+Classification seeds a starting shape; then shape to what the repo actually contains. No
+config file, no persisted structure manifest to drift — re-derive structure from the code.
 
-   ```bash
-   open docs/index.html            # macOS; or xdg-open / just open the file:// path
-   # Nothing is fetched off-site at view time. The only asset is the vendored, relative
-   # style.css — there is no JS or web font. (Absolute <a href> nav links to github.com
-   # are expected — they're clicks, not view-time loads — so don't flag those.)
-   grep -RiE '<script|<link[^>]+stylesheet' docs/   # stylesheet must be relative; no <script>
-   grep -riE 'https?://(cdn|fonts|unpkg|jsdelivr)' docs/   # empty: no external CSS/JS/fonts
-   ```
+- **Marketplace** — landing overview + a page per plugin (manifest facts,
+  skills/commands/agents, rendered README). Authored, not mechanically templated, so it can
+  communicate better.
+- **Copier template** — landing + a template-reference section surfacing `copier.yml`
+  questions/defaults and the modules/structure the template generates.
+- **Library / CLI** — landing + install/usage + an API or commands reference from the
+  public surface.
+- **Generic** — landing from the README + the repo's own `docs/*.md` and key prose rendered
+  into a coherent site, plus reference sections for whatever public surface exists.
 
-   Click through to a plugin page and back from the `file://` view — the internal
-   page-to-page links must resolve locally. If one 404s, it's not self-contained — fix
-   before publishing.
-3. **Publish via GitHub Pages** — point Pages at the `docs/` folder on the default branch:
+**Principles override the templates.** Kind is a starting point, never a straitjacket: a
+library-and-CLI gets both; a marketplace with rich guides gets a guides section; an
+unrecognized repo degrades to generic rather than failing.
 
-   ```bash
-   gh api -X POST repos/{owner}/{repo}/pages -f source[branch]=main -f source[path]=/docs 2>/dev/null \
-     || gh api -X PUT repos/{owner}/{repo}/pages -f source[branch]=main -f source[path]=/docs
-   ```
+## The per-repo design system
 
-   Or set it in the repo UI (Settings → Pages → Deploy from a branch → `main` / `/docs`).
-   No Jekyll/baseurl is involved, so project-pages URLs and local `file://` both resolve.
-4. **Commit `docs/`** — the generated site is tracked so Pages can serve it.
+This skill ships **no** `style.css` or `app.js`. Author a design system **into the repo**
+and maintain it as a reconciliation target like everything else. Repos may look different
+from each other; coherence is *within* a repo.
 
-## Notes
+- **`docs/style.css`** — the visual contract: light/dark via `prefers-color-scheme`, system
+  fonts (no required web fonts), and a small component vocabulary the pages compose (page
+  shell + nav, cards, callouts, tables, code blocks, badges, breadcrumbs). Author it to the
+  repo's character.
+- **`docs/app.js`** — vanilla JS, vendored, no build step, no framework: client-side search
+  (over a small index the run emits), section/collapsible nav, and a theme toggle. Load it
+  as a classic `<script src="app.js">` with a relative path so it works from `file://` and
+  Pages alike. (Sites need not run offline; external CDNs are permitted, but vendoring is
+  the default since the design system is local anyway.)
+- **Escape hatch** — pages compose the shared components by default, but add **page-local**
+  styles/markup for a genuinely special case (a bespoke diagram, an interactive widget),
+  layered on top of the system, not replacing it.
+- **First run** bootstraps `style.css` + `app.js` + the site; **later runs** treat them as
+  inputs to reconcile — extend for a new component, refactor if they've gone incoherent,
+  else leave alone. Treat "a page reinvents styling a shared component already covers" as a
+  consistency finding in Stage 2.
 
-- **Keep generated docs in sync.** `/dev-kit:ship` runs this skill on every ship so the
-  site never drifts from the code. Regenerate whenever plugins, skills, or manifests change.
-- **REUSE/SPDX:** generated `.html`/`.css` carry an SPDX header (from `--holder`/`--license`)
-  so `reuse lint` passes in REUSE repos. In this marketplace, ensure `docs/**` stays
-  compliant after generating (`reuse lint`).
-- **When a server is genuinely needed** (e.g. testing something that requires an HTTP
-  origin), `python3 -m http.server -d docs 8000` serves it — but the site must remain fully
-  usable from `file://` regardless; the server is never a requirement.
+## What a run writes (and what it never touches)
+
+A run writes:
+
+- the **docs site** rooted at `docs/` (`docs/index.html`, per-topic pages, `docs/style.css`,
+  `docs/app.js`, a small search index),
+- the repo **`README.md`** (reconciled as a concise entry point),
+- hand-written **prose guides** (Claude-owned, reconcilable).
+
+A run **never** modifies source code — it is the read-only source of truth.
+
+**Excluded from reconciliation:** developer specs and internal design docs — concretely
+`docs/superpowers/**` (specs and plans). The published site and dev specs share the `docs/`
+tree; this skill owns the former, not the latter. Never rewrite or clobber them.
+
+## Licensing & tooling
+
+Do **not** hand-manage SPDX or re-create checks the repo's gate already runs.
+
+- Generated **HTML/CSS/JS** get inline SPDX headers from **`hawkeye`** (run by the gate);
+  **Markdown** (`README.md`, guides) is covered via **`REUSE.toml`**, never inline
+  (frontmatter-first). If a generated file type isn't covered by the gate's config, fix that
+  config — don't inject headers from here.
+- Run the repo's existing gate (e.g. `uvx prek run --all-files`) and `reuse lint` to enforce
+  licensing/lint/format. The only script this skill ships is the docs validator above.
+
+## Publishing (GitHub Pages)
+
+Point Pages at the `docs/` folder on the default branch (no Jekyll/baseurl, so project-pages
+URLs and local `file://` both resolve):
+
+```bash
+gh api -X POST repos/{owner}/{repo}/pages -f source[branch]=main -f source[path]=/docs 2>/dev/null \
+  || gh api -X PUT repos/{owner}/{repo}/pages -f source[branch]=main -f source[path]=/docs
+```
+
+Or set it in the UI (Settings → Pages → Deploy from a branch → `main` / `/docs`). Commit the
+generated `docs/` so Pages can serve it.
