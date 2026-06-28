@@ -56,8 +56,9 @@ and rigorous, token-aware work in the middle. It ships six composable commands;
 
 **A safety net for git-worktree work.** A single `PreToolUse` hook that catches the classic
 footgun: when your session is inside a `.claude/worktrees/<name>/` worktree, it blocks a
-`Write`/`Edit`/`MultiEdit` that targets the **parent checkout** by absolute path — the main
-copy you didn't mean to touch — while leaving the worktree's own files writable. It's inert
+`Write`/`Edit`/`MultiEdit` whose path resolves into the **parent checkout** outside the
+worktree — the main copy you didn't mean to touch, usually a stray absolute path — while
+leaving the worktree's own files writable. It's inert
 unless you're in a worktree, and fail-open on any error, so it can't get in your way
 elsewhere. A natural companion to `/dev-kit:ship`, which works inside worktrees (and whose
 run state, kept in the worktree's own git dir, the guard knows to allow).

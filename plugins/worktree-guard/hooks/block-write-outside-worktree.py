@@ -7,7 +7,8 @@
 into the *parent* repository but OUTSIDE the active worktree.
 
 This catches the classic worktree footgun: editing the main checkout
-(`<repo>/plugins/foo`) by absolute path while you meant the worktree copy
+(`<repo>/plugins/foo`) — usually via a stray absolute path, but a relative path that
+escapes the worktree is caught too — while you meant the worktree copy
 (`<repo>/.claude/worktrees/<name>/plugins/foo`).
 
 Design:
