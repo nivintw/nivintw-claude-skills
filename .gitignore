@@ -29,3 +29,6 @@ casts/
 ### Python (dev-kit's generate-docs build.py runs under uv) ###
 __pycache__/
 *.py[cod]
+
+### dev-kit:ship continuity files (per-run progress; never committed) ###
+.ship/
