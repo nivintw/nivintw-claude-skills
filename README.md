@@ -36,11 +36,28 @@ library and an end-to-end web-embedding guide:
 | `…/scripts/example-fixtures.sh` · `example-record.sh` | A complete, runnable worked example |
 | `…/reference/embedding.md` | Vendoring asciinema-player + HTML/CSS/JS + REUSE licensing |
 
+### `dev-kit`
+
+**A Human + AI teaming development workflow.** Take a change from idea to a reviewed
+pull request — with the human in control at the ends (plan sign-off, final merge)
+and rigorous, token-aware work in the middle. It ships six composable commands;
+`/dev-kit:ship` is the orchestrator and calls the others, but each stands alone:
+
+| Command | What it does |
+|---------|--------------|
+| `/dev-kit:ship` | Idea → review-ready PR: plan in a worktree, implement with tiered subagent delegation, simplify, refresh docs, review, open the PR. Never auto-merges. |
+| `/dev-kit:review-pr` | One review entry point — the full battery (code-review, security-review, pr-review-toolkit) plus a context-chosen adversarial pass, synthesized into one report. |
+| `/dev-kit:generate-docs` | Reconcile the whole docs set against the whole codebase every run, catching drift and omission, and author a docs site shaped to the repo (file:// and GitHub Pages). |
+| `/dev-kit:handle-task-tracking` | A repeatable workflow for tracking work as GitHub issues — the durable ledger `ship` delegates to. |
+| `/dev-kit:open-work` | Read the open issues and return a ranked "pick up next" shortlist with rationale — the select step between tracking and shipping. |
+| `/dev-kit:cleanup-locally` | Prune merged branches and worktrees and bring the default branch up to date, without clobbering local work. |
+
 ## Install
 
 ```text
 /plugin marketplace add nivintw/nivintw-claude-skills
 /plugin install castify@nivintw-claude-skills
+/plugin install dev-kit@nivintw-claude-skills
 ```
 
 Or from a local clone:
