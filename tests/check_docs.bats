@@ -63,6 +63,13 @@ run_check() {
   [ "$status" -eq 0 ]
 }
 
+@test "unsafe javascript: and file: schemes are rejected" {
+  printf '<a href="javascript:alert(1)">x</a>' >"$SITE/index.html"
+  run_check
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"unsafe or non-portable URL scheme"* ]]
+}
+
 @test "missing same-page anchor fails" {
   printf '<a href="#nope">x</a>' >"$SITE/index.html"
   run_check
