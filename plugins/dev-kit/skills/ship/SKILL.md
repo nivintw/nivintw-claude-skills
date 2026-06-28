@@ -127,6 +127,12 @@ On abort *before* hand-off, remove it directly with `ExitWorktree({ action: "rem
 discard_changes: true })` — but only once you've confirmed nothing in the worktree is worth
 keeping.
 
+A good companion here is the **`worktree-guard`** plugin (this marketplace): a `PreToolUse`
+hook that blocks an accidental write to the *primary* checkout while you're working in the
+worktree, so a stray absolute path can't edit `main`'s copy instead of the worktree's. It's
+optional — ship doesn't depend on it — and it already allows the worktree's own git dir,
+where this run's progress/state live.
+
 ## Phase 3 — Implement (fan out; delegate by cost)
 
 Do the work. Be **thorough but token-conscious** — that balance is a first-class goal, not an
