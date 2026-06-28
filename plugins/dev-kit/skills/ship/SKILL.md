@@ -144,8 +144,10 @@ simplification, efficiency, altitude) while everything is fresh.
 
 ## Phase 5 — Docs (default; skip only if no docs site)
 
-Run **`/dev-kit:generate-docs`** so the docs never drift from the change. If the repo has no
-docs site / isn't a marketplace, note that and skip — but default to keeping docs current.
+Run **`/dev-kit:generate-docs`** so the docs never drift from the change. It reconciles the
+whole docs set against the whole codebase and shapes the site to the repo kind (marketplace,
+Copier template, library/CLI, or generic), so it applies to any repo — only skip if the repo
+genuinely has no docs to maintain. Default to keeping docs current.
 
 ## Phase 6 — Review (always)
 
