@@ -69,6 +69,13 @@ run_hook() {
   [ -z "$output" ]
 }
 
+@test "allows the stop while parked on an async wait (any waiting:* token)" {
+  set_state "waiting:ci"
+  run_hook "$REPO"
+  [ "$status" -eq 0 ]
+  [ -z "$output" ]
+}
+
 @test "blocks the stop when state names an active phase" {
   set_state "phase-6-review"
   run_hook "$REPO"
