@@ -1,0 +1,17 @@
+# SPDX-FileCopyrightText: © 2026 Tyler Nivin
+# SPDX-License-Identifier: MIT
+
+# lychee link-checker config. The link-check workflow passes `--config .config/lychee.toml`,
+# so every exclusion lives here with the rest of the repo's tool config instead of inline in
+# the workflow. (lychee excludes mailto: by default; Markdown-only crawling is set by the
+# workflow's input glob.)
+exclude = [
+  # This repo's own /compare/ URLs. release-please's generated CHANGELOG links to
+  # compare/<prev>...<next>, but the <next> tag isn't cut until the Release PR merges, so it
+  # 404s on every Release PR until then (then self-heals). Self-referential links are
+  # otherwise validated via GITHUB_TOKEN.
+  "github\\.com/nivintw/nivintw-claude-skills/compare/",
+  # asciinema.org blocks/slow-walks GitHub Actions runner IPs: the link in README.md is valid
+  # (HTTP 200 in under a second from normal networks) but TIMEOUTs from CI on every run.
+  "https://asciinema\\.org/",
+]
