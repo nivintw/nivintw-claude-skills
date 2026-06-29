@@ -17,7 +17,7 @@ window.SEARCH_INDEX = [
     cmd: "/dev-kit:ship",
     plugin: "dev-kit",
     url: "dev-kit.html#ship",
-    summary: "Drive a change from idea to a review-ready PR: plan, isolate in a worktree, implement, simplify, refresh docs, review. Never auto-merges."
+    summary: "Drive a change from idea to a review-ready PR: plan, isolate in a worktree, implement, simplify, refresh docs, review. Hands off by default; lands the PR (CI to green, converge, rebase-merge) only when you ask."
   },
   {
     cmd: "/dev-kit:review-pr",
@@ -48,6 +48,12 @@ window.SEARCH_INDEX = [
     plugin: "dev-kit",
     url: "dev-kit.html#cleanup-locally",
     summary: "Reconcile your local clone after PRs land: prune merged branches and worktrees, update the default branch, never clobber local work."
+  },
+  {
+    cmd: "/dev-kit:doctor",
+    plugin: "dev-kit",
+    url: "dev-kit.html#doctor",
+    summary: "A health check for your installed plugins: flag when a stale cache is running an old skill despite a newer release, and inventory the plugins and their skills."
   },
   {
     cmd: "worktree-guard",

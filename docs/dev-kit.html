@@ -10,7 +10,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>dev-kit — nivintw-claude-skills</title>
-  <meta name="description" content="A human + AI teaming development workflow for Claude Code: ship, review-pr, generate-docs, handle-task-tracking, open-work, and cleanup-locally.">
+  <meta name="description" content="A human + AI teaming development workflow for Claude Code: ship, review-pr, generate-docs, handle-task-tracking, open-work, cleanup-locally, and doctor.">
   <link rel="stylesheet" href="style.css">
   <script>
     // Pre-paint: apply a saved theme (no flash-of-wrong-theme) and mark JS available
@@ -47,7 +47,7 @@
     <p class="lede">Take a change from idea to a reviewed pull request — planned, isolated,
       implemented with tiered subagent delegation, simplified, documented, and reviewed. The
       human stays in control at the ends; the rigorous work happens in the middle. It never
-      auto-merges.</p>
+      auto-merges — unless you explicitly tell it to <code class="cmd">land</code> the PR.</p>
     <div class="badge-row">
       <span class="badge" data-version="dev-kit"></span>
       <span class="badge badge-cat">workflow</span>
@@ -61,7 +61,7 @@
 
   <section class="section">
     <h2>The loop</h2>
-    <p class="section-note">Six commands that compose. <code class="cmd">/dev-kit:ship</code>
+    <p class="section-note">Seven commands that compose. <code class="cmd">/dev-kit:ship</code>
       is the orchestrator and calls the others; each also stands alone.</p>
     <p>Track work as issues with <code class="cmd">/dev-kit:handle-task-tracking</code>, pick
       what's next with <code class="cmd">/dev-kit:open-work</code>, then
@@ -80,8 +80,10 @@
         <p class="cmd-summary">The orchestrator. Drives a change from idea to a review-ready PR:
           plan and get sign-off, work in a dedicated worktree, implement with work routed to
           the cheapest fitting model tier, then simplify, refresh docs, run the full review
-          battery, open the PR, and converge an automated review. Hands off — never merges.</p>
-        <p class="cmd-eg"><span class="cmd-eg-label">try</span> "ship this fix" · "take this from idea to a PR" · "run the full dev workflow on this"</p>
+          battery, open the PR, and converge an automated review. Hands off by default — or, on
+          request, <strong>lands</strong> the PR: drives CI to green, converges the review, then
+          rebase-merges and cleans up. The one path where ship merges.</p>
+        <p class="cmd-eg"><span class="cmd-eg-label">try</span> "ship this fix" · "take this from idea to a PR" · "land the PR" · "ship and land it"</p>
       </article>
 
       <article class="cmd-row" id="review-pr">
@@ -131,6 +133,16 @@
           whose commits already merged — squash merges included. Deliberately conservative:
           anything unmerged, dirty, or checked out is kept and reported, never clobbered.</p>
         <p class="cmd-eg"><span class="cmd-eg-label">try</span> "clean up local branches" · "prune merged worktrees" · "update main"</p>
+      </article>
+
+      <article class="cmd-row" id="doctor">
+        <code class="cmd">/dev-kit:doctor</code>
+        <p class="cmd-summary">A health check for your installed plugins. Compares the version
+          actually loaded this session, the newest cached on disk, and the latest released —
+          and flags when a stale cache means an old skill is running despite a newer release,
+          even with autoupdate on. Also inventories the marketplace's plugins and their skills,
+          so you can see what's installed and what each is for.</p>
+        <p class="cmd-eg"><span class="cmd-eg-label">try</span> "am I on the latest version" · "check my plugin versions" · "list my skills"</p>
       </article>
 
     </div>
