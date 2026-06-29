@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.12.0](https://github.com/nivintw/nivintw-claude-skills/compare/dev-kit-v0.11.0...dev-kit-v0.12.0) (2026-06-29)
+
+
+### Features
+
+* **dev-kit:** review-pr whole-repo audit mode + effort default + second-opinion synthesis ([ad17479](https://github.com/nivintw/nivintw-claude-skills/commit/ad174790efc6b14f26caafe928022358d6d6187f)), closes [#50](https://github.com/nivintw/nivintw-claude-skills/issues/50) [#60](https://github.com/nivintw/nivintw-claude-skills/issues/60)
+* **dev-kit:** strip conversation-only comments in ship implement + simplify ([fc2a09e](https://github.com/nivintw/nivintw-claude-skills/commit/fc2a09e0695f19a836d1b3e14be8a7f32531a7a5)), closes [#63](https://github.com/nivintw/nivintw-claude-skills/issues/63)
+
 ## [0.11.0](https://github.com/nivintw/nivintw-claude-skills/compare/dev-kit-v0.10.0...dev-kit-v0.11.0) (2026-06-29)
 
 
