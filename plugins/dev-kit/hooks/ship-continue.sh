@@ -6,10 +6,11 @@
 # mid-flight after a delegated sub-skill (e.g. /security-review) hands back: when ship's
 # per-run `state` file holds an explicit active-phase token (`phase-*`), it blocks the stop
 # and tells the agent to synthesize and continue. It is INERT and DEFAULT-ALLOW everywhere
-# else — no git repo, no state file, a `gate:*`/`done`/blank/typo/stale `state`, an already
-# re-invoked stop, a missing jq, or any error all let the stop through. Blocking only on a
-# `phase-*` token means it can never trap the session at a human gate (plan sign-off /
-# hand-off) and a forgotten or stale token fails safe instead of nagging.
+# else — no git repo, no state file, a `gate:*`/`waiting:*`/`done`/blank/typo/stale `state`,
+# an already re-invoked stop, a missing jq, or any error all let the stop through. Blocking
+# only on a `phase-*` token means it can never trap the session at a human gate (plan
+# sign-off / hand-off), park it while it waits on CI or Copilot (`waiting:*`), or nag on a
+# forgotten or stale token — those all fail safe.
 #
 # Reads the Claude Code Stop-hook JSON payload on stdin; emits a `{"decision":"block",...}`
 # object only when blocking, and nothing (exit 0) when allowing.
@@ -41,15 +42,18 @@ state_file="$gitdir/ship/state"
 [ -f "$state_file" ] || allow # no active ship run
 
 # The token is the first non-empty line, whitespace-stripped. Block ONLY on an explicit
-# active-phase token (`phase-*`); every other value — blank, `done`, any `gate:*`, a stale
-# token, or a typo — falls through to allow. Default-allow keeps the hook from ever trapping
-# the session at a human gate or nagging on a forgotten/stale `state`.
-# This vocabulary (`phase-*` active, `gate:*` parked, `done` done) is the contract documented
-# in plugins/dev-kit/skills/ship/SKILL.md (Phase 0); keep the two in sync.
+# active-phase token (`phase-*`); every other value — blank, `done`, any `gate:*`, any
+# `waiting:*`, a stale token, or a typo — falls through to allow. Default-allow keeps the
+# hook from ever trapping the session at a human gate, parking it on an async wait, or
+# nagging on a forgotten/stale `state`.
+# This vocabulary (`phase-*` active; `gate:*` parked at a human gate; `waiting:*` parked on an
+# async external event like CI or Copilot; `done` done) is the contract documented in
+# plugins/dev-kit/skills/ship/SKILL.md (Phase 0); keep the two in sync.
 state="$(grep -m1 -v '^[[:space:]]*$' "$state_file" 2>/dev/null | tr -d '[:space:]' || true)"
 case "$state" in
-phase-*) : ;; # active phase → fall through to block
-*) allow ;;
+phase-*) : ;;       # active phase → fall through to block
+waiting:*) allow ;; # parked on an async external event (CI/Copilot) → clean yield, no nag
+*) allow ;;         # gate:*, done, blank, stale, typo → fail safe
 esac
 
 # An active phase is named: block the stop and steer the agent back into the workflow.

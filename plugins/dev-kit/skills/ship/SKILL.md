@@ -63,12 +63,17 @@ of:
   (Phases 4–6), all of which are inside the worktree.
 - `gate:plan-signoff` while *parked* awaiting the user's sign-off (Phase 1) — the only `state`
   the primary checkout ever holds before the worktree exists.
+- a **`waiting:*`** token while *parked on an async external event you don't control* —
+  `waiting:ci` while watching a CI run, `waiting:copilot` while awaiting a Copilot review
+  (Phase 8 and the `land` loop). Unlike a `phase-*` token, this lets the session rest between
+  polls without the hook nagging; re-arm the active `phase-*` token when the event lands and
+  you resume work.
 - `done` once the change is *handed off* (Phase 8).
 
 The hook blocks a stop **only** while `state` is a `phase-*` token; **every** other value —
-`gate:*`, `done`, blank, a stale token, or a typo — lets the stop through. That default-allow
-is deliberate: it can never trap you at a human gate, and a forgotten or stale `state` fails
-safe instead of nagging. And because active tokens live only in the worktree's git dir, they
+`gate:*`, `waiting:*`, `done`, blank, a stale token, or a typo — lets the stop through. That
+default-allow is deliberate: it can never trap you at a human gate, never nag while you're
+legitimately parked waiting on CI or Copilot, and a forgotten or stale `state` fails safe. And because active tokens live only in the worktree's git dir, they
 are torn down with the worktree and never orphaned in your primary checkout. So `gate:plan-signoff`
 and `done` are the only points where a ship run legitimately stops (plan sign-off and hand-off);
 keep `state` current as a courtesy to the backstop, but continuing past a hand-back is *your*
@@ -228,7 +233,9 @@ the tracking issue with `Closes #N` so the merge closes it (the linking conventi
 With the draft PR open, request an **automated Copilot review** (GitHub's `request_copilot_review`
 via the GitHub MCP or `gh`) and **iterate to convergence**:
 
-1. Wait for Copilot's review to land on the current PR head.
+1. Wait for Copilot's review to land on the current PR head. While parked on that wait, set
+   `state` to `waiting:copilot` so the Stop hook lets the session rest without nagging; re-arm
+   the `phase-*` token once the review lands and you pick the work back up.
 2. Triage its findings like any reviewer — apply the real ones (commit + push to the same
    branch).
 3. **Resolve each thread once you've handled it** — reply with how it was addressed (the
