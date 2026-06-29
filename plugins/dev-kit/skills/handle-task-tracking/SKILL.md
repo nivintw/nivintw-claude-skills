@@ -56,6 +56,15 @@ later: **type/area** and **priority** labels, a **status** label (start at `stat
 unless it's obviously ready), an **assignee** if someone owns it now, and a **milestone**
 if it belongs to a release. The full label taxonomy is in `reference/recipes.md`.
 
+**File it in the right repo.** Working in one repo routinely surfaces follow-up that belongs
+somewhere else — most often the upstream `copier-everything` template. During capture, decide
+which repo the outcome lives in: default to the current repo, but when the work is really about
+an upstream template or a sibling project, file it THERE — pass an explicit `owner` and `repo`
+to the GitHub MCP (or `--repo owner/repo` to `gh`), not the cwd repo. Confirm or infer the
+target before filing; don't assume cwd. After filing cross-repo, report back a typed, glossed
+cross-repo link (`[owner/repo#N](url)`) as defined in the links section below, so the user can
+click through immediately.
+
 ## Decompose — sub-issues for anything multi-step
 
 When an outcome needs several independent pieces, split it into **native GitHub sub-issues**
@@ -163,7 +172,9 @@ Prefer the **GitHub MCP tools** (`mcp__github__*`) for issue operations: they're
 and typed, and they expose what this workflow leans on — native sub-issues and issue types —
 as first-class calls, which plain `gh issue` handles awkwardly (sub-issues and Projects v2
 otherwise mean verbose `gh api graphql`). Don't clone a repo just to read it — use the
-GitHub MCP to read remote file contents and issues directly.
+GitHub MCP to read remote file contents and issues directly. The MCP's `issue_write` takes an
+explicit `owner`/`repo`, so filing into a different repo — e.g. the upstream template — is a
+first-class call: pass the target owner/repo directly, no directory change or clone needed.
 
 Fall back to the **`gh` CLI** when the MCP server isn't connected — check first, since it can
 be absent in headless or cron runs — and whenever a human wants a command to paste into a

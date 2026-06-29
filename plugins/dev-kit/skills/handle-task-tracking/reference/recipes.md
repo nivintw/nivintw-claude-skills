@@ -79,6 +79,17 @@ gh issue create \
   --assignee @me
 ```
 
+**Cross-repo:** to file into a different repo (e.g. the upstream `copier-everything` template),
+pass `--repo owner/repo` (gh) or the `owner`/`repo` params (MCP); the issue is created there,
+not in the cwd repo.
+
+```bash
+gh issue create --repo nivintw/copier-everything \
+  --title "Port .config/licenserc.toml tweak upstream" \
+  --body-file issue.md \
+  --label "type:chore,priority:medium,status:triage"
+```
+
 ## Decompose into sub-issues
 
 **MCP:** create the child issues with `mcp__github__issue_write`, then attach each to the
