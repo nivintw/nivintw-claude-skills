@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.0](https://github.com/nivintw/nivintw-claude-skills/compare/dev-kit-v0.9.0...dev-kit-v0.10.0) (2026-06-29)
+
+
+### Features
+
+* **dev-kit:** treat newly-added suppressions as review findings ([7c8fcdb](https://github.com/nivintw/nivintw-claude-skills/commit/7c8fcdb321312142be01f52eb750075d326e392d)), closes [#53](https://github.com/nivintw/nivintw-claude-skills/issues/53)
+
 ## [0.9.0](https://github.com/nivintw/nivintw-claude-skills/compare/dev-kit-v0.8.0...dev-kit-v0.9.0) (2026-06-29)
 
 
