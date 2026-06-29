@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.16.0](https://github.com/nivintw/nivintw-claude-skills/compare/dev-kit-v0.15.0...dev-kit-v0.16.0) (2026-06-29)
+
+
+### Features
+
+* **dev-kit:** generate-docs renders the built site before hand-off ([3f443e8](https://github.com/nivintw/nivintw-claude-skills/commit/3f443e84096f103b847079b912e3d3d6edc77521)), closes [#51](https://github.com/nivintw/nivintw-claude-skills/issues/51)
+
 ## [0.15.0](https://github.com/nivintw/nivintw-claude-skills/compare/dev-kit-v0.14.0...dev-kit-v0.15.0) (2026-06-29)
 
 
