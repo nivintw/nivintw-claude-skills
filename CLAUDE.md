@@ -30,7 +30,7 @@ ship only `hooks/` (e.g. `worktree-guard`), `commands/`, or `agents/` instead (a
 
 ## Quality gate (prek)
 
-Infra comes from the `nivintw/scaffold` copier template — **this repo is copier-managed**
+Infra comes from the `nivintw/copier-everything` copier template — **this repo is copier-managed**
 (`.copier-answers.yml`); pull template updates with `copier update`. Don't hand-edit
 generated config expecting it to survive unless you're deliberately reconciling.
 
