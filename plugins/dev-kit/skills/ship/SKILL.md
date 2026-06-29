@@ -97,6 +97,19 @@ plan + checklist into the progress file: what changes, which files, the approach
 how it'll be verified. **Get the user's sign-off on the plan before implementing.** Surface
 genuine decisions now (don't bury them).
 
+**Confirm scope before you build it.** A description of a desired end-state is not a license
+to build everything around it. In the plan, separate what the user is **describing as
+requirements** ("here's what needs to work") from the **work to do now**, and confirm the
+change that actually fits the ask before fanning out implementation — don't wrap validation,
+config scaffolding, or speculative machinery around a request the user wanted kept small. When
+the user says they'll wire it up, configure it, or edit it themselves, leave the relevant
+files as **editable scaffolding** rather than fully implementing them. This is the global
+*match the change to the request's real scope* rule applied at plan time, and it cuts **both**
+ways: size the change to the *true* breadth of the ask, **not its literal minimum** —
+over-building a small request and silently downgrading a broad one (a docs refresh, an audit,
+a "make this right" that should also fix the in-domain mess) are equally failures. When unsure
+which side of the line something falls on, ask rather than assume.
+
 Delegate task tracking to **`/dev-kit:handle-task-tracking`** — don't reinvent it here.
 Find or open the GitHub issue that tracks this work, record its number in the progress file,
 and capture the plan's key decisions on the issue. The ship progress file tracks
