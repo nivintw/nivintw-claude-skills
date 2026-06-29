@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.14.0](https://github.com/nivintw/nivintw-claude-skills/compare/dev-kit-v0.13.0...dev-kit-v0.14.0) (2026-06-29)
+
+
+### Features
+
+* **dev-kit:** add template-reconcile skill for the repo&lt;-&gt;template seam ([afdfcbf](https://github.com/nivintw/nivintw-claude-skills/commit/afdfcbf8879b69842cd045bab1c5925dcc0dfe26)), closes [#52](https://github.com/nivintw/nivintw-claude-skills/issues/52)
+* **dev-kit:** handle-task-tracking supports cross-repo issue filing ([932edef](https://github.com/nivintw/nivintw-claude-skills/commit/932edef0a1b9bc6aa02dd9d2777c3484904e141c)), closes [#49](https://github.com/nivintw/nivintw-claude-skills/issues/49)
+
 ## [0.13.0](https://github.com/nivintw/nivintw-claude-skills/compare/dev-kit-v0.12.0...dev-kit-v0.13.0) (2026-06-29)
 
 
