@@ -16,15 +16,18 @@
 set -uo pipefail
 
 DRY_RUN=0
+PRUNE_REMOTE=0
 deleted=0
 skipped=0
 kept=0
 removed_wt=0
+remote_found=0
+remote_deleted=0
 had_failure=0
 
 usage() {
   cat <<'EOF'
-Usage: cleanup-locally.sh [-n|--dry-run] [-h|--help]
+Usage: cleanup-locally.sh [-n|--dry-run] [--prune-remote] [-h|--help]
 
 Prune local branches and worktrees that have been merged into the default branch, and
 fast-forward / rebase the default branch onto origin. Run from inside a git repository
@@ -38,15 +41,20 @@ The default branch is updated in whichever worktree holds it: a dirty tree is st
 restored, and unpushed local commits are rebased forward onto origin. A genuine conflict
 (rebase or stash-pop) aborts that step with a warning, leaving your work intact.
 
+Remote branches on origin that are fully merged into the default branch are reported by
+default. Pass --prune-remote to delete them as well.
+
 Options:
-  -n, --dry-run   Show what would happen without changing anything.
-  -h, --help      Show this help and exit.
+  -n, --dry-run     Show what would happen without changing anything.
+  --prune-remote    Delete merged remote branches on origin (reported-only by default).
+  -h, --help        Show this help and exit.
 EOF
 }
 
 while [ $# -gt 0 ]; do
   case "$1" in
   -n | --dry-run) DRY_RUN=1 ;;
+  --prune-remote) PRUNE_REMOTE=1 ;;
   -h | --help)
     usage
     exit 0
@@ -291,13 +299,65 @@ while IFS= read -r branch; do
   delete_branch "$branch" "merged local-only" "-D"
 done < <(git branch --merged "$default_ref" --format '%(refname:short)')
 
+# ----------------------- Report (or prune) merged remote branches ---------------------- #
+# Branches on origin that are fully merged into the default branch. Never deletes
+# origin/HEAD or origin/<default>. Use --prune-remote to actually delete; by default
+# only reports. Dry-run is honoured when --prune-remote is set.
+remote_merged_branches=""
+# The `grep -v ' -> '` in the feeder drops the `origin/HEAD -> origin/<default>` symref line
+# that `git branch -r` emits; the HEAD/default skips below then guard the named refs.
+while IFS= read -r ref; do
+  branch="${ref#origin/}"
+  [ "$branch" = "HEAD" ] && continue
+  [ "$branch" = "$default_local" ] && continue
+  remote_merged_branches="${remote_merged_branches}${branch}"$'\n'
+done < <(git branch -r --merged "$default_ref" | sed 's/^[[:space:]]*//' | grep "^origin/" | grep -v ' -> ' || true)
+
+if [ -n "$remote_merged_branches" ]; then
+  echo
+  echo "note: if the repo auto-deletes branches on merge, these are usually already gone."
+  while IFS= read -r branch; do
+    [ -z "$branch" ] && continue
+    remote_found=$((remote_found + 1))
+    if [ "$PRUNE_REMOTE" = 1 ]; then
+      if [ "$DRY_RUN" = 1 ]; then
+        echo "[dry-run] would delete merged remote branch: origin/$branch"
+        remote_deleted=$((remote_deleted + 1))
+      elif git push origin --delete "$branch" >/dev/null 2>&1; then
+        echo "Deleted merged remote branch: origin/$branch"
+        remote_deleted=$((remote_deleted + 1))
+      else
+        echo "    WARNING: failed to delete remote branch: origin/$branch" >&2
+        had_failure=1
+      fi
+    else
+      echo "Merged remote branch (pass --prune-remote to delete): origin/$branch"
+    fi
+  done <<<"$remote_merged_branches"
+fi
+
 # ------------------------------------ Summary ---------------------------------------- #
-if [ "$deleted" = 0 ] && [ "$removed_wt" = 0 ] && [ "$skipped" = 0 ] && [ "$kept" = 0 ]; then
+# Trailing fragment so the remote pass isn't invisible in the one-line summary.
+remote_summary=""
+if [ "$remote_found" != 0 ]; then
+  if [ "$PRUNE_REMOTE" = 1 ]; then
+    # "N of M" so the line stays visible even when some (or all) deletions failed.
+    if [ "$DRY_RUN" = 1 ]; then
+      remote_summary=" Would delete $remote_deleted of $remote_found merged remote branch(es)."
+    else
+      remote_summary=" Deleted $remote_deleted of $remote_found merged remote branch(es)."
+    fi
+  else
+    remote_summary=" Reported $remote_found merged remote branch(es) (pass --prune-remote to delete)."
+  fi
+fi
+
+if [ "$deleted" = 0 ] && [ "$removed_wt" = 0 ] && [ "$skipped" = 0 ] && [ "$kept" = 0 ] && [ "$remote_found" = 0 ]; then
   echo "Nothing to clean up."
 elif [ "$DRY_RUN" = 1 ]; then
-  echo "Dry run complete: would delete $deleted branch(es), would remove $removed_wt worktree(s), skipped $skipped (need review), kept $kept."
+  echo "Dry run complete: would delete $deleted branch(es), would remove $removed_wt worktree(s), skipped $skipped (need review), kept $kept.${remote_summary}"
 else
-  echo "Cleanup complete: deleted $deleted branch(es), removed $removed_wt worktree(s), skipped $skipped (need review), kept $kept."
+  echo "Cleanup complete: deleted $deleted branch(es), removed $removed_wt worktree(s), skipped $skipped (need review), kept $kept.${remote_summary}"
 fi
 
 [ "$had_failure" = 0 ]

@@ -29,7 +29,11 @@ stops at hand-off.
 
 ## Start of run — reconcile local state (cleanup-locally)
 
-Before anything else, run **`/dev-kit:cleanup-locally`** from the primary checkout. It
+Before anything else, confirm the session is inside a git repository (`git rev-parse
+--git-dir`); if not, stop immediately and report that the cwd isn't inside a git repo
+(name the path) rather than proceeding — every step below assumes a repo.
+
+Run **`/dev-kit:cleanup-locally`** from the primary checkout. It
 fetches, brings the default branch up to date (stashing/rebasing any local work forward,
 never clobbering), and prunes branches and `.claude/worktrees/` worktrees whose work has
 already merged. Two payoffs: the worktree this run creates in Phase 2 branches off a
