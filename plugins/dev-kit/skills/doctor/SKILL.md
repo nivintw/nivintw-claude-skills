@@ -35,22 +35,35 @@ versions can disagree, and you must check all three:
    this if the session loaded a stale entry.
 3. **Latest released** — the newest `<plugin>-v<version>` release tag on the repo.
 
-Run the helper to compare *newest-cached* against *latest-released* for every plugin:
+The script compares two of these (newest-cached vs latest-released); the **running** version is
+visible only to *you*, from the load banner — so the check is two-handed, and the
+running-version comparison is the half that catches the headline bug. Do both, every run:
+
+**Step 1 — read the running versions (the headline check, do it first).** For each skill
+invoked this session, read the `<version>` out of its load-banner base directory
+(`…/<plugin>/<version>/skills/<skill>`). That is the code that actually executed — the one
+thing no script can see for you, and the one most likely to be silently stale.
+
+**Step 2 — run the helper for newest-cached vs latest-released:**
 
 ```bash
-scripts/plugin-doctor.sh            # defaults to the nivintw-claude-skills marketplace
-scripts/plugin-doctor.sh <marketplace> <owner/repo>
+# defaults to the nivintw-claude-skills marketplace
+"${CLAUDE_PLUGIN_ROOT}/skills/doctor/scripts/plugin-doctor.sh"
+# or target another marketplace / repo explicitly
+"${CLAUDE_PLUGIN_ROOT}/skills/doctor/scripts/plugin-doctor.sh" <marketplace> <owner/repo>
 ```
 
-It prints a `PLUGIN / INSTALLED / LATEST / STATUS` table (and exits non-zero if any plugin is
-behind), noting how many versions are cached — a large cache is the breeding ground for the
-stale-load bug. Then **add the running-version check the script can't do**: compare the
-`<version>` from each invoked skill's load banner against that table. Report drift in any of
-these forms and prescribe the fix:
+It prints a `PLUGIN / INSTALLED / LATEST / STATUS` table and a summary line (always exiting 0 —
+drift is reported in the output, not the exit code), noting how many versions are cached; a
+large cache is the breeding ground for the stale-load bug.
 
-- **running < latest released** → an old skill is live. Advise **`/reload-plugins`** (and a
-  session restart if that doesn't pick it up); note autoupdate can lag a fresh release.
-- **newest cached < latest released** → the update hasn't been fetched yet → `/reload-plugins`.
+**Step 3 — reconcile running vs newest-cached vs latest-released** and prescribe the fix:
+
+- **running < newest cached** → the session loaded a stale entry though a newer one is already
+  on disk → **`/reload-plugins`** (restart the session if it doesn't pick it up). This is the
+  exact stale-load bug, and only Step 1 catches it.
+- **running or newest-cached < latest released** → a newer version is published but not live
+  → **`/reload-plugins`**; note autoupdate can lag a fresh release.
 - **all three equal** → current; say so plainly.
 
 ## Inventory the installed skills

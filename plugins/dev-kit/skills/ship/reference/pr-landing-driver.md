@@ -32,16 +32,19 @@ reads; `gh` is the fallback and the only option for live `--watch` streams.
 1. **Make sure the branch can merge.** If the PR is behind its base, update it
    (`gh pr update-branch <#>`, or rebase onto the base and force-push). A branch-protection
    "branches must be up to date" rule otherwise blocks the merge.
-2. **Watch CI on the current head.** Poll the check runs until they reach a terminal state.
-   While checks run, ship is *parked on an async external event* — set `state` to
-   `waiting:ci` so the Stop hook lets the session rest without nagging (see ship Phase 0), and
-   re-arm the active `phase-*` token when you resume.
+2. **Watch CI on the current head.** Kick off a *harness-tracked* background watch that exits
+   when the checks reach a terminal state and **re-invokes you on completion** (a backgrounded
+   poll loop, or a Monitor). Set `state` to `waiting:ci` so the Stop hook lets the session rest
+   meanwhile (see ship Phase 0); when the watch fires, re-arm the active `phase-*` token and
+   continue. Don't set `waiting:ci` with nothing watching — a bare stop strands the loop, since
+   nothing would resume it.
 3. **On red, fix and re-watch.** Triage the failing check like any reviewer: reproduce, fix,
    commit, push to the same branch, then go back to step 1 against the new head. **Bound it** —
    after ~3 rounds with no progress on the same failure, stop and surface it for the human
    rather than thrashing. Don't paper over a real failure to force the merge.
 4. **Converge the automated review.** Run ship's Phase 8 Copilot convergence loop to
-   completion. Park as `waiting:copilot` between rounds.
+   completion, parking as `waiting:copilot` between rounds the same way — backed by a watch
+   that resumes you, never a bare stop.
 5. **Merge — the one place ship merges.** Once CI is green on the current head **and** the
    review has converged, mark the PR ready (`gh pr ready`) and **rebase-merge** it:
    `gh pr merge <#> --rebase`. Rebase-merge (not squash, not a merge commit) is deliberate —
@@ -62,5 +65,7 @@ reads; `gh` is the fallback and the only option for live `--watch` streams.
 - **Not a force-merge.** A failing check that can't be fixed in the bounded rounds, an
   unresolved review, or a merge GitHub refuses (conflicts, failing required checks) stops the
   loop with the reason surfaced. land never overrides a red gate to get the merge through.
-- **Not a background cron.** It's a procedure ship runs in-session; there's no detached job
+- **Not a background cron that merges.** The only background job is a *watch* that notifies you
+  when CI or a review lands; it never merges. ship runs in-session and makes every merge
+  decision itself when the watch resumes it — there's no detached job
   left merging after the session ends.

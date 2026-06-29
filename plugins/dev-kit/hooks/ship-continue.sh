@@ -51,9 +51,8 @@ state_file="$gitdir/ship/state"
 # plugins/dev-kit/skills/ship/SKILL.md (Phase 0); keep the two in sync.
 state="$(grep -m1 -v '^[[:space:]]*$' "$state_file" 2>/dev/null | tr -d '[:space:]' || true)"
 case "$state" in
-phase-*) : ;;       # active phase → fall through to block
-waiting:*) allow ;; # parked on an async external event (CI/Copilot) → clean yield, no nag
-*) allow ;;         # gate:*, done, blank, stale, typo → fail safe
+phase-*) : ;; # active phase → fall through to block
+*) allow ;;   # gate:*, waiting:*, done, blank, stale, typo → fail safe
 esac
 
 # An active phase is named: block the stop and steer the agent back into the workflow.
