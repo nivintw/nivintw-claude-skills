@@ -26,8 +26,15 @@ Both reach the same loop below; they differ only in how the PR is located.
 ## The loop
 
 Pin every check to the PR's **current head SHA** — re-read it after each push, never poll a
-stale head. Prefer the GitHub MCP (`pull_request_read` `get_check_runs` / `get_status`) for
-reads; `gh` is the fallback and the only option for live `--watch` streams.
+stale head. **Reads must use the GitHub MCP, not `gh`**: PR state, checks, and reviews via
+`mcp__github__pull_request_read` / `get_check_runs` / `get_status`, and remote file
+contents via `mcp__github__get_file_contents`. The **only** read for which `gh` is the right tool is a live
+`--watch` stream (`gh pr checks --watch`, `gh run watch`) that delivers a terminal
+notification when checks reach a terminal state; for every other read, including polling CI
+status, run an MCP `get_check_runs` loop instead of `gh --watch`. For **writes** — merging,
+commenting, resolving threads — prefer the MCP (`mcp__github__merge_pull_request` and
+siblings); the `gh` porcelain used in the numbered steps below (e.g. `gh pr merge`) is an
+acceptable equivalent where it reads cleaner.
 
 1. **Make sure the branch can merge.** If the PR is behind its base, update it
    (`gh pr update-branch <#>`, or rebase onto the base and force-push). A branch-protection

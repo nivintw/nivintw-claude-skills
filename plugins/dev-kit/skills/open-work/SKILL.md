@@ -264,7 +264,9 @@ linked PR and its merge state: find the PR that references the issue
 read its `state` / `mergedAt` (`mcp__github__pull_request_read`, or
 `gh pr view <pr#> --json state,mergedAt`); the `issue_read` timeline also surfaces a
 linked/closing PR. Fall back to the **`gh` CLI** when the MCP server isn't connected — check
-first, since it can be absent in headless or cron runs — or when a human wants a command to paste.
+first, since it can be absent in headless or cron runs — or when a human wants a command to paste;
+`gh` is also the right tool for anything the MCP doesn't expose. Don't clone a repo just to
+read it — the MCP reads remote file contents (and issues/PRs) directly.
 The label and query command forms live in `handle-task-tracking`'s
 [`reference/recipes.md`](../handle-task-tracking/reference/recipes.md) (e.g. `gh issue list
 --label "status:ready" --label "priority:high" --state open`) — reuse them rather than
