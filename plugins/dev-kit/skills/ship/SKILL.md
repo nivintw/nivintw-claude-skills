@@ -396,6 +396,15 @@ if not, and **clear its now-stale `status:in-*` progression label** so a closed 
 just-merged issue isn't left wearing `status:in-review`. That leftover label is the stale
 state that makes `/dev-kit:open-work` misread finished work as still in flight.
 
+**Optional — release-gated merges only:** if the PR that just merged was a **release-please
+Release PR** (`chore(main): release …` / `chore(<pkg>): release …`), optionally **watch the
+release**: poll for the new `<plugin>-v<version>` tag + GitHub Release that `main.yml` cuts
+asynchronously, report the version and release notes when it lands, then confirm the closed
+issues via `/dev-kit:handle-task-tracking`. The full mechanic — including how to set up a
+self-deleting poll cron so the session doesn't block — lives in
+[`reference/release-watch.md`](reference/release-watch.md). Skip this for all normal
+feature/fix merges: release-please cuts no tag then, and the poll would run indefinitely.
+
 ## Guardrails
 
 - Plan sign-off (Phase 1) is always the human's, and so is the merge **unless** they
