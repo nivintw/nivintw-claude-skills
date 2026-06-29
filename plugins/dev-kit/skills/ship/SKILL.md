@@ -11,15 +11,21 @@ description: >-
   /dev-kit:handle-task-tracking across the lifecycle, then always /simplify, then refresh
   docs, then a full /dev-kit:review-pr pass, the local quality gate, a conventional-commit
   PR, and an automated Copilot review iterated to convergence before the change is handed
-  off for human review. Not for a trivial one-off commit or a bare "push this". Never
-  auto-merges.
+  off for human review. On explicit request it also **lands** an open PR ("land the PR",
+  "land this", "land #N", "ship and land it"): it drives CI to green, converges the
+  automated review, then rebase-merges and cleans up — the one path where ship merges. Not
+  for a trivial one-off commit or a bare "push this". Never merges unless you explicitly
+  invoke `land`.
 ---
 
 # ship
 
 The orchestrator for shipping a change well. Run the phases **in order**. The throughline:
-keep the human in control at the ends (plan sign-off, final merge) and do rigorous,
-token-aware work in the middle. **ship never merges** — it hands off a review-ready PR.
+keep the human in control at the ends (plan sign-off, and the merge decision) and do
+rigorous, token-aware work in the middle. **By default ship never merges** — it hands off a
+review-ready PR. The one exception is the explicit **`land`** verb (see *Land the PR*),
+where you authorize ship to drive the PR all the way to merged; absent that, ship always
+stops at hand-off.
 
 ## Start of run — reconcile local state (cleanup-locally)
 
@@ -243,7 +249,9 @@ green before a person looks. If Copilot review isn't enabled on the repo, note t
 
 Once the review has converged, **mark the PR ready for review** (`gh pr ready`), set `state`
 to `done`, and **hand off** — that flip from draft to ready *is* the hand-off signal. Ship
-stops here; merging is the human's call (or a later, explicitly-authorized step).
+stops here by default; merging is the human's call. If you instead want ship to take it the
+rest of the way, invoke **`land`** (see *Land the PR* below) — at hand-off or any time after
+— and ship drives the PR to merged rather than stopping.
 
 **Leave the worktree in place at hand-off.** The change isn't done until it merges: review
 feedback may land, and addressing it means more commits *in this worktree*. Tearing it down
@@ -251,10 +259,35 @@ now would strand that work and force you to recreate it. Just confirm everything
 and pushed (the PR holds all the work) before you stop. The worktree's teardown is the
 **post-merge** step below — not hand-off.
 
-## Post-merge — clean up (when the human reports the merge)
+## Land the PR (on demand — the one path where ship merges)
 
-ship doesn't merge, but it does clean up *after* the human does. When the user says the PR
-landed (e.g. "merged", "I merged it"), reconcile local state via **`/dev-kit:cleanup-locally`**:
+`land` is an **explicit, opt-in** verb, never auto-chosen: ship runs it only when the user
+asks ("land the PR", "land this", "land #N", "ship and land it"). It is invocable two ways,
+neither decided at `/ship`-invocation time:
+
+- **Mid or after a ship run** — the PR for this worktree's branch is already open; "land it"
+  drives that PR.
+- **Standalone** — with no active ship run, "land the PR" / "land #N" attaches to the current
+  branch's open PR (or the named one) and drives it cold.
+
+Both run the same idempotent loop: bring the branch up to date with its base → **watch CI on
+the current head, and on any red check fix it, push, and re-watch until green** (bounded —
+surface a failure you can't clear rather than thrashing) → run the Phase 8 Copilot
+convergence loop → then, instead of stopping at hand-off, **rebase-merge the PR itself**
+(`gh pr merge --rebase`, the one place ship merges) → fall straight into Post-merge cleanup
+below. The full procedure, including how to locate the PR and the `waiting:ci`/`waiting:copilot`
+park states to set while watching, lives in
+[`reference/pr-landing-driver.md`](reference/pr-landing-driver.md).
+
+This is **not** GitHub auto-merge — ship holds the merge decision and merges only on green +
+converged; it never hands the trigger to branch-protection and walks away, and it never
+force-merges past a red gate.
+
+## Post-merge — clean up (after the merge — land's tail, or when the human reports it)
+
+ship cleans up once the change is merged — whether **`land`** just merged it, or the human
+did and says so (e.g. "merged", "I merged it"). Reconcile local state via
+**`/dev-kit:cleanup-locally`**:
 
 1. If the session is still inside the ship worktree, **ExitWorktree (`action: "keep"`)**
    first — this returns the session to the primary checkout *without* deleting anything.
@@ -284,8 +317,10 @@ state that makes `/dev-kit:open-work` misread finished work as still in flight.
 
 ## Guardrails
 
-- Plan sign-off (Phase 1) and the final merge are the human's; everything between is ship's
-  to execute rigorously. Merge happens *after* hand-off — it is never a ship phase.
+- Plan sign-off (Phase 1) is always the human's, and so is the merge **unless** they
+  explicitly invoke **`land`**; everything between is ship's to execute rigorously. By
+  default merge happens *after* hand-off and is never a ship phase — `land` is the one
+  opt-in path where the human authorizes ship to do the merge itself.
 - **A delegated sub-skill's return is a hand-back, not a stop.** When `/simplify`,
   `/dev-kit:generate-docs`, `/dev-kit:review-pr`, or any reviewer under it (`/code-review`,
   `/security-review`, `/pr-review-toolkit:review-pr`) returns, that output reads like
