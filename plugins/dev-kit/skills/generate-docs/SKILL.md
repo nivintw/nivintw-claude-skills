@@ -108,6 +108,32 @@ Exit 0 = clean; 1 = violations (one per line); fix and re-run until clean. Licen
 linting, formatting, markdown, TOML, and secrets are **the repo's existing gate's job** (see
 *Licensing & tooling*) — don't re-implement them here.
 
+**Then render the built site and confirm it actually loads.** `check_docs.py` catches broken
+links and absolute refs *statically*, but only a real render catches a missing embed, a
+relative path that resolves wrong in a browser, or a script/asset that fails to load — the breakage
+the user otherwise discovers only *after* publishing. Open the built site from a **`file://`
+path with no server** using the available Playwright tooling (the `mcp__playwright__*` MCP, or
+the Playwright CLI) and smoke-check:
+
+- **Pages load.** Navigate to `file://…/docs/index.html` and each key per-topic page it links
+  (`mcp__playwright__browser_navigate`); confirm each renders content, not a blank page or an
+  error.
+- **Assets and embeds resolve.** Inspect the browser's network requests and console for failed
+  loads (`mcp__playwright__browser_network_requests`,
+  `mcp__playwright__browser_console_messages`) — over `file://` a missing local asset surfaces
+  as `ERR_FILE_NOT_FOUND`, not an HTTP 404. Everything the page references — its stylesheet,
+  scripts (`app.js`), the search index, embedded media (e.g. asciinema casts) — must actually
+  load, not just be referenced. Check whatever the built pages link rather than a fixed list of
+  filenames.
+
+A blank page, a failed asset load, or a missing embed is a **hand-off blocker**: fix the
+relative path or restore the embed and re-render. This is the whole point of doing it from
+`file://` *before* publishing — GitHub Pages serves these same files, so if it's broken
+locally it's broken live (the parity the *Publishing* section promises). It's a **load/parity
+smoke check, not visual regression** — confirm pages and assets resolve; don't diff pixels. If
+no Playwright tooling is available, say so and fall back to the static check rather than
+skipping silently.
+
 ### Stage 5 — Synthesize + reconciliation report
 
 Emit a human-facing **reconciliation report**: what drifted, what was missing, what you
