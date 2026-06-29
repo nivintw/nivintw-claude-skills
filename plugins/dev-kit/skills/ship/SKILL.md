@@ -203,6 +203,20 @@ Update the progress file and make **checkpoint commits** as coherent pieces land
 starts, flip the tracking issue to `status:in-progress` (via `/dev-kit:handle-task-tracking`)
 and log notable decisions on it as they're made.
 
+**Re-read the working tree at phase boundaries — the user may have edited it.** ship runs in
+a worktree the user can open and change too. At each phase boundary (the same moment you
+update the progress file), check both the working tree **and the branch's commits** *before*
+acting — `git status` and `git diff HEAD` catch *uncommitted* edits (staged or not), but the
+user may have *committed* their work, so also diff the branch against its base
+(`git diff <base>...HEAD` / `git log <base>..HEAD`) or you'll read a clean tree and wrongly
+conclude nothing changed. Then
+**reconcile to whatever the user changed** rather than regenerating from your own plan — a
+plan is a starting point, not a contract that outranks the user's own edits. When the user
+says *"take a look at what I did"* / *"look at what I changed,"* their files in the worktree
+are **authoritative**: read them, build on top of them, and never overwrite them with your
+version of the same work. If their edits change the shape of the task, update the plan and the
+progress file to match instead of pushing your original through.
+
 ## Phase 4 — Simplify (always)
 
 Run **`/simplify`** on the change before any review. Quality-only cleanup (reuse,
@@ -358,6 +372,11 @@ state that makes `/dev-kit:open-work` misread finished work as still in flight.
   post-merge**). Don't duplicate that lifecycle inside ship.
 - If real scope turns out much larger than the ask, stop and check in rather than silently
   ballooning or downgrading the change.
+- **The user's edits in the worktree are authoritative.** From Phase 3 onward (inside the
+  worktree), at each phase boundary re-read both the working tree and the branch's commits
+  (`git status` / `git diff HEAD` / `git diff <base>...HEAD`) and reconcile to the user's
+  changes instead of regenerating your own; "look at what I did" means treat their files as the
+  source of truth, not your plan.
 - The phases lean on skills this plugin doesn't ship (`/simplify`, `/dev-kit:generate-docs`,
   `/dev-kit:review-pr`, and the reviewers it calls). If one isn't installed or is denied,
   note the gap and continue — don't fail the whole ship over a missing optional step.
