@@ -304,3 +304,60 @@ merged_gone_branch() {
   [ "$status" -eq 1 ]
   [[ "$output" == *"cannot resolve the default branch"* ]]
 }
+
+# A branch merged into main whose remote copy is NOT deleted: origin/<branch> stays live and
+# fully merged. The local branch is dropped so only the remote one is in play — exactly the
+# state the merged-remote-branch pass reports (default) or prunes (--prune-remote).
+merged_live_remote_branch() {
+  git checkout -q -b "$1" main
+  commit_on "$REPO" "$1.txt" "$1" "$1 work"
+  git push -q -u origin "$1"
+  git checkout -q main
+  git merge -q --no-ff "$1"
+  git push -q origin main
+  git branch -q -D "$1"
+}
+
+@test "reports a merged remote branch by default, without deleting it" {
+  merged_live_remote_branch feature-x
+  run "$SCRIPT"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"Merged remote branch (pass --prune-remote to delete): origin/feature-x"* ]]
+  [[ "$output" == *"Reported 1 merged remote branch"* ]]
+  # the remote branch is untouched without the flag
+  git -C "$REMOTE" rev-parse --verify --quiet refs/heads/feature-x
+}
+
+@test "--prune-remote deletes a merged remote branch" {
+  merged_live_remote_branch feature-x
+  run "$SCRIPT" --prune-remote
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"Deleted merged remote branch: origin/feature-x"* ]]
+  [[ "$output" == *"Deleted 1 of 1 merged remote branch"* ]]
+  # the remote branch is gone
+  run git -C "$REMOTE" rev-parse --verify --quiet refs/heads/feature-x
+  [ "$status" -ne 0 ]
+}
+
+@test "--prune-remote never touches origin/main or origin/HEAD" {
+  merged_live_remote_branch feature-x
+  run "$SCRIPT" --prune-remote
+  [ "$status" -eq 0 ]
+  # the protected refs survive a prune that did delete a real merged branch
+  git -C "$REMOTE" rev-parse --verify --quiet refs/heads/main
+  git -C "$REMOTE" symbolic-ref --quiet HEAD
+  # and neither protected ref was ever a deletion target (origin/main appears in the
+  # default-branch-update lines, so match the specific delete-line form instead)
+  [[ "$output" != *"remote branch: origin/main"* ]]
+  [[ "$output" != *"remote branch: origin/HEAD"* ]]
+  [[ "$output" != *"to delete): origin/main"* ]]
+}
+
+@test "--prune-remote with --dry-run reports but keeps the remote branch" {
+  merged_live_remote_branch feature-x
+  run "$SCRIPT" --prune-remote --dry-run
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"would delete merged remote branch: origin/feature-x"* ]]
+  # still there after a dry run
+  git -C "$REMOTE" rev-parse --verify --quiet refs/heads/feature-x
+}

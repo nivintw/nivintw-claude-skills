@@ -25,8 +25,9 @@ and again once a PR is merged.
 (it assumes the remote is named `origin`):
 
 ```bash
-"${CLAUDE_PLUGIN_ROOT}/skills/cleanup-locally/scripts/cleanup-locally.sh"        # do it
-"${CLAUDE_PLUGIN_ROOT}/skills/cleanup-locally/scripts/cleanup-locally.sh" -n     # dry run
+"${CLAUDE_PLUGIN_ROOT}/skills/cleanup-locally/scripts/cleanup-locally.sh"                   # do it
+"${CLAUDE_PLUGIN_ROOT}/skills/cleanup-locally/scripts/cleanup-locally.sh" -n                # dry run
+"${CLAUDE_PLUGIN_ROOT}/skills/cleanup-locally/scripts/cleanup-locally.sh" --prune-remote    # also delete merged remote branches
 ```
 
 `-n`/`--dry-run` prints exactly what *would* change without performing any cleanup — it
@@ -53,6 +54,11 @@ What it does, in order:
    whose remote is gone but whose commits are *not* in the default branch are **kept** (an
    accidentally-deleted remote can't cost you your only copy). Branches checked out in *any*
    worktree are skipped.
+5. **Report merged remote branches** on `origin` that are fully merged into the default
+   branch — one line each, so you can see what's eligible for deletion. If the repo
+   auto-deletes branches on merge these are usually already gone. Pass `--prune-remote` to
+   delete them with `git push origin --delete`; dry-run is honoured. `origin/HEAD` and
+   `origin/<default>` are never touched.
 
 Worktrees are pruned before branches so a branch freed by removing its worktree becomes
 eligible for deletion in the same run.
