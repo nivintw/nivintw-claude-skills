@@ -113,6 +113,31 @@ The exact branch-name and `Refs` / `Blocked by` / `Related to` forms live in
 `/dev-kit:ship` delivers the *change* that closes it — the issue is the durable record, ship
 is the worktree-isolated, reviewed PR that resolves it.
 
+## Reference issues and PRs as typed, glossed links
+
+Whenever you mention an issue or PR **in your own output** — a capture confirmation, a triage
+summary, a "what I closed" report — render it as a **typed, clickable markdown link, glossed
+on first mention**, never a bare `#N`. A bare number forces the reader to go look it up; a
+linked, titled reference reads at a glance. This mirrors `/dev-kit:open-work`'s output
+contract — keep the two consistent.
+
+- **Issue:** `[issue #46](https://github.com/<owner>/<repo>/issues/46)` (short title) — e.g.
+  `[issue #46](…/issues/46) (add release-please gate)`.
+- **PR:** `[PR #46](https://github.com/<owner>/<repo>/pull/46)` (short title), and state its
+  state — open / merged / draft — when it bears on the point.
+- **Cross-repo:** repo-qualify the visible text so it's unambiguous —
+  `[owner/repo#46](https://github.com/owner/repo/issues/46)`. An issue that lives in a
+  different repo (an upstream template, a sibling project) is always qualified this way.
+- Subsequent mentions in the same message may drop the gloss but keep the typed link.
+
+**The one exception — the machine keyword stays bare.** GitHub's auto-close trailers in a
+**commit message or PR body** (`Closes #N`, `Fixes #N`, `Refs #N`) must remain literal
+`#N` — GitHub parses them, and a markdown link there breaks the auto-close. The link contract
+governs **prose addressed to a human**; the bare keyword governs **machine-parsed trailers**.
+
+This contract is the skill's own rule — apply it even if the surrounding environment's
+conventions aren't loaded.
+
 ## Close deliberately
 
 Closing is a real step, not an afterthought. Close with a **one- or two-line resolution**:
