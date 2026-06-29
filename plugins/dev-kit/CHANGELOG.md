@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.9.0](https://github.com/nivintw/nivintw-claude-skills/compare/dev-kit-v0.8.0...dev-kit-v0.9.0) (2026-06-29)
+
+
+### Features
+
+* **dev-kit:** add a scope-confirmation beat to ship's plan phase ([7e98895](https://github.com/nivintw/nivintw-claude-skills/commit/7e9889585a4d5bd6b9783dcc9384fe362fa07994)), closes [#56](https://github.com/nivintw/nivintw-claude-skills/issues/56)
+* **dev-kit:** treat worktree edits as authoritative at phase boundaries ([0f9cd63](https://github.com/nivintw/nivintw-claude-skills/commit/0f9cd6321f6d34ae030de48df70340ac617a00f8)), closes [#54](https://github.com/nivintw/nivintw-claude-skills/issues/54)
+
+
+### Bug Fixes
+
+* **dev-kit:** distinguish three states in ship's Copilot-review loop ([0cd556a](https://github.com/nivintw/nivintw-claude-skills/commit/0cd556accb481aee50aa7349796d5839406c37b8)), closes [#57](https://github.com/nivintw/nivintw-claude-skills/issues/57)
+
 ## [0.8.0](https://github.com/nivintw/nivintw-claude-skills/compare/dev-kit-v0.7.0...dev-kit-v0.8.0) (2026-06-29)
 
 
