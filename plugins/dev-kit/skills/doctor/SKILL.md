@@ -62,8 +62,9 @@ large cache is the breeding ground for the stale-load bug.
 - **running < newest cached** → the session loaded a stale entry though a newer one is already
   on disk → **`/reload-plugins`** (restart the session if it doesn't pick it up). This is the
   exact stale-load bug, and only Step 1 catches it.
-- **running or newest-cached < latest released** → a newer version is published but not live
-  → **`/reload-plugins`**; note autoupdate can lag a fresh release.
+- **newest-cached < latest released** → the newer release is published but not yet downloaded
+  — wait for autoupdate to fetch it, then **`/reload-plugins`** (or it's live next session);
+  a bare `/reload-plugins` is a no-op until autoupdate downloads the release.
 - **all three equal** → current; say so plainly.
 
 ## Inventory the installed skills

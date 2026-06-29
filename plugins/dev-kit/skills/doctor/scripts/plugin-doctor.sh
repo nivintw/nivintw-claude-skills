@@ -57,7 +57,7 @@ for dir in "$cache"/*/; do
   elif [ "$newest" = "$latest" ]; then
     status="ok"
   elif [ "$(printf '%s\n%s\n' "$newest" "$latest" | sort -V | head -1)" = "$newest" ]; then
-    status="DRIFT — $latest released; run /reload-plugins"
+    status="DRIFT — $latest published; autoupdate will fetch it, then /reload-plugins (or it's live next session)"
     drift=1
   else
     status="ahead of released $latest"
@@ -68,7 +68,7 @@ done
 
 echo
 if [ "$drift" -ne 0 ]; then
-  echo "DRIFT: at least one installed plugin is behind its latest release — run /reload-plugins."
+  echo "DRIFT: at least one installed plugin is behind its latest release — autoupdate will fetch it; then /reload-plugins (or it's live next session)."
 else
   echo "No drift detected against the latest releases that were resolvable."
 fi
