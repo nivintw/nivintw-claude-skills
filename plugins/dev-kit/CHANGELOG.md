@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.15.0](https://github.com/nivintw/nivintw-claude-skills/compare/dev-kit-v0.14.0...dev-kit-v0.15.0) (2026-06-29)
+
+
+### Features
+
+* **dev-kit:** add pre-public-hardening skill ([f058951](https://github.com/nivintw/nivintw-claude-skills/commit/f05895109c44d13929317e07b78ff90be83fc756)), closes [#58](https://github.com/nivintw/nivintw-claude-skills/issues/58)
+
 ## [0.14.0](https://github.com/nivintw/nivintw-claude-skills/compare/dev-kit-v0.13.0...dev-kit-v0.14.0) (2026-06-29)
 
 

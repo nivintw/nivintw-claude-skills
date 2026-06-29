@@ -1,6 +1,6 @@
 {
   "name": "dev-kit",
-  "version": "0.14.0",
+  "version": "0.15.0",
   "description": "A Human + AI teaming development workflow. Ship orchestrates a change end to end (plan in a worktree, implement with tiered subagent delegation, simplify, refresh docs, review, PR); review-pr runs a full review battery (code-review, security-review, pr-review-toolkit, and a context-chosen adversarial pass) on your own or a teammate's PR; generate-docs builds a self-contained docs site that works from file:// and GitHub Pages; handle-task-tracking defines a repeatable workflow for tracking work as GitHub issues (the durable task ledger ship delegates to); open-work reads those open issues and returns a ranked \"pick up next\" shortlist with rationale (the select step between tracking and ship); cleanup-locally prunes merged branches and worktrees and brings the default branch up to date without clobbering local work (ship runs it at the start of a run and again after a merge); doctor checks the installed plugin versions against the latest releases — flagging a stale cache that runs an old skill despite a newer one — and inventories the plugins and their skills.",
   "author": {
     "name": "Tyler Nivin"
