@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0](https://github.com/nivintw/nivintw-claude-skills/compare/dev-kit-v0.6.0...dev-kit-v0.7.0) (2026-06-29)
+
+
+### Features
+
+* **dev-kit:** add canonical output contract to open-work ([0edf854](https://github.com/nivintw/nivintw-claude-skills/commit/0edf854a9cf4d62c4e2316c93528251d81ccd6df)), closes [#41](https://github.com/nivintw/nivintw-claude-skills/issues/41)
+
 ## [0.6.0](https://github.com/nivintw/nivintw-claude-skills/compare/dev-kit-v0.5.1...dev-kit-v0.6.0) (2026-06-28)
 
 
