@@ -63,12 +63,15 @@ of:
   (Phases 4–6), all of which are inside the worktree.
 - `gate:plan-signoff` while *parked* awaiting the user's sign-off (Phase 1) — the only `state`
   the primary checkout ever holds before the worktree exists.
-- a **`waiting:*`** token while *parked on an async event you're waiting out rather than
-  actively working* — `waiting:ci` while watching a CI run, `waiting:copilot` while awaiting a
-  Copilot review (Phase 8 and the `land` loop), or `waiting:agents` while a fan-out of
-  subagents you dispatched is still running (e.g. the Phase 4/6 review agents). Unlike a
-  `phase-*` token, this lets the session rest without the hook nagging; re-arm the active
-  `phase-*` token when the work lands back and you pick it up.
+- a **`waiting:*`** token while *parked on a harness-tracked async job that will re-invoke you
+  when it finishes* — `waiting:ci` / `waiting:copilot` while a background CI or Copilot watch
+  runs (Phase 8 and the `land` loop), or `waiting:agents` while a background subagent fan-out
+  you dispatched is still running. The hook lets the session rest instead of nagging, and the
+  job's own completion notification is what resumes you; re-arm the active `phase-*` token when
+  it does. **Only park when something will actually resume you, and never set `waiting:*` in
+  place of continuing after a sub-skill hands back** — a `/simplify` or `/security-review`
+  return is a hand-back to act on *now*, not a wait, and is exactly the premature stop the
+  `phase-*` block exists to catch.
 - `done` once the change is *handed off* (Phase 8).
 
 The hook blocks a stop **only** while `state` is a `phase-*` token; **every** other value —

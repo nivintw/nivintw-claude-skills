@@ -12,8 +12,8 @@ set -euo pipefail
 #   owner/repo  : GitHub repo whose <plugin>-v<ver> release tags are the source of truth
 #                 (default: nivintw/<marketplace>)
 #
-# Exit status is the count-capped drift flag: 0 = everything current (or latest unknown),
-# 1 = at least one installed plugin is behind its latest release.
+# Always exits 0 — this is a report, not a gate. Drift is signalled in the STATUS column and
+# a final summary line, so a caller running it as a plain command never sees a "failure".
 
 marketplace="${1:-nivintw-claude-skills}"
 repo="${2:-nivintw/${marketplace}}"
@@ -66,4 +66,10 @@ for dir in "$cache"/*/; do
   printf '%-14s %-18s %-10s %s\n' "$plugin" "$installed" "${latest:-?}" "$status"
 done
 
-exit "$drift"
+echo
+if [ "$drift" -ne 0 ]; then
+  echo "DRIFT: at least one installed plugin is behind its latest release — run /reload-plugins."
+else
+  echo "No drift detected against the latest releases that were resolvable."
+fi
+exit 0
