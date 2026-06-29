@@ -162,7 +162,8 @@ the issue by hand (with the resolution) and clear the label.
 Prefer the **GitHub MCP tools** (`mcp__github__*`) for issue operations: they're structured
 and typed, and they expose what this workflow leans on — native sub-issues and issue types —
 as first-class calls, which plain `gh issue` handles awkwardly (sub-issues and Projects v2
-otherwise mean verbose `gh api graphql`).
+otherwise mean verbose `gh api graphql`). Don't clone a repo just to read it — use the
+GitHub MCP to read remote file contents and issues directly.
 
 Fall back to the **`gh` CLI** when the MCP server isn't connected — check first, since it can
 be absent in headless or cron runs — and whenever a human wants a command to paste into a
