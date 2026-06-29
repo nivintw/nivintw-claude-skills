@@ -111,7 +111,9 @@ In this skill's `scripts/` directory (read them before adapting):
 
    Check the expected output appears (the branch list, the search hits, the kill
    confirmation) and that the prompt is clean (no greeting, no `direnv:` lines).
-   Re-record if a `pause` was too short and a tool hadn't drawn yet.
+   Re-record if a `pause` was too short and a tool hadn't drawn yet. For quitting
+   the CLI player, checking cast duration, exporting to GIF, and scrubbing noise,
+   see [`reference/viewing-casts.md`](reference/viewing-casts.md).
 
 6. **Embed (optional).** Vendor the player, add the `<figure class="cast">`
    markup, a small init script, and a no-JS fallback — full steps, including
