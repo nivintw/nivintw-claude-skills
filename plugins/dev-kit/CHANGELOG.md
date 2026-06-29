@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.8.0](https://github.com/nivintw/nivintw-claude-skills/compare/dev-kit-v0.7.0...dev-kit-v0.8.0) (2026-06-29)
+
+
+### Features
+
+* **dev-kit:** add doctor skill (version drift + skill inventory) ([a7a9d58](https://github.com/nivintw/nivintw-claude-skills/commit/a7a9d58ceb3e012590aee072f4bbaba3b9715bf3)), closes [#47](https://github.com/nivintw/nivintw-claude-skills/issues/47)
+* **dev-kit:** add opt-in land verb to ship ([34145b5](https://github.com/nivintw/nivintw-claude-skills/commit/34145b5c6ce48b158a989d78de2af652ade547ed)), closes [#44](https://github.com/nivintw/nivintw-claude-skills/issues/44)
+* **dev-kit:** enforce typed, glossed issue/PR links in handle-task-tracking ([846769d](https://github.com/nivintw/nivintw-claude-skills/commit/846769d46ccf89a34d72464d850a911563987edb)), closes [#45](https://github.com/nivintw/nivintw-claude-skills/issues/45)
+
+
+### Bug Fixes
+
+* **dev-kit:** address review findings on land, waiting states, and doctor ([f8a4beb](https://github.com/nivintw/nivintw-claude-skills/commit/f8a4beb4ab50543bab299a74937e0e017c2d74f7))
+* **dev-kit:** give ship's Stop hook waiting:ci/waiting:copilot park states ([733a497](https://github.com/nivintw/nivintw-claude-skills/commit/733a497ed841f48ce7807b2ab08c0429a70e34c5)), closes [#48](https://github.com/nivintw/nivintw-claude-skills/issues/48)
+* **dev-kit:** stop generate-docs/review-pr skipping in-scope pre-existing drift ([b42c836](https://github.com/nivintw/nivintw-claude-skills/commit/b42c8368620c1f310d0f3ccb8279adcdc8f9e58a)), closes [#46](https://github.com/nivintw/nivintw-claude-skills/issues/46)
+
 ## [0.7.0](https://github.com/nivintw/nivintw-claude-skills/compare/dev-kit-v0.6.0...dev-kit-v0.7.0) (2026-06-29)
 
 
