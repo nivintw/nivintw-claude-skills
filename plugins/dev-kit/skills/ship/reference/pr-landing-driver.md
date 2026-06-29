@@ -44,9 +44,13 @@ reads; `gh` is the fallback and the only option for live `--watch` streams.
    rather than thrashing. Don't paper over a real failure to force the merge.
 4. **Converge the automated review.** Run ship's Phase 8 Copilot convergence loop to
    completion, parking as `waiting:copilot` between rounds the same way — backed by a watch
-   that resumes you, never a bare stop.
+   that resumes you, never a bare stop. If Copilot is **unavailable** (Phase 8 state (a) —
+   rejected, or assigned-but-silent past the bounded window), that **counts as converged** for
+   the gate below: `land` does not block a green PR on a review that can't happen — surface
+   that Copilot didn't review, and proceed.
 5. **Merge — the one place ship merges.** Once CI is green on the current head **and** the
-   review has converged, mark the PR ready (`gh pr ready`) and **rebase-merge** it:
+   review has converged (or was skipped as unavailable per step 4), mark the PR ready
+   (`gh pr ready`) and **rebase-merge** it:
    `gh pr merge <#> --rebase`. Rebase-merge (not squash, not a merge commit) is deliberate —
    it keeps the per-commit Conventional Commit history release-please reads and matches the
    repo's merge strategy. Confirm the merge actually landed (`gh pr view <#> --json state,mergedAt`).

@@ -263,11 +263,38 @@ the tracking issue with `Closes #N` so the merge closes it (the linking conventi
 ### Converge an automated review before handing off
 
 With the draft PR open, request an **automated Copilot review** (GitHub's `request_copilot_review`
-via the GitHub MCP or `gh`) and **iterate to convergence**:
+via the GitHub MCP or `gh`) and **iterate to convergence**. The request resolves into one of
+three states — tell them apart by two signals: whether Copilot is in the PR's
+**`requested_reviewers`** (a PR-level flag, not tied to a head), and whether a **review**
+exists *for the current head SHA* — not by "did a review show up yet":
 
-1. Wait for Copilot's review to land on the current PR head. While parked on that wait, set
-   `state` to `waiting:copilot` so the Stop hook lets the session rest without nagging; re-arm
-   the `phase-*` token once the review lands and you pick the work back up.
+- **(a) Copilot can't review this PR** — either the request to add Copilot as a reviewer is
+  **rejected** (a lapsed subscription, or the feature is off for the repo), *or* it's accepted
+  but **no review ever posts within the bounded window** below (org policy, an unsupported or
+  oversized diff, a bot-side error). Both are "unavailable." Surface it plainly — *"Copilot
+  review isn't available — check your Copilot access for this repo"* — and **skip the loop**:
+  don't poll for a review that won't arrive, and don't block hand-off (or, under `land`, the
+  merge) on it.
+- **(b) Copilot is a requested reviewer but hasn't posted on the current head yet** — the one
+  state you wait in, but **bound it**: keep a harness-tracked watch on the current head for a
+  finite window (a few rounds), not an open-ended busy-loop. If the window elapses with no
+  review, fall through to (a) — assigned-but-silent is just unavailability you detect by
+  timeout.
+- **(c) a review is present *on the current head*** — confirm the review's commit matches the
+  current head SHA (a review left on a previous push is **stale**, not convergence), then parse
+  it and proceed to triage.
+
+**Never declare "unavailable" until you've checked the PR's `requested_reviewers` *and*
+confirmed no review exists for the current head SHA, with the bounded window elapsed.** The
+*reviews* list being empty fits both (a) and (b), so it can't separate them on its own — the
+signal that tells "assigned, still pending" from "can't review" is whether Copilot is a
+requested reviewer (and whether the request call succeeded), backed by the bounded-window
+timeout above. A review *on the current head* means state (c), not unavailable — so confirm
+its absence before you skip. Then iterate:
+
+1. While parked waiting for a review to land on the current head (state b), set `state` to
+   `waiting:copilot` so the Stop hook lets the session rest without nagging; re-arm the
+   `phase-*` token once the review lands and you pick the work back up.
 2. Triage its findings like any reviewer — apply the real ones (commit + push to the same
    branch).
 3. **Resolve each thread once you've handled it** — reply with how it was addressed (the
@@ -281,8 +308,8 @@ via the GitHub MCP or `gh`) and **iterate to convergence**:
    rather than chasing nits forever.
 
 This catches what the Phase 6 battery missed on the *actual* PR diff and keeps the branch
-green before a person looks. If Copilot review isn't enabled on the repo, note that and skip
-— don't block the hand-off on it.
+green before a person looks (state a above is where you skip it cleanly when Copilot can't
+review at all).
 
 ### Hand off
 
