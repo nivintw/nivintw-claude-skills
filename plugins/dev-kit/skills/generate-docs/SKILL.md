@@ -42,6 +42,13 @@ code.
    but only drifted / missing / poorly-communicated content gets *rewritten*. Accurate,
    well-communicated pages are left **byte-identical** — that is what keeps the diff small
    and reviewable. "Reconcile whole" means *evaluate* whole, not *regenerate* whole.
+7. **Pre-existing drift is yours to fix — "it was already like that" is never an excuse.**
+   When the run surfaces something wrong — a stale number, a broken link, a section that no
+   longer matches the code — fix it, even if it predates this run and you didn't introduce it.
+   A docs refresh is broad by nature: every drifted/missing/miscommunicated item *within the
+   docs set* is in scope, not just whatever a recent change touched. This sharpens #2, it does
+   not soften #6: you still leave accurate pages byte-identical — the license is to *fix what's
+   wrong*, never to regenerate what's already right.
 
 ## The reconciliation pipeline
 

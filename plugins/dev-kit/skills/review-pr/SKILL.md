@@ -37,6 +37,12 @@ Identify exactly what's under review (`git diff <base>...HEAD`, or the PR's file
 files touched, and the change's *intent* — the adversarial pass needs the intent to know
 what "broken" means.
 
+"Scopes to that diff" bounds *where you look*, not *what counts as a finding*. A real bug or
+broken behavior in the code the diff touches is a finding **even if it predates this
+change** — "it was already like that" is never a reason to wave it past. Surface it (and, in
+Mode A, fix the safe ones); flag it as pre-existing so the human can weigh it, rather than
+silently dropping it because it's older than the diff.
+
 ## The battery — default to the full set, right-sized
 
 Run these and collect their findings. Prefer running them concurrently (fan them out as
