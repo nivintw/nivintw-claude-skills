@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.13.0](https://github.com/nivintw/nivintw-claude-skills/compare/dev-kit-v0.12.0...dev-kit-v0.13.0) (2026-06-29)
+
+
+### Features
+
+* **dev-kit:** add /dev-kit:land command as a thin entry point to ship's land verb ([e172990](https://github.com/nivintw/nivintw-claude-skills/commit/e172990d46fdba5fefa8d2b1951e2182ad55f1fc)), closes [#77](https://github.com/nivintw/nivintw-claude-skills/issues/77)
+* **dev-kit:** watch the release after a release-gated merge ([3fc2693](https://github.com/nivintw/nivintw-claude-skills/commit/3fc269389acc11a51ae03a6bea4df68555183c80)), closes [#55](https://github.com/nivintw/nivintw-claude-skills/issues/55)
+
 ## [0.12.0](https://github.com/nivintw/nivintw-claude-skills/compare/dev-kit-v0.11.0...dev-kit-v0.12.0) (2026-06-29)
 
 
