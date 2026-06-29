@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.11.0](https://github.com/nivintw/nivintw-claude-skills/compare/dev-kit-v0.10.0...dev-kit-v0.11.0) (2026-06-29)
+
+
+### Features
+
+* **dev-kit:** cleanup-locally reports merged remote branches ([c21373c](https://github.com/nivintw/nivintw-claude-skills/commit/c21373cad5077b48f2b1bf4879605f04fd7f4950)), closes [#61](https://github.com/nivintw/nivintw-claude-skills/issues/61)
+
+
+### Bug Fixes
+
+* **dev-kit:** doctor distinguishes published-not-downloaded from stale-load ([5ed2c96](https://github.com/nivintw/nivintw-claude-skills/commit/5ed2c96ad65545c7d06fd50707bfe278f542267a)), closes [#76](https://github.com/nivintw/nivintw-claude-skills/issues/76)
+
 ## [0.10.0](https://github.com/nivintw/nivintw-claude-skills/compare/dev-kit-v0.9.0...dev-kit-v0.10.0) (2026-06-29)
 
 
