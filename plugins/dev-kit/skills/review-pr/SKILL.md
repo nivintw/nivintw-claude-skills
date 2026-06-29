@@ -17,7 +17,7 @@ description: >-
 One review entry point that fans out specialized reviewers, then **synthesizes** their
 findings into a single prioritized report — instead of a pile of overlapping outputs.
 
-## Two modes (detect, don't ask if obvious)
+## Modes (detect, don't ask if obvious)
 
 - **Mode A — your own PR, pre-handoff.** Default when reviewing the current branch / a PR
   authored in this session. Goal: catch everything *before* a human looks. **Apply** safe
@@ -27,15 +27,21 @@ findings into a single prioritized report — instead of a pile of overlapping o
   comments is an outward-facing action — draft the review, show it, and only post with
   explicit confirmation (`/pr-review-toolkit:review-pr` and `/code-review --comment` can
   post; use them only after the user says to).
+- **Mode C — whole-repo audit.** For a first-time / never-been-reviewed repo, or when the
+  user explicitly asks to review the entire codebase rather than a diff. Points the same
+  reviewer battery at the whole codebase (or a named subtree) instead of a diff, and
+  **saves a report** — the audit is a deliverable, not an inline glance. Distinct from Modes A
+  and B: there is no PR or branch scope; the goal is a baseline picture of codebase health.
 
-State the detected mode and the review target (branch / PR #) up front.
+State the detected mode and the review target (branch / PR # / subtree) up front.
 
-## Establish the diff first
+## Establish the scope first
 
 Identify exactly what's under review (`git diff <base>...HEAD`, or the PR's files via
-`gh pr diff <n>`). Every reviewer below scopes to that diff. Note the base branch, the
+`gh pr diff <n>`). For Modes A/B every reviewer below scopes to that diff. Note the base branch, the
 files touched, and the change's *intent* — the adversarial pass needs the intent to know
-what "broken" means.
+what "broken" means. **In Mode C there is no diff** — scope the battery to the whole
+codebase (or the named subtree) instead; expect significantly higher cost and runtime.
 
 "Scopes to that diff" bounds *where you look*, not *what counts as a finding*. A real bug or
 broken behavior in the code the diff touches is a finding **even if it predates this
@@ -63,12 +69,17 @@ or agent the environment offers** — including ones not listed here and ones ad
 was written (e.g. a specialized reviewer that fits the kind of change at hand); survey what's
 installed rather than treating this list as exhaustive.
 
-1. **`/code-review`** — correctness bugs + reuse/simplification/efficiency cleanups.
+1. **`/code-review`** — correctness bugs + reuse/simplification/efficiency cleanups. In
+   **Mode A** (pre-handoff) default to the **higher-effort, workflow-backed pass** — run the
+   battery via `/workflows` (fanning the reviewers out as a workflow) at high effort, rather
+   than a quick inline glance; low-effort inline review is reserved for spot checks, not
+   pre-handoff. **Mode C** likewise runs workflow-backed at high effort. Effort is chosen by
+   context, not manually escalated each run.
 2. **`/security-review`** — security review of the pending changes.
 3. **`/pr-review-toolkit:review-pr`** — the specialized agent suite (silent-failure,
    type-design, test coverage, comment accuracy, etc.).
 4. **Adversarial review** — see below. This one is bespoke each run.
-5. **Independent second-opinion model** — a *different* model fails differently, so a second
+5. **Independent second-opinion model** *(optional)* — a *different* model fails differently, so a second
    read from a cheaper tier or a local model is a genuine extra lens at low cost (for a local
    Ollama model, the detect-and-shell-out recipe in
    [`../ship/reference/local-model-offload.md`](../ship/reference/local-model-offload.md)
@@ -120,6 +131,9 @@ Merge every pass you ran into ONE report:
 - **De-duplicate** overlapping findings; keep the clearest statement of each.
 - **Rank by severity** (blocker → major → minor → nit) and label the source.
 - Separate **must-fix** from **consider**.
+- Findings from the second-opinion model (item 5) fold in **clearly marked as
+  untrusted / needs-verification** — confirm each against the code before counting it as
+  must-fix; never promote to must-fix on the model's word alone.
 - End with a clear verdict: ready to hand off / merge, or the specific blockers remaining.
 
 ## Then
