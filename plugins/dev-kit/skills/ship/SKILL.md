@@ -203,6 +203,11 @@ defaulting everything to the driver. And **draw on whatever relevant skills and 
 environment offers** — including ones not named in these phases and ones added after this was
 written — at your discretion; survey what's installed rather than following a fixed list.
 
+**Strip conversation-only comments.** Comments that only make sense given this session's
+conversation — justifications aimed at the reviewer-in-the-moment (e.g. "no hardcoded key
+name as we discussed") — do not belong in shipped code; they are noise to a future reader.
+Write comments that stand on their own without this session as context.
+
 Update the progress file and make **checkpoint commits** as coherent pieces land. As work
 starts, flip the tracking issue to `status:in-progress` (via `/dev-kit:handle-task-tracking`)
 and log notable decisions on it as they're made.
@@ -227,9 +232,11 @@ Run **`/simplify`** on the change before any review. Quality-only cleanup (reuse
 simplification, efficiency, altitude) while everything is fresh. **A suppression is not a
 cleanup**: if the change (or `/simplify` itself) adds a `# noqa`, `# type: ignore`, a broad
 `per-file-ignores` entry, or similar to quiet a check instead of fixing it, treat that as a
-finding —
-justify it with a one-line rationale or remove it and fix the underlying issue. Phase 6's
-`/dev-kit:review-pr` enforces the same standing no-suppressions rule on the PR diff.
+finding — justify it with a one-line rationale or remove it and fix the underlying issue.
+Likewise, **conversation-only comments** left over from the implement phase should be removed
+here — they are not documentation; the `comment-analyzer` agent (from `pr-review-toolkit`,
+invoked inside Phase 6's battery, not a slash command) can enforce this. Separately, Phase
+6's `/dev-kit:review-pr` enforces the same standing no-suppressions rule on the PR diff.
 
 ## Phase 5 — Docs (default; skip only if no docs site)
 
