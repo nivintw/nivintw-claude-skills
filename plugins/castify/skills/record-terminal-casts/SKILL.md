@@ -46,8 +46,10 @@ embedding, also fetch the asciinema-player (see the reference below).
 
 In this skill's `scripts/` directory (read them before adapting):
 
-- **`cast-lib.sh`** — the harness. Source it, then call `start_rec`, `type_in`,
-  `key`, `pause`, `end_rec`. Configured by `CAST_OUT`, `CAST_CWD`, `CAST_SHELL`.
+- **`cast-lib.sh`** — the harness. Source it, then call `start_rec`, the per-character
+  typing helpers `run_cmd` (a command) / `type_human` (text into a TUI), `key`, `pause`,
+  `end_rec` — with `type_in` reserved for the rare instant-paste case (see the Process
+  rules below). Configured by `CAST_OUT`, `CAST_CWD`, `CAST_SHELL`.
 - **`launch.sh`** — starts one recording (asciicast **v2**, idle capped) of a
   clean shell. Invoked by the harness inside the pane.
 - **`recprompt.fish`** — a clean recording prompt (single `❯`, no greeting/noise)
