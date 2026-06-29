@@ -41,8 +41,7 @@ reads; `gh` is the fallback and the only option for live `--watch` streams.
    after ~3 rounds with no progress on the same failure, stop and surface it for the human
    rather than thrashing. Don't paper over a real failure to force the merge.
 4. **Converge the automated review.** Run ship's Phase 8 Copilot convergence loop to
-   completion (apply real findings, resolve threads, re-request, repeat until it approves or
-   only non-actionable nits remain). Park as `waiting:copilot` between rounds.
+   completion. Park as `waiting:copilot` between rounds.
 5. **Merge — the one place ship merges.** Once CI is green on the current head **and** the
    review has converged, mark the PR ready (`gh pr ready`) and **rebase-merge** it:
    `gh pr merge <#> --rebase`. Rebase-merge (not squash, not a merge commit) is deliberate —

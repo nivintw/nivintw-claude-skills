@@ -63,11 +63,12 @@ of:
   (Phases 4–6), all of which are inside the worktree.
 - `gate:plan-signoff` while *parked* awaiting the user's sign-off (Phase 1) — the only `state`
   the primary checkout ever holds before the worktree exists.
-- a **`waiting:*`** token while *parked on an async external event you don't control* —
-  `waiting:ci` while watching a CI run, `waiting:copilot` while awaiting a Copilot review
-  (Phase 8 and the `land` loop). Unlike a `phase-*` token, this lets the session rest between
-  polls without the hook nagging; re-arm the active `phase-*` token when the event lands and
-  you resume work.
+- a **`waiting:*`** token while *parked on an async event you're waiting out rather than
+  actively working* — `waiting:ci` while watching a CI run, `waiting:copilot` while awaiting a
+  Copilot review (Phase 8 and the `land` loop), or `waiting:agents` while a fan-out of
+  subagents you dispatched is still running (e.g. the Phase 4/6 review agents). Unlike a
+  `phase-*` token, this lets the session rest without the hook nagging; re-arm the active
+  `phase-*` token when the work lands back and you pick it up.
 - `done` once the change is *handed off* (Phase 8).
 
 The hook blocks a stop **only** while `state` is a `phase-*` token; **every** other value —
@@ -209,9 +210,10 @@ needed; leave the branch green. Flip the tracking issue to `status:in-review` (v
 **`/dev-kit:review-pr` and the reviewers under it return *hand-backs*, not stopping points.**
 `/security-review` is the most frequent trap: it returns a self-contained markdown report
 that *looks* like a terminal deliverable, so the pull is to yield. Don't. When the review pass
-returns, synthesize it and continue straight to Phase 7 — the only stops in a ship run are
-plan sign-off (Phase 1) and hand-off (Phase 8). The dev-kit Stop hook backstops this while
-`state` names an active phase, but the discipline is yours.
+returns, synthesize it and continue straight to Phase 7 — the only stops in a default ship
+run are plan sign-off (Phase 1) and hand-off (Phase 8); under `land` the run continues past
+hand-off through merge to cleanup. The dev-kit Stop hook backstops this while `state` names an
+active phase, but the discipline is yours.
 
 ## Phase 7 — Local gate
 
@@ -287,8 +289,7 @@ park states to set while watching, lives in
 [`reference/pr-landing-driver.md`](reference/pr-landing-driver.md).
 
 This is **not** GitHub auto-merge — ship holds the merge decision and merges only on green +
-converged; it never hands the trigger to branch-protection and walks away, and it never
-force-merges past a red gate.
+converged (the reference spells out what `land` deliberately is *not*).
 
 ## Post-merge — clean up (after the merge — land's tail, or when the human reports it)
 
@@ -332,8 +333,9 @@ state that makes `/dev-kit:open-work` misread finished work as still in flight.
   `/dev-kit:generate-docs`, `/dev-kit:review-pr`, or any reviewer under it (`/code-review`,
   `/security-review`, `/pr-review-toolkit:review-pr`) returns, that output reads like
   end-of-turn but is **not** — synthesize it and proceed to the next phase instead of
-  yielding. The only stops in a ship run are plan sign-off (`gate:plan-signoff`) and hand-off
-  (`done`); keep `state` current so the dev-kit Stop hook can backstop a slip.
+  yielding. By default the only stops in a ship run are plan sign-off (`gate:plan-signoff`)
+  and hand-off (`done`); `land` carries the run past hand-off to the merge before `done`. Keep
+  `state` current so the dev-kit Stop hook can backstop a slip.
 - Task state is GitHub's job — delegate it to **`/dev-kit:handle-task-tracking`** throughout
   (establish the issue at Phase 1, `in-progress` at Phase 3, `in-review` at Phase 6,
   `Closes #N` at Phase 8, and **reconcile to closed with the `status:in-*` label cleared

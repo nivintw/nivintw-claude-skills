@@ -118,8 +118,8 @@ is the worktree-isolated, reviewed PR that resolves it.
 Whenever you mention an issue or PR **in your own output** — a capture confirmation, a triage
 summary, a "what I closed" report — render it as a **typed, clickable markdown link, glossed
 on first mention**, never a bare `#N`. A bare number forces the reader to go look it up; a
-linked, titled reference reads at a glance. This mirrors `/dev-kit:open-work`'s output
-contract — keep the two consistent.
+linked, titled reference reads at a glance. This is the canonical form of that rule;
+`/dev-kit:open-work` applies a presentation-only subset of it — keep the two consistent.
 
 - **Issue:** `[issue #46](https://github.com/<owner>/<repo>/issues/46)` (short title) — e.g.
   `[issue #46](…/issues/46) (add release-please gate)`.
