@@ -77,6 +77,20 @@ installed rather than treating this list as exhaustive.
    **verify its claims**: its failure mode is misreading control flow and low signal on subtle
    logic, so treat its output as candidate findings to confirm, never as authority. Skip it
    when the change can't be understood without the whole repo (it has no repo access).
+6. **Newly-added suppressions are findings (standing, every run).** A built-in `/code-review`
+   or `/simplify` may quietly accept a silenced check as a "cleanup" — this battery does not.
+   Scan the change's **added (`+`) lines** for suppressions it **newly applies to real code**:
+   `# noqa` / `# ruff: noqa`, `# type: ignore` / `# pyright: ignore`, `// @ts-ignore` /
+   `// @ts-expect-error`, `eslint-disable*`, `# pragma: no cover`, broad `per-file-ignores` table
+   entries, blanket `# fmt: off`, and the like. Each one is a **finding**: it must either carry
+   a one-line rationale for why the underlying issue genuinely can't be fixed here, or be
+   removed and **fixed properly** — this enforces the standing *do the actual work — no
+   suppressions* rule. Key on *newly silencing a check*, not on the token appearing in the
+   diff: a suppression the change merely **relocates** (already justified, just moved) silences
+   nothing new, and a literal token in **prose, docs, or a test fixture** (this very skill file
+   names several as examples) isn't active code — neither is a finding. Pre-existing
+   suppressions the diff doesn't touch are likewise out of scope unless the change is
+   explicitly about them (per the "scopes to that diff" rule above).
 
 ## Adversarial review (interpret per change, every time)
 

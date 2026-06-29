@@ -220,7 +220,12 @@ progress file to match instead of pushing your original through.
 ## Phase 4 — Simplify (always)
 
 Run **`/simplify`** on the change before any review. Quality-only cleanup (reuse,
-simplification, efficiency, altitude) while everything is fresh.
+simplification, efficiency, altitude) while everything is fresh. **A suppression is not a
+cleanup**: if the change (or `/simplify` itself) adds a `# noqa`, `# type: ignore`, a broad
+`per-file-ignores` entry, or similar to quiet a check instead of fixing it, treat that as a
+finding —
+justify it with a one-line rationale or remove it and fix the underlying issue. Phase 6's
+`/dev-kit:review-pr` enforces the same standing no-suppressions rule on the PR diff.
 
 ## Phase 5 — Docs (default; skip only if no docs site)
 
