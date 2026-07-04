@@ -179,9 +179,12 @@ triage the rest of the report's findings.
 ## 7. Components
 
 - **`plugins/dev-kit/skills/dry-dock-overhaul/SKILL.md`** — the main skill.
-- **`reference/`** — supporting material kept out of the main file: illustrative (explicitly
-  non-exhaustive) examples of what a 10,000-foot lens can look like, and notes on reusing
-  `generate-docs`'s repo-kind classification rather than redefining it.
+- **`reference/lens-examples.md`** — supporting material kept out of the main file:
+  illustrative (explicitly non-exhaustive) examples of what a 10,000-foot lens can look like.
+  Reusing `generate-docs`'s repo-kind classification is handled as a direct link from Phase 0
+  to `generate-docs`'s own SKILL.md rather than a separate notes file — one link stays
+  current automatically; a duplicated summary would drift the moment `generate-docs`'s
+  classification logic changes.
 - **No dedicated mechanical-detection script.** Unlike `generate-docs`'s HTML validator
   (one fixed, language-agnostic format), "find files with zero inbound references" has a
   different answer in every language and framework. Phase 1's cheap-tier work is
