@@ -144,3 +144,112 @@ and the next, since units are independent of one another — but **not** relativ
 which must already have run to completion before any Phase 2 agent starts (see above): a
 Phase 2 agent needs Phase 1's candidate list for its own unit before it can render each
 candidate's confirm-or-dismiss verdict.
+
+## Phase 3 — 10,000-foot discovery, then holistic passes (parallel with Phase 2)
+
+Start with a discovery step that asks **"what whole-repo-level questions actually matter for
+this specific repo?"**, informed by **Phase 0's classification** and **Phase 1's inventory**
+(the unit map) — never from a fixed list baked into this file. Phase 3 needs only that
+context, not Phase 2's per-unit output, so it starts as soon as Phase 1 completes and runs
+fully in parallel with Phase 2 rather than behind a barrier on it.
+
+Discovered lenses are concerns that only make sense judged **holistically**, across the whole
+repo, not per unit: whole-test-suite structure and cross-unit DRYness (distinct from Phase
+2's per-unit test judgment, which stays scoped to one unit's own colocated tests); docs-site
+UX as an **independent second opinion** — judged fresh, not anchored to `generate-docs`'s own
+self-assessment of that same site; naming and terminology consistency across the whole
+codebase; or whatever else this specific repo's shape actually calls for (e.g. a CLI-shaped
+repo might instead surface a lens on its flag/config surface's internal consistency). A repo
+with no docs site simply gets no docs-UX lens — the absence of a lens is a correct outcome,
+not a gap. Each discovered lens becomes its own agent, run in parallel with the rest.
+
+See [`reference/lens-examples.md`](reference/lens-examples.md) for illustrative examples of
+what a lens can look like. Treat that file strictly as inspiration for the *kind* of question
+worth asking — **not** as a checklist to enumerate against; the discovery step must propose
+lenses from what this repo actually contains, even when that means proposing something none
+of the examples cover, or dropping a lens the examples show for a repo that doesn't have the
+shape it applies to.
+
+## Phase 4 — Existing sub-passes (parallel, fully independent)
+
+Invoke the three existing whole-repo-capable skills, each via the **`Skill`** tool:
+`review-pr` (Mode C), `generate-docs`, and `pre-public-hardening`. All three are fully
+independent of Phase 0–3 and of each other, so run them in parallel with the rest of this
+skill's work rather than waiting on it.
+
+When Phase 0 narrows scope to a subtree, invoke `review-pr` Mode C against that same
+subtree — it already supports a named-subtree target natively, so no special-casing is
+needed here. **`generate-docs` and `pre-public-hardening` are not narrowed, even when the
+overall audit is**, for two distinct reasons: `generate-docs`'s whole-against-whole
+philosophy reconciles the *entire* docs set every run by design, and a partial reconciliation
+would violate that core principle rather than merely shrink it; `pre-public-hardening`'s
+secret/license posture is inherently a whole-repo, whole-history concern that a subtree scope
+cannot meaningfully bound. Both continue to run at full native cost and behave exactly as
+they do standalone — including `generate-docs` writing its fixes directly to the working
+tree, which is why this skill runs inside a worktree (see Execution model below).
+
+## Phase 5 — Synthesis
+
+Synthesis runs at the **main-conversation level**, not inside the Phase 0–3 `Workflow`
+script — the script has no access to Phase 4's output, since Phase 4's three `Skill`
+invocations are dispatched from the main conversation, alongside the `Workflow` script, not
+from within it. Synthesis begins only once **both** the `Workflow` script and all three
+Phase 4 `Skill` invocations have completed.
+
+Phase 2's many per-unit results are rolled up mechanically — plain aggregation, not another
+agent call — as the `Workflow` script's last step before it returns, so the main-conversation
+driver receives an already-curated structure rather than every unit's raw output. Synthesis
+merges that structure with Phase 3's lens findings (returned by the same `Workflow`) and
+Phase 4's three reports, dedupes overlap (e.g. a per-unit test note and a whole-suite finding
+about the same redundancy), maps every finding onto the shared severity scale (see
+Components below), and produces the final report — including an explicit callout of what
+`generate-docs` already changed on disk, since that's the one place this run leaves the
+working tree different from how it started.
+
+## Execution model
+
+**Two-level orchestration**, mirroring the pattern `ship` already uses when it invokes
+`review-pr` (which itself invokes `security-review` and `pr-review-toolkit:review-pr`): the
+executing Claude instance invokes the three existing skills via the `Skill` tool at the
+main-conversation level, while a dedicated `Workflow` script implements this skill's own
+net-new phases — 0 through 3 — and returns its rolled-up result (Phase 5's structure) when it
+completes. Both levels' backgroundable work runs concurrently. **Synthesis itself runs at
+the main-conversation level**, explicitly *not* inside the `Workflow` script, exactly as
+Phase 5 states above — it needs Phase 4's output, which the script has no way to see.
+
+**Worktree isolation.** Branch into a dedicated worktree first via `EnterWorktree`, exactly
+like `ship` does, because `generate-docs` writes to the working tree as part of its normal
+behavior. The human reviews that diff afterward and decides whether to keep it, discard it,
+or hand it to `/dev-kit:ship` to land as its own PR — independently of, and on whatever
+timeline they like relative to, how they triage the rest of the report's findings.
+
+## Components
+
+- **No dedicated mechanical-detection script.** Unlike `generate-docs`'s HTML validator (one
+  fixed, language-agnostic format), "find files with zero inbound references" has a different
+  answer in every language and framework. Phase 1's cheap-tier work is prompt-driven
+  grep/reference-analysis by a fast or local-model agent, not a bespoke script.
+- **A durable progress file**, uncommitted, under the git dir, following `ship`'s pattern —
+  necessary because this is the longest-running, most expensive skill in the marketplace by
+  design, and a context compaction mid-run shouldn't lose the whole run. State its scope
+  precisely: it covers *this session's* context getting compacted while the run is still in
+  flight — **not** a brand-new session rediscovering an old, abandoned run (`ship` doesn't
+  solve that case either; it relies on the branch itself as the resumption handle). The file
+  records the `Workflow` tool's own `resumeFromRunId` (which handles resuming the Phase 0–3
+  fan-out itself) and which of Phase 4's three sub-skills have already completed. If
+  `generate-docs` was interrupted mid-write, resuming simply re-invokes it — its own
+  whole-against-whole reconciliation is idempotent by design (it re-derives truth from
+  current code and docs state every run, regardless of what a prior partial run left behind),
+  so no special partial-write recovery logic is needed here.
+- **Report skeleton** — a fixed presentation contract, in the spirit of `open-work`'s output
+  contract and `review-pr`'s severity-ranked synthesis: a scope/tally header, findings ranked
+  by severity across all phases with dimension labels, an explicit "already fixed by
+  generate-docs" callout, and a closing verdict paragraph. Ephemeral, per Core philosophy
+  above — printed, never committed.
+- **A single shared severity scale across every phase and sub-pass** — reuse `review-pr`'s
+  existing **blocker → major → minor → nit** scale rather than defining a new one, so Phase 5
+  maps each source's native output onto it explicitly: `review-pr` and Phases 2/3's own
+  findings already use this scale natively; `pre-public-hardening`'s checklist items map by
+  whether they'd block going public (blocker) or are lower-stakes hygiene (minor/nit);
+  `generate-docs`'s applied changes aren't findings at all and carry no severity — list them
+  in the report as already-resolved, not ranked.
