@@ -338,9 +338,10 @@ PR (or the tracking issue) alone, with no dependency on this conversation. Rules
   issue comment, so it's greppable via `gh issue view <N> --json comments` without reading
   full history. Multiple decisions from the same checkpoint can share one comment (several
   `Decision:` bullets in it) rather than one round-trip each — the requirement is that every
-  decision is logged there, not one API call per decision. This is
-  `/dev-kit:handle-task-tracking`'s existing "post a comment when a decision is made"
-  convention — a hard requirement here, not a soft norm. **When a PR closes more than one
+  decision is logged there, not one API call per decision. Posting the comment at all builds
+  on `/dev-kit:handle-task-tracking`'s existing "post a comment when a decision is made"
+  habit; the `Decision:` prefix and the hard (not soft) requirement to log *every* decision
+  are new here, specific to `land`. **When a PR closes more than one
   tracking issue** (a batch, per the section above), post batch-level decisions — the
   grouping choice, what got split out — on **every** issue the PR closes, not just one:
   each issue is a place someone might look, and the retrieval guarantee (any one of them,
