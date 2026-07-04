@@ -10,7 +10,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>dev-kit — nivintw-claude-skills</title>
-  <meta name="description" content="A human + AI teaming development workflow for Claude Code: ship, review-pr, generate-docs, handle-task-tracking, open-work, cleanup-locally, doctor, pre-public-hardening, and dry-dock-overhaul.">
+  <meta name="description" content="A human + AI teaming development workflow for Claude Code: ship, land, review-pr, generate-docs, handle-task-tracking, open-work, cleanup-locally, doctor, pre-public-hardening, and dry-dock-overhaul.">
   <link rel="stylesheet" href="style.css">
   <script>
     // Pre-paint: apply a saved theme (no flash-of-wrong-theme) and mark JS available
@@ -61,11 +61,14 @@
 
   <section class="section">
     <h2>The loop</h2>
-    <p class="section-note">Seven commands that compose. <code class="cmd">/dev-kit:ship</code>
-      is the orchestrator and calls the others; each also stands alone. An eighth,
-      <code class="cmd">/dev-kit:dry-dock-overhaul</code>, sits deliberately outside this
-      loop — an occasional whole-repo audit you reach for on your own schedule, not
-      something the loop above ever calls automatically.</p>
+    <p class="section-note">Seven commands that compose the loop below.
+      <code class="cmd">/dev-kit:ship</code> is the orchestrator and calls the others; each
+      also stands alone — including <code class="cmd">/dev-kit:land</code>, a discoverable
+      entry point to ship's own merge verb. Two more sit deliberately outside this loop:
+      <code class="cmd">/dev-kit:dry-dock-overhaul</code> and
+      <code class="cmd">/dev-kit:pre-public-hardening</code>, both occasional,
+      human-triggered audits you reach for on your own schedule, never called
+      automatically.</p>
     <p>Track work as issues with <code class="cmd">/dev-kit:handle-task-tracking</code>, pick
       what's next with <code class="cmd">/dev-kit:open-work</code>, then
       <code class="cmd">/dev-kit:ship</code> it — which reviews with
@@ -85,8 +88,21 @@
           the cheapest fitting model tier, then simplify, refresh docs, run the full review
           battery, open the PR, and converge an automated review. Hands off by default — or, on
           request, <strong>lands</strong> the PR: drives CI to green, converges the review, then
-          rebase-merges and cleans up. The one path where ship merges.</p>
+          rebase-merges and cleans up. The one path where ship merges. Ask for <code>land</code>
+          up front and that single grant also covers design/plan choices for the rest of the
+          run — no re-confirming, every call logged to the PR and issue instead.</p>
         <p class="cmd-eg"><span class="cmd-eg-label">try</span> "ship this fix" · "take this from idea to a PR" · "land the PR" · "ship and land it"</p>
+      </article>
+
+      <article class="cmd-row" id="land">
+        <code class="cmd">/dev-kit:land</code>
+        <p class="cmd-summary">A discoverable, tab-completable entry point to <code
+          class="cmd">ship</code>'s <code>land</code> verb — drives an already-open PR to
+          merged: CI to green, the automated review converged, a rebase-merge, then cleanup.
+          With no PR number, attaches to the current branch's open PR; <code>/dev-kit:land
+          &lt;N&gt;</code> drives PR #N cold. Handing it several items at once (e.g. several
+          issue numbers) auto-groups them into the fewest sensible PRs instead of one apiece.</p>
+        <p class="cmd-eg"><span class="cmd-eg-label">try</span> "land it" · "land PR #42" · "land these five issues"</p>
       </article>
 
       <article class="cmd-row" id="review-pr">
