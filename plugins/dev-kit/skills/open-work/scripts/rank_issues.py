@@ -34,7 +34,11 @@ STATUS_LABELS = ("status:triage", "status:ready", "status:in-progress", "status:
 PRIORITY_LABELS = ("high", "medium", "low")
 PRIORITY_RANK = {p: i for i, p in enumerate(PRIORITY_LABELS)}
 STALE_DAYS = 14
-BLOCKED_BY_RE = re.compile(r"blocked\s+by\s*:?\s*((?:#\d+[\s,]*)+)", re.IGNORECASE)
+GH_TIMEOUT = 30
+# Comma- or "and"-joined lists ("Blocked by #10, #20 and #30") are supported; free-form
+# prose between numbers is not — this mirrors handle-task-tracking's documented
+# "Blocked by #N" convention, not a full natural-language parse.
+BLOCKED_BY_RE = re.compile(r"blocked\s+by\s*:?\s*((?:#\d+(?:[\s,]|and)*)+)", re.IGNORECASE)
 ISSUE_NUM_RE = re.compile(r"#(\d+)")
 
 CLOSED_BY_PR_QUERY = """
@@ -52,7 +56,7 @@ query($owner: String!, $repo: String!, $number: Int!) {
 
 def run_gh(args: list[str]) -> str:
     return subprocess.run(
-        ["gh", *args], capture_output=True, text=True, check=True
+        ["gh", *args], capture_output=True, text=True, check=True, timeout=GH_TIMEOUT
     ).stdout
 
 
@@ -94,9 +98,12 @@ def resolve_linked_pr(owner: str, repo: str, number: int) -> dict | None:
     out = run_gh(
         [
             "api", "graphql",
+            # -f (raw string), not -F: gh's -F does magic type coercion (a purely numeric
+            # owner/repo would otherwise be sent as a GraphQL Int and rejected by the
+            # String! variables). number genuinely needs -F, since $number is Int!.
             "-f", f"query={CLOSED_BY_PR_QUERY}",
-            "-F", f"owner={owner}",
-            "-F", f"repo={repo}",
+            "-f", f"owner={owner}",
+            "-f", f"repo={repo}",
             "-F", f"number={number}",
         ]
     )
@@ -104,6 +111,8 @@ def resolve_linked_pr(owner: str, repo: str, number: int) -> dict | None:
     nodes = (issue.get("closedByPullRequestsReferences") or {}).get("nodes") or []
     if not nodes:
         return None
+    # Prefer a merged PR if one exists among the (up to 5) linked references; otherwise
+    # fall back to whichever GitHub returned first (its own relevance ordering).
     node = next((n for n in nodes if n.get("mergedAt")), nodes[0])
     return {
         "number": node["number"],
@@ -139,6 +148,9 @@ def gather(owner: str, repo: str, limit: int = 500) -> list[dict]:
                 "title": item["title"],
                 "url": item["url"],
                 "updated_at": item["updatedAt"],
+                # Only the first assignee is tracked (matches this repo's single-assignee
+                # convention) — a multi-assignee issue where the viewer isn't first is
+                # misclassified as someone else's in the resume split below.
                 "assignee": item["assignees"][0]["login"] if item["assignees"] else None,
                 "status": get_primary_status(labels),
                 "blocked_label": "status:blocked" in labels,
@@ -151,14 +163,20 @@ def gather(owner: str, repo: str, limit: int = 500) -> list[dict]:
     degraded = is_degraded(issues)
 
     def enrich(issue: dict) -> None:
-        wants_pr_check = (issue["status"] in ("in-progress", "in-review")) or (degraded and issue["assignee"])
-        if wants_pr_check:
-            issue["linked_pr"] = resolve_linked_pr(owner, repo, issue["number"])
-        if not degraded and issue["status"] == "ready":
-            body = fetch_body(owner, repo, issue["number"])
-            issue["blocked_by"] = [
-                {"number": n, "open": n in open_numbers} for n in extract_blocked_by(body)
-            ]
+        # Each issue's extra gh calls are independent of every other issue's — a failure
+        # here (a transient API error, a timeout) shouldn't take down the whole ledger, so
+        # it's degraded to a stderr warning rather than aborting gather() for every issue.
+        try:
+            wants_pr_check = (issue["status"] in ("in-progress", "in-review")) or (degraded and issue["assignee"])
+            if wants_pr_check:
+                issue["linked_pr"] = resolve_linked_pr(owner, repo, issue["number"])
+            if not degraded and issue["status"] == "ready":
+                body = fetch_body(owner, repo, issue["number"])
+                issue["blocked_by"] = [
+                    {"number": n, "open": n in open_numbers} for n in extract_blocked_by(body)
+                ]
+        except (subprocess.SubprocessError, json.JSONDecodeError, KeyError) as e:
+            print(f"warning: couldn't enrich issue #{issue['number']}: {e}", file=sys.stderr)
 
     # Each issue's extra gh calls (linked-PR lookup, body fetch) are independent network
     # round trips — run them concurrently rather than one at a time.
@@ -179,13 +197,19 @@ def _is_stale(updated_at: str, now: datetime) -> bool:
 def rank(issues: list[dict], viewer: str | None, now: datetime) -> dict:
     degraded = is_degraded(issues)
 
+    def is_in_flight(issue: dict) -> bool:
+        if issue["status"] in ("in-progress", "in-review"):
+            return True
+        # Degraded-mode proxy: no status labels exist, so treat an assigned issue with a
+        # resolved linked PR (gather() only resolves one for assigned issues in this mode)
+        # as in-flight, the same signal a status label would otherwise carry.
+        return degraded and bool(issue["assignee"]) and issue.get("linked_pr") is not None
+
     def has_merged_linked_pr(issue: dict) -> bool:
         pr = issue.get("linked_pr")
         return bool(pr and pr.get("state") == "MERGED")
 
-    done_but_open = [
-        i for i in issues if i["status"] in ("in-progress", "in-review") and has_merged_linked_pr(i)
-    ]
+    done_but_open = [i for i in issues if is_in_flight(i) and has_merged_linked_pr(i)]
     done_numbers = {i["number"] for i in done_but_open}
 
     def effectively_blocked(issue: dict) -> bool:
@@ -197,9 +221,16 @@ def rank(issues: list[dict], viewer: str | None, now: datetime) -> dict:
     blocked_numbers = {i["number"] for i in blocked}
     excluded = done_numbers | blocked_numbers
 
-    untriaged = [i for i in issues if i["number"] not in excluded and i["status"] in ("triage", "unlabeled")]
+    in_flight = [i for i in issues if i["number"] not in excluded and is_in_flight(i)]
+    in_flight_numbers = {i["number"] for i in in_flight}
 
-    in_flight = [i for i in issues if i["number"] not in excluded and i["status"] in ("in-progress", "in-review")]
+    untriaged = [
+        i for i in issues
+        if i["number"] not in excluded
+        and i["number"] not in in_flight_numbers
+        and i["status"] in ("triage", "unlabeled")
+    ]
+
     yours = sorted(
         (i for i in in_flight if i["assignee"] in (None, viewer)), key=lambda i: i["updated_at"]
     )
@@ -269,14 +300,15 @@ def main(argv: list[str] | None = None) -> int:
                 owner, repo = resolve_repo()
             viewer = args.viewer or resolve_viewer()
             issues = gather(owner, repo, args.limit)
+        result = rank(issues, viewer, datetime.now(timezone.utc))
     except subprocess.CalledProcessError as e:
         print(f"gh command failed: {e.stderr.strip() if e.stderr else e}", file=sys.stderr)
         return 1
-    except (OSError, json.JSONDecodeError) as e:
+    except (OSError, json.JSONDecodeError, KeyError, TypeError) as e:
         print(f"error: {e}", file=sys.stderr)
         return 1
 
-    print(json.dumps(rank(issues, viewer, datetime.now(timezone.utc)), indent=2))
+    print(json.dumps(result, indent=2))
     return 0
 
 

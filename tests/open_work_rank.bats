@@ -199,3 +199,67 @@ run_rank() {
   echo "$output" | jq -e '.tally == {open: 0, ready: 0, in_progress: 0, untriaged: 0}'
   echo "$output" | jq -e '.start_next == [] and .needs_attention.blocked == [] and .needs_attention.done_but_open == []'
 }
+
+@test "degraded mode: an assigned unlabeled issue with an open linked PR is resumable, not untriaged" {
+  local pr='{"number": 50, "state": "OPEN", "merged_at": null, "url": "https://x/50"}'
+  jq -n --argjson a "$(issue 1 unlabeled null someone "$RECENT" false '[]' "$pr")" '[$a]' >"$FIXTURE"
+  run_rank someone
+  [ "$status" -eq 0 ]
+  echo "$output" | jq -e '.degraded == true'
+  echo "$output" | jq -e '.resume.yours | map(.number) == [1]'
+  echo "$output" | jq -e '.needs_attention.untriaged_count == 0'
+}
+
+@test "degraded mode: an assigned unlabeled issue with a merged linked PR is done-but-open" {
+  local pr='{"number": 50, "state": "MERGED", "merged_at": "2026-01-01T00:00:00Z", "url": "https://x/50"}'
+  jq -n --argjson a "$(issue 1 unlabeled null someone "$RECENT" false '[]' "$pr")" '[$a]' >"$FIXTURE"
+  run_rank someone
+  [ "$status" -eq 0 ]
+  echo "$output" | jq -e '.resume.yours == [] and .resume.others == []'
+  echo "$output" | jq -e '.needs_attention.done_but_open | map(.number) == [1]'
+}
+
+@test "degraded mode: an assigned unlabeled issue with no linked PR is untriaged, not resumable" {
+  jq -n --argjson a "$(issue 1 unlabeled null someone "$RECENT")" '[$a]' >"$FIXTURE"
+  run_rank someone
+  [ "$status" -eq 0 ]
+  echo "$output" | jq -e '.resume.yours == [] and .resume.others == []'
+  echo "$output" | jq -e '.needs_attention.untriaged_count == 1'
+}
+
+@test "status:blocked on an in-progress issue excludes it from resume, not just start-next" {
+  jq -n --argjson a "$(issue 1 in-progress null someone "$RECENT" true)" '[$a]' >"$FIXTURE"
+  run_rank someone
+  [ "$status" -eq 0 ]
+  echo "$output" | jq -e '.resume.yours == [] and .resume.others == []'
+  echo "$output" | jq -e '.tally.in_progress == 0'
+  echo "$output" | jq -e '.needs_attention.blocked | map(.number) == [1]'
+}
+
+@test "done-but-open takes precedence over status:blocked" {
+  local pr='{"number": 50, "state": "MERGED", "merged_at": "2026-01-01T00:00:00Z", "url": "https://x/50"}'
+  jq -n --argjson a "$(issue 1 in-progress null someone "$RECENT" true '[]' "$pr")" '[$a]' >"$FIXTURE"
+  run_rank someone
+  [ "$status" -eq 0 ]
+  echo "$output" | jq -e '.needs_attention.done_but_open | map(.number) == [1]'
+  echo "$output" | jq -e '.needs_attention.blocked == []'
+}
+
+@test "malformed --input (missing required key) fails cleanly instead of a raw traceback" {
+  jq -n '[{"number": 1, "title": "x"}]' >"$FIXTURE"
+  run_rank someone
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"error:"* ]]
+  [[ "$output" != *"Traceback"* ]]
+}
+
+@test "extract_blocked_by parses a comma- and 'and'-joined list of references" {
+  run uv run python3 -c "
+import sys
+sys.path.insert(0, '$BATS_TEST_DIRNAME/../plugins/dev-kit/skills/open-work/scripts')
+from rank_issues import extract_blocked_by
+print(extract_blocked_by('Blocked by #10, #20 and #30'))
+"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"[10, 20, 30]"* ]]
+}
