@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.19.0](https://github.com/nivintw/nivintw-claude-skills/compare/dev-kit-v0.18.0...dev-kit-v0.19.0) (2026-07-04)
+
+
+### Features
+
+* **dev-kit:** land implies design-autonomy and batches into minimal PRs ([ec644c5](https://github.com/nivintw/nivintw-claude-skills/commit/ec644c5f148b7d4aef6efc32d31eac94b7165179)), closes [#104](https://github.com/nivintw/nivintw-claude-skills/issues/104)
+
+
+### Bug Fixes
+
+* **dev-kit:** address review-pr findings on land-batch-autonomy ([523d331](https://github.com/nivintw/nivintw-claude-skills/commit/523d331f3ab4721d126c9304e6f9fc1de16cd83f))
+
 ## [0.18.0](https://github.com/nivintw/nivintw-claude-skills/compare/dev-kit-v0.17.0...dev-kit-v0.18.0) (2026-07-04)
 
 
