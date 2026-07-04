@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.17.0](https://github.com/nivintw/nivintw-claude-skills/compare/dev-kit-v0.16.0...dev-kit-v0.17.0) (2026-07-04)
+
+
+### Features
+
+* **dev-kit:** split open-work's gather+rank into a testable script ([a0ade7f](https://github.com/nivintw/nivintw-claude-skills/commit/a0ade7f4d6e32a390b60994d5d3fd5993011d2c0)), closes [#97](https://github.com/nivintw/nivintw-claude-skills/issues/97)
+
+
+### Bug Fixes
+
+* **dev-kit:** correct degraded-mode ranking and GraphQL variable typing ([2196372](https://github.com/nivintw/nivintw-claude-skills/commit/219637273a83ac1906981a90ff16a6d2e72b5dda))
+
 ## [0.16.0](https://github.com/nivintw/nivintw-claude-skills/compare/dev-kit-v0.15.0...dev-kit-v0.16.0) (2026-06-29)
 
 
