@@ -27,10 +27,12 @@ import json
 import re
 import subprocess
 import sys
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 
 STATUS_LABELS = ("status:triage", "status:ready", "status:in-progress", "status:in-review")
 PRIORITY_LABELS = ("high", "medium", "low")
+PRIORITY_RANK = {p: i for i, p in enumerate(PRIORITY_LABELS)}
 STALE_DAYS = 14
 BLOCKED_BY_RE = re.compile(r"blocked\s+by\s*:?\s*((?:#\d+[\s,]*)+)", re.IGNORECASE)
 ISSUE_NUM_RE = re.compile(r"#(\d+)")
@@ -61,6 +63,10 @@ def resolve_repo() -> tuple[str, str]:
 
 def resolve_viewer() -> str:
     return run_gh(["api", "user", "--jq", ".login"]).strip()
+
+
+def is_degraded(issues: list[dict]) -> bool:
+    return not any(issue["status"] != "unlabeled" for issue in issues)
 
 
 def get_primary_status(labels: list[str]) -> str:
@@ -142,9 +148,9 @@ def gather(owner: str, repo: str, limit: int = 500) -> list[dict]:
             }
         )
 
-    degraded = not any(issue["status"] != "unlabeled" for issue in issues)
+    degraded = is_degraded(issues)
 
-    for issue in issues:
+    def enrich(issue: dict) -> None:
         wants_pr_check = (issue["status"] in ("in-progress", "in-review")) or (degraded and issue["assignee"])
         if wants_pr_check:
             issue["linked_pr"] = resolve_linked_pr(owner, repo, issue["number"])
@@ -153,6 +159,11 @@ def gather(owner: str, repo: str, limit: int = 500) -> list[dict]:
             issue["blocked_by"] = [
                 {"number": n, "open": n in open_numbers} for n in extract_blocked_by(body)
             ]
+
+    # Each issue's extra gh calls (linked-PR lookup, body fetch) are independent network
+    # round trips — run them concurrently rather than one at a time.
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        list(pool.map(enrich, issues))
 
     return issues
 
@@ -165,9 +176,8 @@ def _is_stale(updated_at: str, now: datetime) -> bool:
     return (now - dt).days >= STALE_DAYS
 
 
-def rank(issues: list[dict], viewer: str | None) -> dict:
-    now = datetime.now(timezone.utc)
-    degraded = not any(issue["status"] != "unlabeled" for issue in issues)
+def rank(issues: list[dict], viewer: str | None, now: datetime) -> dict:
+    degraded = is_degraded(issues)
 
     def has_merged_linked_pr(issue: dict) -> bool:
         pr = issue.get("linked_pr")
@@ -199,8 +209,11 @@ def rank(issues: list[dict], viewer: str | None) -> dict:
 
     ready = [i for i in issues if i["number"] not in excluded and i["status"] == "ready"]
     startable = [i for i in ready if i["assignee"] in (None, viewer)]
-    priority_rank = {"high": 0, "medium": 1, "low": 2, None: 3}
-    startable_sorted = sorted(startable, key=lambda i: (priority_rank[i["priority"]], i["updated_at"]))
+    unranked_priority = len(PRIORITY_LABELS)
+    startable_sorted = sorted(
+        startable,
+        key=lambda i: (PRIORITY_RANK.get(i["priority"], unranked_priority), i["updated_at"]),
+    )
 
     def annotate_stale(rows: list[dict]) -> list[dict]:
         return [{**i, "stale": _is_stale(i["updated_at"], now)} for i in rows]
@@ -263,7 +276,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"error: {e}", file=sys.stderr)
         return 1
 
-    print(json.dumps(rank(issues, viewer), indent=2))
+    print(json.dumps(rank(issues, viewer, datetime.now(timezone.utc)), indent=2))
     return 0
 
 

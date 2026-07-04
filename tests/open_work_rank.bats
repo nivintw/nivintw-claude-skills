@@ -33,14 +33,15 @@ issue() {
     --argjson blocked_label "$blocked_label" \
     --argjson blocked_by "$blocked_by" \
     --argjson linked_pr "$linked_pr" \
-    '{
+    'def nullify(x): if x == "null" then null else x end;
+     {
       number: $number, title: ("issue " + ($number | tostring)),
       url: ("https://github.com/o/r/issues/" + ($number | tostring)),
       updated_at: $updated_at,
-      assignee: (if $assignee == "null" then null else $assignee end),
+      assignee: nullify($assignee),
       status: $status,
       blocked_label: $blocked_label,
-      priority: (if $priority == "null" then null else $priority end),
+      priority: nullify($priority),
       blocked_by: $blocked_by,
       linked_pr: $linked_pr
     }'
@@ -123,11 +124,11 @@ run_rank() {
 }
 
 @test "start-next is capped at 5 but reports the true total" {
-  jq -n '[range(1;8) | {
-    number: ., title: ("issue " + (. | tostring)), url: "https://x",
-    updated_at: "2026-01-01T00:00:00Z", assignee: null, status: "ready",
-    blocked_label: false, priority: "medium", blocked_by: [], linked_pr: null
-  }]' >"$FIXTURE"
+  local rows=()
+  for n in $(seq 1 7); do
+    rows+=("$(issue "$n" ready medium null "$RECENT")")
+  done
+  printf '%s\n' "${rows[@]}" | jq -s '.' >"$FIXTURE"
   run_rank someone
   [ "$status" -eq 0 ]
   echo "$output" | jq -e '.start_next | length == 5'
