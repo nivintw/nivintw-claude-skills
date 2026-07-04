@@ -41,7 +41,7 @@ window.SEARCH_INDEX = [
     cmd: "/dev-kit:open-work",
     plugin: "dev-kit",
     url: "dev-kit.html#open-work",
-    summary: "Read the open issues, call out any in-progress work to resume, then return a short, ranked \"pick up next\" shortlist with a one-line rationale each."
+    summary: "Read the open issues, call out any in-progress work to resume, then return the full ranked \"pick up next\" list — never truncated — with rationale for the standout picks."
   },
   {
     cmd: "/dev-kit:cleanup-locally",
@@ -54,6 +54,12 @@ window.SEARCH_INDEX = [
     plugin: "dev-kit",
     url: "dev-kit.html#doctor",
     summary: "A health check for your installed plugins: flag when a stale cache is running an old skill despite a newer release, and inventory the plugins and their skills."
+  },
+  {
+    cmd: "/dev-kit:dry-dock-overhaul",
+    plugin: "dev-kit",
+    url: "dev-kit.html#dry-dock-overhaul",
+    summary: "An exhaustive, occasional, human-triggered whole-repo audit: every tracked file read and judged, plus a discovered \"10,000-foot\" pass on communication and UX, orchestrating review-pr, generate-docs, and pre-public-hardening."
   },
   {
     cmd: "worktree-guard",

@@ -10,7 +10,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>dev-kit — nivintw-claude-skills</title>
-  <meta name="description" content="A human + AI teaming development workflow for Claude Code: ship, review-pr, generate-docs, handle-task-tracking, open-work, cleanup-locally, and doctor.">
+  <meta name="description" content="A human + AI teaming development workflow for Claude Code: ship, review-pr, generate-docs, handle-task-tracking, open-work, cleanup-locally, doctor, and dry-dock-overhaul.">
   <link rel="stylesheet" href="style.css">
   <script>
     // Pre-paint: apply a saved theme (no flash-of-wrong-theme) and mark JS available
@@ -62,7 +62,10 @@
   <section class="section">
     <h2>The loop</h2>
     <p class="section-note">Seven commands that compose. <code class="cmd">/dev-kit:ship</code>
-      is the orchestrator and calls the others; each also stands alone.</p>
+      is the orchestrator and calls the others; each also stands alone. An eighth,
+      <code class="cmd">/dev-kit:dry-dock-overhaul</code>, sits deliberately outside this
+      loop — an occasional whole-repo audit you reach for on your own schedule, not
+      something the loop above ever calls automatically.</p>
     <p>Track work as issues with <code class="cmd">/dev-kit:handle-task-tracking</code>, pick
       what's next with <code class="cmd">/dev-kit:open-work</code>, then
       <code class="cmd">/dev-kit:ship</code> it — which reviews with
@@ -119,10 +122,11 @@
         <code class="cmd">/dev-kit:open-work</code>
         <p class="cmd-summary">Reads the repo's open issues and, when you have work in flight,
           <em>leads</em> by calling out your in-progress work to resume — usually finish what
-          you started first — then returns a short, ranked "pick up next" shortlist of ready
-          work, each with a one-line rationale, instead of you eyeballing the whole list.
-          Ranks ready work by priority, staleness, and dependencies, surfaces blocked items,
-          and flags the untriaged pile. The select step between tracking and shipping.</p>
+          you started first — then returns the <strong>full</strong> ranked "pick up next"
+          list of ready work, never truncated, with a one-line rationale for the standout
+          picks, instead of you eyeballing the whole list. Ranks ready work by priority,
+          staleness, and dependencies, surfaces blocked items, and flags the untriaged pile.
+          The select step between tracking and shipping.</p>
         <p class="cmd-eg"><span class="cmd-eg-label">try</span> "what should I work on next" · "what's in progress" · "shortlist my ready work"</p>
       </article>
 
@@ -143,6 +147,20 @@
           even with autoupdate on. Also inventories the marketplace's plugins and their skills,
           so you can see what's installed and what each is for.</p>
         <p class="cmd-eg"><span class="cmd-eg-label">try</span> "am I on the latest version" · "check my plugin versions" · "list my skills"</p>
+      </article>
+
+      <article class="cmd-row" id="dry-dock-overhaul">
+        <code class="cmd">/dev-kit:dry-dock-overhaul</code>
+        <p class="cmd-summary">The eighth command — deliberately outside the loop above. An
+          exhaustive, always-human-triggered audit of the whole repo, not a diff: every
+          tracked file is genuinely read and judged, plus a "10,000-foot" pass discovered
+          fresh for this repo's own shape (docs-site UX, test-suite architecture, naming
+          consistency, or whatever else it calls for). Orchestrates
+          <code class="cmd">review-pr</code> (whole-repo mode), <code class="cmd">generate-docs</code>,
+          and <code class="cmd">pre-public-hardening</code> alongside that net-new coverage
+          into one severity-ranked, ephemeral report. This is the most expensive skill in the
+          marketplace by design — reach for it rarely, and on purpose.</p>
+        <p class="cmd-eg"><span class="cmd-eg-label">try</span> "dry dock overhaul this repo" · "audit the whole repo" · "review every line"</p>
       </article>
 
     </div>
