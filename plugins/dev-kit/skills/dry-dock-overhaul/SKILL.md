@@ -42,19 +42,16 @@ schedules rarely and on purpose, never something another skill reaches for autom
   an independent second opinion on docs-site *UX*, judged holistically, on top of
   `generate-docs`'s own drift-and-omission reconciliation.
 - **Not a to-do list, and not a tracker.** Every new dimension this skill judges is
-  report-only — nothing gets auto-applied (`generate-docs`'s own native writes are the one
-  exception, and they're its behavior, not this skill's finding — see Phase 4). The report
-  itself is never committed; a human who wants a finding tracked files it themselves via
-  `/dev-kit:handle-task-tracking`.
+  report-only (see *Report-only for every new dimension* under Core philosophy below). The
+  report itself is never committed; a human who wants a finding tracked files it themselves
+  via `/dev-kit:handle-task-tracking`.
 
 ## Core philosophy
 
 These are operating rules for every run, not history:
 
-- **Repo-agnostic, always.** Never assume this skill is auditing this specific marketplace.
-  Classify the target repo the same way `generate-docs` does — reuse its sentinel-file
-  classification (see `generate-docs`'s [Stage 0 — Inventory &
-  classify](../generate-docs/SKILL.md)) rather than redefining repo-kind detection here.
+- **Repo-agnostic, always.** Never assume this skill is auditing this specific marketplace —
+  it classifies whatever repo it's pointed at (see Phase 0 below for how).
 - **Exhaustive coverage is non-negotiable.** Every tracked, `.gitignore`-respecting file gets
   read and judged by some agent. Being cost-conscious means routing mechanical work (building
   the inventory, cheap candidate detection) to a fast or local tier and reserving expensive
@@ -69,9 +66,8 @@ These are operating rules for every run, not history:
   net-new dimensions above and around them; it never re-derives what they already do well.
 - **Discovery over enumeration for the 10,000-foot pass.** The specific holistic lenses (test
   suite shape, docs UX, naming consistency, or anything else) are **not a fixed list baked
-  into this file**. They're proposed at run time from what the target repo actually contains.
-  Anything in `reference/lens-examples.md` is an illustrative example, never a checklist to
-  enumerate against.
+  into this file** — they're proposed at run time from what the target repo actually contains
+  (see Phase 3 below).
 - **Ephemeral by design.** The report is a conversational deliverable. It is never committed.
   If a finding is worth tracking past this conversation, the human files it themselves via
   `/dev-kit:handle-task-tracking`.
@@ -110,8 +106,12 @@ draws.
 
 For each unit, gather its file list, a rough size, and cheap mechanical candidate-detection —
 files with zero inbound references, obvious dead exports, TODO/FIXME density — via
-grep/reference-analysis, routed to a fast or local model. **Batch multiple units per agent
-here, do not spin up one agent per unit**: this stage's work is lightweight and grep-based,
+grep/reference-analysis, routed to a fast or local model. This is the same batched,
+cheap-tier subsystem fan-out `generate-docs` already uses in its own Stage 1 (see
+[`../generate-docs/SKILL.md`](../generate-docs/SKILL.md)) to cover a whole codebase without
+blowing context — this phase's "unit" is that same slice, just gathering candidates instead
+of documentable facts. **Batch multiple units per agent here, do not spin up one agent per
+unit**: this stage's work is lightweight and grep-based,
 not a full read-and-judge, so a small number of agents can each cover several units, keeping
 Phase 1's own agent count well below what Phase 2 needs (contrast this deliberately with
 Phase 2's one-agent-per-unit granularity below — the two phases are tuned differently on
@@ -172,11 +172,15 @@ shape it applies to.
 
 ## Phase 4 — Existing sub-passes (parallel, fully independent)
 
-Invoke the three existing whole-repo-capable skills, each via the **`Skill`** tool:
-`review-pr` (Mode C), `generate-docs`, and `pre-public-hardening` — always all three, with no
-toggle to skip any of them for a lighter-weight run. All three are fully independent of Phase
-0–3 and of each other, so run them in parallel with the rest of this skill's work rather than
-waiting on it.
+Invoke the three existing whole-repo-capable skills — `review-pr` (Mode C), `generate-docs`,
+and `pre-public-hardening` — always all three, with no toggle to skip any of them for a
+lighter-weight run. All three are fully independent of Phase 0–3 and of each other: **prefer
+dispatching them as concurrent background `Agent` invocations** (mirroring how `review-pr`
+itself fans out its own reviewer battery) rather than three sequential `Skill` tool calls — a
+bare `Skill` invocation is synchronous within the main conversation, so three of them back to
+back would serialize the three most expensive parts of an already-expensive skill for no
+reason. Fall back to sequential `Skill` invocations only where concurrent dispatch genuinely
+isn't available.
 
 When Phase 0 narrows scope to a subtree, invoke `review-pr` Mode C against that same
 subtree — it already supports a named-subtree target natively, so no special-casing is
@@ -211,12 +215,14 @@ working tree different from how it started.
 
 **Two-level orchestration**, mirroring the pattern `ship` already uses when it invokes
 `review-pr` (which itself invokes `security-review` and `pr-review-toolkit:review-pr`): the
-executing Claude instance invokes the three existing skills via the `Skill` tool at the
-main-conversation level, while a dedicated `Workflow` script implements this skill's own
-net-new phases — 0 through 3 — and returns its rolled-up result (Phase 5's structure) when it
-completes. Both levels' backgroundable work runs concurrently. **Synthesis itself runs at
-the main-conversation level**, explicitly *not* inside the `Workflow` script, exactly as
-Phase 5 states above — it needs Phase 4's output, which the script has no way to see.
+executing Claude instance dispatches the three existing skills at the main-conversation
+level — preferably as concurrent background `Agent` invocations, per Phase 4 above — while a
+dedicated `Workflow` script implements this skill's own net-new phases — 0 through 3 — and
+returns its rolled-up result (Phase 5's structure) when it completes. The `Workflow` script
+and the three sub-skill dispatches are independent of each other, so nothing here forces them
+onto a single serial timeline. **Synthesis itself runs at the main-conversation level**,
+explicitly *not* inside the `Workflow` script, exactly as Phase 5 states above — it needs
+Phase 4's output, which the script has no way to see.
 
 **Worktree isolation.** Branch into a dedicated worktree first via `EnterWorktree`, exactly
 like `ship` does, because `generate-docs` writes to the working tree as part of its normal
