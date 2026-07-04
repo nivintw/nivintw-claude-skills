@@ -5,12 +5,12 @@ description: >-
   pick up next", "what's next in the backlog", "pick my next task", "rank my issues",
   "shortlist my ready work", "what's in progress", "what am I in the middle of", or otherwise
   wants a recommendation of which open work to start or resume. It reads the repo's open
-  GitHub issues (the durable task ledger) and returns a short, ranked "pick up next" shortlist
-  with a one-line rationale per item — not a full dump. It leads by calling out your
-  in-progress work to resume (usually, finish what you started first), then
-  ranks status:ready work by priority, staleness, and dependencies, surfaces blocked items,
-  and flags an untriaged pile. It selects from the ledger but neither grooms it
-  (that's /dev-kit:handle-task-tracking, whose status-label model it reuses) nor does the
+  GitHub issues (the durable task ledger) and returns the full ranked "pick up next" list —
+  every status:ready item, never capped to a top-N — with a one-line rationale per standout
+  pick. It leads by calling out your in-progress work to resume (usually, finish what you
+  started first), then ranks status:ready work by priority, staleness, and dependencies,
+  surfaces blocked items, and flags an untriaged pile. It selects from the ledger but neither
+  grooms it (that's /dev-kit:handle-task-tracking, whose status-label model it reuses) nor does the
   work (that's /dev-kit:ship). Gathers and ranks via a bundled script; reads issue bodies for
   rationale via the GitHub MCP tools, falling back to the gh CLI.
 ---
@@ -18,10 +18,11 @@ description: >-
 # open-work
 
 Answer **"what should I pick up next?"** by reading the repo's open GitHub issues and
-returning a **ranked, reasoned shortlist** — not the user eyeballing the whole issue list.
-The output **leads with your in-progress work to resume** — usually you finish what you
-started before starting something new — then a few recommended items to start, each with a
-one-line *why this one*, plus a short footer of what needs attention before it's pickable.
+returning the **full ranked, reasoned list of ready work** — not the user eyeballing the whole
+issue list, and never a truncated top-N. The output **leads with your in-progress work to
+resume** — usually you finish what you started before starting something new — then every
+`status:ready` item ranked to start, with a one-line *why this one* for the standout picks,
+plus a short footer of what needs attention before it's pickable.
 
 This is the **select** verb in the dev-kit loop:
 
@@ -60,8 +61,7 @@ omitted; pass them explicitly if the cwd isn't the target repo. It prints one JS
   "tally": {"open": N, "ready": N, "in_progress": N, "untriaged": N},
   "degraded": bool,               // true when no status:* label is used anywhere
   "resume": {"yours": [...], "others": [...]},   // in-progress/in-review, done-but-open excluded
-  "start_next": [...],            // top 5 ready+startable, priority x staleness sorted
-  "start_next_total": N,          // true count before the top-5 cap — never silently truncate
+  "start_next": [...],            // every ready+startable issue, priority x staleness sorted, never capped
   "needs_attention": {
     "untriaged_count": N,
     "blocked": [...],             // status:blocked OR a ready issue with an open Blocked-by
@@ -75,16 +75,17 @@ Each issue object carries `number`, `title`, `url`, `updated_at`, `assignee`, `s
 `linked_pr` (`{number, state, merged_at, url}` or `null`), and (on resume rows) a `stale`
 bool. Only the *first* assignee is tracked — a multi-assignee issue where the viewer isn't
 first is misclassified as someone else's. **What the script does not do — because it's
-judgment, not mechanics — stays your job**: read the body of each `start_next` /
-`needs_attention` candidate for the one-line rationale (a rationale needs more than a title),
-and in **degraded mode** (see below) read bodies to judge actionability, since the script has
-no ranking signal to fall back on there.
+judgment, not mechanics — stays your job**: read the body of each `needs_attention` candidate,
+and of the `start_next` standout picks you call out with a rationale (a rationale needs more
+than a title — you don't need to read every body when the ready list is long, just the ones
+you're writing a rationale line for), and in **degraded mode** (see below) read bodies to
+judge actionability, since the script has no ranking signal to fall back on there.
 
 Readiness-gate semantics the script encodes (for reference — you don't need to re-derive
 these, just narrate the result): only `status:ready` is startable; `status:triage` and
 unlabeled issues are the untriaged pile; `status:in-progress`/`status:in-review` are in-flight
 (split yours vs. others by assignee); `status:blocked` — or a `status:ready` issue whose body
-references a still-open `Blocked by #N` — is excluded from the shortlist and surfaced
+references a still-open `Blocked by #N` — is excluded from `start_next` and surfaced
 separately; an in-progress/in-review issue whose linked PR already **merged** is done-but-open,
 not resumable. A `status:ready` issue assigned to someone else is excluded from `start_next`
 (ownership filter) even though it still counts toward the `ready` tally.
@@ -121,7 +122,7 @@ have to re-learn its shape.
 <your resumable work as a table, then others' in-flight work as a separate table>
 
 ## Start next
-<ranked shortlist as a signal table; one-line rationale per item beneath the table>
+<full ranked status:ready list as a signal table; one-line rationale beneath the table for standout picks>
 
 ## Needs attention
 <untriaged count; blocked table; done-but-open table>
@@ -149,11 +150,13 @@ have to re-learn its shape.
    than listing every row. The `Yours to resume:` table uses columns `Issue | Status |
    Updated`; the others' table inserts an `Assignee` column (`Issue | Assignee | Status |
    Updated`).
-3. **`## Start next`** — the ranked shortlist of ~3 (up to ~5) `status:ready` items to start,
-   as a **signal table** with columns `# | Issue | Pri | Assignee | Updated` (every row here is
-   `status:ready` by definition, so a `Status` column would be constant and is omitted). The
-   **one-line rationale per item goes in prose lines beneath the table**, never inside a table
-   cell — a sentence wrapped into a cell is exactly the mess this contract exists to avoid.
+3. **`## Start next`** — **every** `status:ready` and startable item, ranked, never capped to a
+   top-N — as a **signal table** with columns `# | Issue | Pri | Assignee | Updated` (every row
+   here is `status:ready` by definition, so a `Status` column would be constant and is
+   omitted). Give a **one-line rationale in prose beneath the table** for the standout picks
+   (the top priority item, anything that unblocks other work, a quick win) — never inside a
+   table cell, and never force a rationale line for every row once the list is long; the table
+   itself is the complete ranked record, the prose is judgment on top of it.
 4. **`## Needs attention`** — the **untriaged count** (a bare number with the
    `/dev-kit:handle-task-tracking` pointer), then **blocked** items as a table with columns
    `Issue | Pri | Blocked by | Updated` (the `Blocked by` cell lists every open blocker), then
@@ -188,8 +191,10 @@ have to re-learn its shape.
   cells of any table that has them. The table never breaks.
 - **Issue references are always typed markdown links** — e.g.
   `[#23](https://github.com/<owner>/<repo>/issues/23)` — so they're clickable in the terminal.
-- **Never silently truncate.** When there are more ready or in-progress items than shown, say
-  so and show the top slice — never dump the full list, never hide the remainder.
+- **`Start next` is never capped.** Every `status:ready`, startable item appears in the table,
+  ranked — no top-N truncation, ever. **`Resume in progress` may still show a top slice** when
+  the in-flight pile itself is large (see above) — but state the total and never hide the
+  remainder.
 - **Emoji are fine** where they arise naturally; they're neither required nor banned.
 
 ### Worked example — a populated ledger

@@ -123,7 +123,7 @@ run_rank() {
   echo "$output" | jq -e '.start_next | map(.number) == [2, 3, 1]'
 }
 
-@test "start-next is capped at 5 but reports the true total" {
+@test "start-next returns every ready+startable issue, never capped" {
   local rows=()
   for n in $(seq 1 7); do
     rows+=("$(issue "$n" ready medium null "$RECENT")")
@@ -131,8 +131,7 @@ run_rank() {
   printf '%s\n' "${rows[@]}" | jq -s '.' >"$FIXTURE"
   run_rank someone
   [ "$status" -eq 0 ]
-  echo "$output" | jq -e '.start_next | length == 5'
-  echo "$output" | jq -e '.start_next_total == 7'
+  echo "$output" | jq -e '.start_next | length == 7'
   echo "$output" | jq -e '.tally.ready == 7'
 }
 
