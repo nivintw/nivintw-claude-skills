@@ -1,16 +1,17 @@
 # dry-dock-overhaul: exhaustive, occasional, whole-repo audit
 
-**Status:** design approved (brainstorming), pending spec review
+**Status:** design approved (brainstorming), implemented
 **Date:** 2026-07-04
-**Tracking issue:** none yet — to be filed via `/dev-kit:handle-task-tracking` when implementation begins
+**Tracking issue:** [#100](https://github.com/nivintw/nivintw-claude-skills/issues/100)
 **Plugin:** `dev-kit` · skill `dry-dock-overhaul`
 
 ## 1. Summary
 
 A new `dev-kit` skill, invoked as `/dev-kit:dry-dock-overhaul`, that performs an exhaustive,
 occasional, always-human-triggered audit of an entire repository: every tracked source file
-(respecting `.gitignore` — generated, vendored, and binary artifacts are out of scope) is
-genuinely read and judged by some agent, not sampled, plus a "10,000-foot" pass asking whether
+is genuinely read and judged by some agent, not sampled — `.gitignore`-excluded and untracked
+paths (generated, vendored, and binary artifacts) are out of scope — plus a "10,000-foot" pass
+asking whether
 the repo communicates well — is the docs site good UX, is the test suite well-architected, is
 terminology used consistently — on top of the existing correctness/security/hygiene coverage
 this marketplace already has. It produces one ephemeral, severity-ranked report; it does not
@@ -93,8 +94,8 @@ framework(s) in use and whether a docs site exists — both feed Phase 3's disco
 
 **Phase 1 — Inventory (cheap/local tier).** Build the unit map: for a marketplace, one unit
 per plugin; for a library, top-level packages; generic repos fall back to a
-language-appropriate directory heuristic. Only tracked files (`.gitignore`-respecting) are in
-scope — generated output, vendored dependencies, and binary artifacts are excluded from the
+language-appropriate directory heuristic. Only tracked files are in scope — `.gitignore`-excluded
+and untracked paths (generated output, vendored dependencies, binary artifacts) sit outside the
 exhaustive-coverage guarantee, the same boundary git itself already draws. For each unit,
 gather its file list, rough size,
 and cheap mechanical candidate-detection (files with zero inbound references, obvious dead
