@@ -11,7 +11,8 @@ description: >-
   ranks status:ready work by priority, staleness, and dependencies, surfaces blocked items,
   and flags an untriaged pile. It selects from the ledger but neither grooms it
   (that's /dev-kit:handle-task-tracking, whose status-label model it reuses) nor does the
-  work (that's /dev-kit:ship). Prefer the GitHub MCP tools, falling back to the gh CLI.
+  work (that's /dev-kit:ship). Gathers and ranks via a bundled script; reads issue bodies for
+  rationale via the GitHub MCP tools, falling back to the gh CLI.
 ---
 
 # open-work
@@ -39,62 +40,66 @@ single source of truth for the labels; open-work only *consumes* them to rank.
 - **Not doing the work.** Executing the chosen item end to end is `/dev-kit:ship`.
 - **Single-repo.** Cross-repo aggregation is out of scope (possible later).
 
-## Gather — read the ledger
+## Gather + Rank — run the script
 
-Pull all **open** issues with enough signal to rank: status / priority / type labels,
-`updated_at` (staleness), assignee, dependency links in the body (`Blocked by` / `Related
-to` references), and parent/sub-issue links. Prefer the GitHub MCP tools; fall back to `gh`
-(see Tooling). Read the issue *bodies* for the candidates you're about to recommend — a
-rationale needs more than a title. For `status:in-progress` / `status:in-review` candidates,
-also check the **linked PR's state** — a *merged* PR on a still-open issue means the work is
-done and the label is stale (needs closing), not in flight.
+The mechanical half of this skill — listing open issues, partitioning by status label,
+resolving a candidate's linked-PR merge state, resolving `Blocked by #N` references, and
+applying the priority × staleness sort — is **fully deterministic** and lives in
+[`scripts/rank_issues.py`](scripts/rank_issues.py), not in this prose. Run it (via `uv run`,
+which resolves the script's own PEP 723 header — no project install needed):
 
-## Rank — readiness gate, then priority × staleness × dependencies
+```bash
+uv run plugins/dev-kit/skills/open-work/scripts/rank_issues.py
+```
 
-Rank using `handle-task-tracking`'s model, in this order:
+It infers `--owner`/`--repo` (via `gh repo view`) and `--viewer` (via `gh api user`) when
+omitted; pass them explicitly if the cwd isn't the target repo. It prints one JSON object:
 
-- **Readiness gate (first).** Only `status:ready` is recommendable to *start*. Partition the
-  rest rather than ranking them in:
-  - `status:triage` — not yet rankable; these are the **untriaged pile** (flag the count).
-  - `status:in-progress` — already in flight; not recommendable to *start* fresh, but
-    **always surface it** — not only stalled ones (the Output leads with it, splitting *your*
-    work to resume from items in flight by someone else, capping a large pile, and flagging
-    stalled ones).
-  - `status:in-review` — awaiting review, effectively in-flight; exclude from "start next".
-  - `status:blocked` — exclude from the shortlist; surface separately with its blocker.
-  - **Done-but-open (either `status:in-*`).** If an in-progress *or* in-review issue's
-    **linked PR has already merged**, it's *done, not in flight* — the label is stale;
-    surface it separately as **needs closing** (point at `/dev-kit:handle-task-tracking` to
-    close it and clear the label), never as resumable or in-review work.
-- **Ownership.** A `status:ready` issue already assigned to someone else isn't yours to
-  start — exclude it from the shortlist (or surface it separately); prefer unassigned or
-  self-assigned ready work.
-- **Priority (primary sort)** among ready items: `priority:high` > `priority:medium` >
-  `priority:low` > unlabeled.
-- **Dependencies.** An issue still blocked by an open dependency is **not** ready regardless
-  of its label — resolve its `Blocked by` reference and confirm that blocker is still open,
-  then treat it as blocked. An issue that *unblocks* others (a blocker for several) earns a
-  bump up.
-- **Staleness (tie-breaker).** Among equal priority, surface long-sitting `ready` items first
-  (older `updated_at`) so they don't rot — but call it out when age signals the issue itself
-  may be going stale and want a re-triage.
-- **Effort, light touch.** A quick `ready` win can jump the queue when it clears a path for
-  other work; don't let size override priority otherwise.
+```jsonc
+{
+  "tally": {"open": N, "ready": N, "in_progress": N, "untriaged": N},
+  "degraded": bool,               // true when no status:* label is used anywhere
+  "resume": {"yours": [...], "others": [...]},   // in-progress/in-review, done-but-open excluded
+  "start_next": [...],            // top 5 ready+startable, priority x staleness sorted
+  "start_next_total": N,          // true count before the top-5 cap — never silently truncate
+  "needs_attention": {
+    "untriaged_count": N,
+    "blocked": [...],             // status:blocked OR a ready issue with an open Blocked-by
+    "done_but_open": [...]        // in-progress/in-review whose linked PR already merged
+  }
+}
+```
+
+Each issue object carries `number`, `title`, `url`, `updated_at`, `assignee`, `status`,
+`priority`, and (on resume rows) a `stale` bool. **What the script does not do — because it's
+judgment, not mechanics — stays your job**: read the body of each `start_next` /
+`needs_attention` candidate for the one-line rationale (a rationale needs more than a title),
+and in **degraded mode** (see below) read bodies to judge actionability, since the script has
+no ranking signal to fall back on there.
+
+Readiness-gate semantics the script encodes (for reference — you don't need to re-derive
+these, just narrate the result): only `status:ready` is startable; `status:triage` and
+unlabeled issues are the untriaged pile; `status:in-progress`/`status:in-review` are in-flight
+(split yours vs. others by assignee); `status:blocked` — or a `status:ready` issue whose body
+references a still-open `Blocked by #N` — is excluded from the shortlist and surfaced
+separately; an in-progress/in-review issue whose linked PR already **merged** is done-but-open,
+not resumable. A `status:ready` issue assigned to someone else is excluded from `start_next`
+(ownership filter) even though it still counts toward the `ready` tally.
 
 ## When the ledger isn't labeled (degraded mode)
 
 Many repos haven't set up the status / priority taxonomy — issues may carry only a `type` or
-a bare `enhancement` label. **Don't fail.** Flag the gap, recommend
+a bare `enhancement` label. The script detects this itself (`"degraded": true` — no `status:*`
+label used anywhere) and, in that mode, also resolves a linked-PR proxy for every *assigned*
+issue (not just `status:in-progress`/`in-review` ones), so `resume` still surfaces real
+in-flight work without the labels. **Don't fail.** Flag the gap, recommend
 `/dev-kit:handle-task-tracking` to establish the labels (its
 [`reference/recipes.md`](../handle-task-tracking/reference/recipes.md) has the one-time
-`gh label create` block), then rank on whatever signal exists: any explicit priority in the
-body, type, how **actionable** the issue is (clear acceptance criteria reads as more ready
-than a vague stub), and recency / staleness. Say plainly that the ranking is best-effort
-until the labels exist.
-
-To still **lead with in-progress** here: without a `status:in-progress` label, detect
-in-flight work by proxy — an issue that's **assigned and has a linked branch or an open PR
-referencing it** — and lead with that, flagged best-effort.
+`gh label create` block), then rank on whatever signal exists beyond the script's output: any
+explicit priority in the body, type, how **actionable** the issue is (clear acceptance
+criteria reads as more ready than a vague stub) — this part is judgment, not something the
+script can compute — and recency/staleness (which the script does give you per-issue). Say
+plainly that the ranking is best-effort until the labels exist.
 
 ## Output — a fixed presentation contract
 
@@ -254,20 +259,20 @@ None — nothing untriaged, blocked, or done-but-open.
 Queue is dry. Capture new work with `/dev-kit:handle-task-tracking`, or tell me what to tackle and I'll take it to `/dev-kit:ship`.
 ```
 
-## Tooling — MCP first, gh as fallback
+## Tooling — the script for gathering + ranking, MCP/gh for candidate bodies
 
-Prefer the **GitHub MCP tools**: `mcp__github__list_issues` (filter `state: OPEN`, read
-`labels`) and `mcp__github__issue_read` for a candidate's body, comments, labels, and
-sub-issues. For **done-but-open** / degraded-mode in-flight detection, resolve a candidate's
-linked PR and its merge state: find the PR that references the issue
-(`mcp__github__search_pull_requests`, or `gh pr list --search "<issue#>" --state all`) and
-read its `state` / `mergedAt` (`mcp__github__pull_request_read`, or
-`gh pr view <pr#> --json state,mergedAt`); the `issue_read` timeline also surfaces a
-linked/closing PR. Fall back to the **`gh` CLI** when the MCP server isn't connected — check
-first, since it can be absent in headless or cron runs — or when a human wants a command to paste;
-`gh` is also the right tool for anything the MCP doesn't expose. Don't clone a repo just to
-read it — the MCP reads remote file contents (and issues/PRs) directly.
-The label and query command forms live in `handle-task-tracking`'s
+`scripts/rank_issues.py` (above) *is* the tested `gh`-CLI gather-and-rank path — it's what
+`tests/open_work_rank.bats` exercises, so prefer it over re-deriving the same `gh` calls by
+hand. Its `--input <fixture.json> --viewer <login>` mode is for testing only (bypasses live
+`gh`); a normal run always calls it with no `--input`.
+
+For the judgment-only step layered on top — reading a `start_next` or `needs_attention`
+candidate's **body** to write its one-line rationale, or to judge actionability in degraded
+mode — prefer the **GitHub MCP tools**: `mcp__github__issue_read` for a candidate's body,
+comments, labels, and sub-issues. Fall back to `gh issue view <n> --json body` when the MCP
+server isn't connected (it can be absent in headless or cron runs) or when a human wants a
+command to paste. Don't clone a repo just to read it — both paths read remote content
+directly. The label and query command forms live in `handle-task-tracking`'s
 [`reference/recipes.md`](../handle-task-tracking/reference/recipes.md) (e.g. `gh issue list
 --label "status:ready" --label "priority:high" --state open`) — reuse them rather than
 duplicating.
