@@ -10,7 +10,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>dev-kit — nivintw-claude-skills</title>
-  <meta name="description" content="A human + AI teaming development workflow for Claude Code: ship, review-pr, generate-docs, handle-task-tracking, open-work, cleanup-locally, doctor, and dry-dock-overhaul.">
+  <meta name="description" content="A human + AI teaming development workflow for Claude Code: ship, review-pr, generate-docs, handle-task-tracking, open-work, cleanup-locally, doctor, pre-public-hardening, and dry-dock-overhaul.">
   <link rel="stylesheet" href="style.css">
   <script>
     // Pre-paint: apply a saved theme (no flash-of-wrong-theme) and mark JS available
@@ -149,9 +149,19 @@
         <p class="cmd-eg"><span class="cmd-eg-label">try</span> "am I on the latest version" · "check my plugin versions" · "list my skills"</p>
       </article>
 
+      <article class="cmd-row" id="pre-public-hardening">
+        <code class="cmd">/dev-kit:pre-public-hardening</code>
+        <p class="cmd-summary">A whole-repo, full-history readiness review before a private repo
+          goes public: scans every commit for secrets (not just the working tree), audits
+          <code>.gitignore</code> for leak gaps, flushes private-context artifacts, and verifies
+          license completeness — producing a go/no-go checklist. Detects and prescribes; it
+          never flips visibility or rewrites history itself.</p>
+        <p class="cmd-eg"><span class="cmd-eg-label">try</span> "make this repo public" · "is this repo safe to open-source?" · "scan the git history for secrets"</p>
+      </article>
+
       <article class="cmd-row" id="dry-dock-overhaul">
         <code class="cmd">/dev-kit:dry-dock-overhaul</code>
-        <p class="cmd-summary">The eighth command — deliberately outside the loop above. An
+        <p class="cmd-summary">The ninth command — deliberately outside the loop above. An
           exhaustive, always-human-triggered audit of the whole repo, not a diff: every
           tracked file is genuinely read and judged, plus a "10,000-foot" pass discovered
           fresh for this repo's own shape (docs-site UX, test-suite architecture, naming

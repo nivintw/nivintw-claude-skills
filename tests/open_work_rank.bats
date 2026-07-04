@@ -150,9 +150,10 @@ run_rank() {
   run_rank someone
   [ "$status" -eq 0 ]
   # #2 is excluded from start_next (assigned elsewhere) but still counts as ready; #5 is
-  # excluded from both (status:blocked), so only 7 of these 8 issues count as ready. The
-  # remaining 6 startable issues survive, ranked by priority then staleness — proving
-  # filtering still composes correctly with a ready set larger than the old 5-item cap.
+  # excluded from both by its blocked_label (still status:ready itself), so only 7 of these
+  # 8 issues count as ready. The remaining 6 startable issues survive, ranked by priority
+  # then staleness — proving filtering still composes correctly with a ready set larger than
+  # the old 5-item cap.
   echo "$output" | jq -e '.start_next | map(.number) == [1, 3, 4, 6, 7, 8]'
   echo "$output" | jq -e '.tally.ready == 7'
 }
