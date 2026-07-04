@@ -224,6 +224,13 @@ onto a single serial timeline. **Synthesis itself runs at the main-conversation 
 explicitly *not* inside the `Workflow` script, exactly as Phase 5 states above — it needs
 Phase 4's output, which the script has no way to see.
 
+**This assumes a top-level session, not a subagent.** `Workflow` (with the `resumeFromRunId`
+resumption handle and the agent-count cap this file cites) is a tool available to the main
+Claude Code session — the one a human actually invokes `/dev-kit:dry-dock-overhaul` from —
+but a subagent dispatched via `Agent`/`Task` has no nested access to it. This skill's Phase
+0–3 orchestration must therefore run from the main conversation that received this skill's
+instructions, never delegated wholesale to a subagent expecting to call `Workflow` itself.
+
 **Worktree isolation.** Branch into a dedicated worktree first via `EnterWorktree`, exactly
 like `ship` does, because `generate-docs` writes to the working tree as part of its normal
 behavior. The human reviews that diff afterward and decides whether to keep it, discard it,
@@ -287,10 +294,25 @@ the only stage that reads across all of it — it is the sole consumer of the fu
   agent) design keeps its own share of that budget small; Phase 2's one-agent-per-unit cost is
   what actually scales with repo size. If a repo's unit count would still risk the cap,
   surface that plainly and recommend scoping to a subtree via the optional path argument
-  (Phase 0) rather than silently doing a partial audit under the "exhaustive" banner.
+  (Phase 0) rather than silently doing a partial audit under the "exhaustive" banner. If the
+  cap is hit mid-run rather than caught by this estimate beforehand — the `Workflow` tool
+  itself errors or stops short — mark every phase it interrupted as incomplete in the final
+  report rather than presenting whatever partial result came back as if it were the whole
+  picture.
+- **A Phase 1, 2, or 3 agent itself fails, times out, or is denied.** Before Phase 5
+  synthesizes, reconcile the units that actually returned a result against Phase 1's unit
+  map, and the lenses that actually returned against what Phase 3's discovery step
+  dispatched. Any unit or lens missing a result gets named in the final report as a coverage
+  gap — never silently dropped from the rollup. This is the one failure mode most directly in
+  tension with *Exhaustive coverage is non-negotiable* (Core philosophy above): the skill's
+  entire premise is that every file was genuinely read, so an undisclosed gap here is worse
+  than not running the audit at all.
 - **A sub-skill unavailable or denied** — note the gap in the final report and continue with
   the rest, matching the resilience pattern `ship` and `review-pr` already use for their own
-  optional sub-steps.
+  optional sub-steps. The same applies if a Phase 4 dispatch returns but its result isn't a
+  genuine report (an error or refusal string rather than actual findings) — verify each of
+  the three has real content before Synthesis treats it as a completed input, and route
+  anything that looks like a tool failure into this same "note the gap" path.
 - **No test framework detected, or no docs site** — not errors; these are inputs to Phase 3's
   discovery step, not failures of Phase 0's detection. A repo with no docs site simply yields
   no docs-UX lens. A repo with no tests at all might itself surface as a finding ("no test
