@@ -425,9 +425,13 @@ what that changes about the run itself. It can also be granted later, independen
 - **Standalone** — with no active ship run, "land the PR" / "land #N" attaches to the current
   branch's open PR (or the named one) and drives it cold.
 
-Phase 1's carve-out applies here too, however `land` was invoked — including standalone,
-after the fact: CI fixes, review triage, and any other call this loop has to make get
-decided and logged (see Phase 1), not asked about. If the PR predates this run (a standalone
+The "decide it, log it, don't ask" principle applies here too, however `land` was invoked —
+including standalone, after the fact: CI fixes, review triage, and any other call this loop
+has to make get decided and logged (Phase 8's *Decisions made without asking*), not asked
+about. (Phase 1's plan-sign-off folding specifically only applies when `land` was granted
+up front, before Phase 1 ran — a standalone invocation happens after the plan already
+shipped, so there's no sign-off left to fold; the logging discipline is what carries over.)
+If the PR predates this run (a standalone
 `land #N` on a PR ship never authored, or one from before this convention existed) and has no
 `## Decisions made without asking` section yet, **create it** rather than assuming it's
 already there — the logging requirement doesn't depend on how the PR was opened.
