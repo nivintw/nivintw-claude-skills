@@ -133,6 +133,28 @@ run_rank() {
   [ "$status" -eq 0 ]
   echo "$output" | jq -e '.start_next | length == 7'
   echo "$output" | jq -e '.tally.ready == 7'
+  echo "$output" | jq -e 'has("start_next_total") | not'
+}
+
+@test "start-next stays uncapped and correctly filtered above the old cap size" {
+  local rows=()
+  rows+=("$(issue 1 ready high null "$RECENT")")
+  rows+=("$(issue 2 ready high other-person "$RECENT")")
+  rows+=("$(issue 3 ready medium null "$STALE")")
+  rows+=("$(issue 4 ready medium null "$RECENT")")
+  rows+=("$(issue 5 ready medium null "$RECENT" true)")
+  rows+=("$(issue 6 ready low null "$RECENT")")
+  rows+=("$(issue 7 ready low null "$RECENT")")
+  rows+=("$(issue 8 ready low null "$RECENT")")
+  printf '%s\n' "${rows[@]}" | jq -s '.' >"$FIXTURE"
+  run_rank someone
+  [ "$status" -eq 0 ]
+  # #2 is excluded from start_next (assigned elsewhere) but still counts as ready; #5 is
+  # excluded from both (status:blocked). The remaining 6 startable issues survive, ranked by
+  # priority then staleness — proving filtering still composes correctly with an 8-issue
+  # ready set larger than the old 5-item cap.
+  echo "$output" | jq -e '.start_next | map(.number) == [1, 3, 4, 6, 7, 8]'
+  echo "$output" | jq -e '.tally.ready == 7'
 }
 
 @test "a ready issue assigned to someone else is excluded from start-next but still counted ready" {
