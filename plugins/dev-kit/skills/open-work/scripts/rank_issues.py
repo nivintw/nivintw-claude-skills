@@ -261,8 +261,7 @@ def rank(issues: list[dict], viewer: str | None, now: datetime) -> dict:
             "yours": annotate_stale(yours),
             "others": annotate_stale(others),
         },
-        "start_next": startable_sorted[:5],
-        "start_next_total": len(startable_sorted),
+        "start_next": startable_sorted,
         "needs_attention": {
             "untriaged_count": len(untriaged),
             "blocked": blocked,
