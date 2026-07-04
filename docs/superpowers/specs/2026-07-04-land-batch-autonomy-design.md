@@ -1,8 +1,8 @@
 # land batch autonomy: don't re-confirm, group into minimal PRs, persist every call
 
-**Status:** design approved (brainstorming), pending spec review
+**Status:** design approved (brainstorming), implemented
 **Date:** 2026-07-04
-**Tracking issue:** none yet — to be filed via `/dev-kit:handle-task-tracking` when implementation begins
+**Tracking issue:** [#104](https://github.com/nivintw/nivintw-claude-skills/issues/104)
 **Plugin:** `dev-kit` · skill `ship` (+ its `land` command wrapper)
 
 ## 1. Summary
@@ -124,7 +124,7 @@ this conversation's memory.**
   risky, or hard to revert relative to the rest of the batch) — never for mere topical
   variety. Each split is itself a decision, logged per §5.
 - **Not gated**: since `land` covers the batch, the grouping plan gets written and documented
-  like any other decision — not held for a sign-off, per Key decision #6.
+  like any other decision — not held for a sign-off, per Key decision #2.
 
 ## 7. Error handling & degradation
 

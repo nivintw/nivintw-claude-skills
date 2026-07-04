@@ -23,7 +23,7 @@ window.SEARCH_INDEX = [
     cmd: "/dev-kit:land",
     plugin: "dev-kit",
     url: "dev-kit.html#land",
-    summary: "A discoverable entry point to ship's land verb: drive an already-open PR to merged (CI to green, review converged, rebase-merge, cleanup). Multiple items at once auto-group into the fewest sensible PRs."
+    summary: "A discoverable entry point to ship's land verb: drive an already-open PR to merged (CI to green, review converged, rebase-merge, cleanup)."
   },
   {
     cmd: "/dev-kit:review-pr",
@@ -72,6 +72,12 @@ window.SEARCH_INDEX = [
     plugin: "dev-kit",
     url: "dev-kit.html#dry-dock-overhaul",
     summary: "An exhaustive, occasional, human-triggered whole-repo audit: every tracked file read and judged, plus a discovered \"10,000-foot\" pass on communication and UX, orchestrating /dev-kit:review-pr, /dev-kit:generate-docs, and /dev-kit:pre-public-hardening."
+  },
+  {
+    cmd: "/dev-kit:template-reconcile",
+    plugin: "dev-kit",
+    url: "dev-kit.html#template-reconcile",
+    summary: "For Copier-templated repos: reconciles against the upstream template after an adopt or update, verifying no template infra was silently dropped, and prompts to file upstream when a change touches a template-owned file."
   },
   {
     cmd: "worktree-guard",
