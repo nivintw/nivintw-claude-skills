@@ -59,7 +59,7 @@ window.SEARCH_INDEX = [
     cmd: "/dev-kit:dry-dock-overhaul",
     plugin: "dev-kit",
     url: "dev-kit.html#dry-dock-overhaul",
-    summary: "An exhaustive, occasional, human-triggered whole-repo audit: every tracked file read and judged, plus a discovered \"10,000-foot\" pass on communication and UX, orchestrating review-pr, generate-docs, and pre-public-hardening."
+    summary: "An exhaustive, occasional, human-triggered whole-repo audit: every tracked file read and judged, plus a discovered \"10,000-foot\" pass on communication and UX, orchestrating /dev-kit:review-pr, /dev-kit:generate-docs, and /dev-kit:pre-public-hardening."
   },
   {
     cmd: "worktree-guard",
