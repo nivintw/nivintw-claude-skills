@@ -173,9 +173,10 @@ shape it applies to.
 ## Phase 4 — Existing sub-passes (parallel, fully independent)
 
 Invoke the three existing whole-repo-capable skills, each via the **`Skill`** tool:
-`review-pr` (Mode C), `generate-docs`, and `pre-public-hardening`. All three are fully
-independent of Phase 0–3 and of each other, so run them in parallel with the rest of this
-skill's work rather than waiting on it.
+`review-pr` (Mode C), `generate-docs`, and `pre-public-hardening` — always all three, with no
+toggle to skip any of them for a lighter-weight run. All three are fully independent of Phase
+0–3 and of each other, so run them in parallel with the rest of this skill's work rather than
+waiting on it.
 
 When Phase 0 narrows scope to a subtree, invoke `review-pr` Mode C against that same
 subtree — it already supports a named-subtree target natively, so no special-casing is
@@ -253,3 +254,58 @@ timeline they like relative to, how they triage the rest of the report's finding
   whether they'd block going public (blocker) or are lower-stakes hygiene (minor/nit);
   `generate-docs`'s applied changes aren't findings at all and carry no severity — list them
   in the report as already-resolved, not ranked.
+
+## Data flow
+
+Trace how each phase's output feeds the next, since that's what makes the parallelism above
+safe rather than accidental: Phase 0's output (repo kind, scope root, detected test
+framework(s), docs-site presence) seeds every phase after it. Phase 1 produces the unit map
+plus unconfirmed candidates, each tagged to its unit. Phase 2 consumes both, confirming or
+dismissing each candidate using the full context of the one unit it's reading — this is why
+Phase 2 needs Phase 1 complete first, but nothing more than that. Phase 3 reads only Phase
+0's and Phase 1's context to decide which lenses are worth running at all; it never waits on
+Phase 2's per-unit output, which is exactly why it runs fully in parallel with Phase 2 rather
+than behind a barrier on it. Phase 4's three sub-passes are independent of everything else in
+this skill and produce their own native output on their own schedule. Synthesis (Phase 5) is
+the only stage that reads across all of it — it is the sole consumer of the full picture.
+
+## Error handling & degradation
+
+- **Not a git repository** — hard stop, matching `ship`'s own hard stop, and the same check
+  Phase 0 above performs.
+- **Repo too large for exhaustive coverage within a sane agent budget.** The `Workflow` tool
+  caps total agents at 1000 per run, and that cap applies to the Phase 0–3 `Workflow` script
+  **specifically** — Phase 4's three `Skill` invocations sit outside it entirely, each
+  managing its own existing agent budget independently (e.g. `review-pr`'s own
+  workflow-backed battery). Within the Phase 0–3 script, Phase 1's batched (multi-unit-per-
+  agent) design keeps its own share of that budget small; Phase 2's one-agent-per-unit cost is
+  what actually scales with repo size. If a repo's unit count would still risk the cap,
+  surface that plainly and recommend scoping to a subtree via the optional path argument
+  (Phase 0) rather than silently doing a partial audit under the "exhaustive" banner.
+- **A sub-skill unavailable or denied** — note the gap in the final report and continue with
+  the rest, matching the resilience pattern `ship` and `review-pr` already use for their own
+  optional sub-steps.
+- **No test framework detected, or no docs site** — not errors; these are inputs to Phase 3's
+  discovery step, not failures of Phase 0's detection. A repo with no docs site simply yields
+  no docs-UX lens. A repo with no tests at all might itself surface as a finding ("no test
+  suite exists") rather than the skill failing to audit tests that don't exist.
+- **`generate-docs` fails partway through its own writes** — surface that plainly in the
+  final report; the human needs to know the working-tree diff might be incomplete before
+  deciding whether to keep it, discard it, or hand it to `/dev-kit:ship`.
+
+## Verification / testing guidance
+
+There is no code here to unit-test the way a bats-tested script has one — treat a first run
+against any given repo as a staged dry run, not a leap straight to the genuine article. Scope
+that first run to a single subtree (one plugin in a marketplace, one package in a library) via
+Phase 0's optional path argument, and use it to sanity-check that each phase behaves as this
+file describes and that the report renders the skeleton above — before ever running a
+genuine whole-repo pass on a repo you actually care about auditing.
+
+Be precise with the human about what "cheap" means for that staged dry run: it only applies
+to Phases 0–3 and to `review-pr` (Phase 4), both of which do narrow to the subtree. It does
+**not** apply to `generate-docs` or `pre-public-hardening` — per Phase 4 above, both always
+run at full native, whole-repo scope regardless of what Phase 0 resolves, so even a
+subtree-scoped dry run still pays their full whole-repo cost. Say so plainly before a human
+runs their first dry run, rather than letting "scoped to a subtree" imply the whole run got
+cheaper.
