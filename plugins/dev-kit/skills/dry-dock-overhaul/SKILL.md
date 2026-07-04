@@ -19,8 +19,9 @@ description: >-
 
 Haul the whole repo out of the water and inspect every plank. This skill runs an exhaustive,
 occasional, always-human-triggered audit of an entire repository: every tracked source file
-(respecting `.gitignore` — generated, vendored, and binary artifacts are out of scope) is
-genuinely read and judged by some agent, not sampled, plus a "10,000-foot" pass that asks
+is genuinely read and judged by some agent, not sampled — `.gitignore`-excluded and untracked
+paths (generated, vendored, and binary artifacts) are out of scope — plus a "10,000-foot" pass
+that asks
 whether the repo *communicates* well — is the docs site good UX, is the test suite
 well-architected, is terminology used consistently — discovered fresh for whatever this
 specific repo actually is, not read off a fixed checklist. On top of that net-new coverage,

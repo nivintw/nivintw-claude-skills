@@ -6,8 +6,8 @@ description: >-
   "shortlist my ready work", "what's in progress", "what am I in the middle of", or otherwise
   wants a recommendation of which open work to start or resume. It reads the repo's open
   GitHub issues (the durable task ledger) and returns the full ranked "pick up next" list —
-  every status:ready item, never capped to a top-N — with a one-line rationale per standout
-  pick. It leads by calling out your in-progress work to resume (usually, finish what you
+  every ready and startable item, never capped to a top-N — with a one-line rationale per
+  standout pick. It leads by calling out your in-progress work to resume (usually, finish what you
   started first), then ranks status:ready work by priority, staleness, and dependencies,
   surfaces blocked items, and flags an untriaged pile. It selects from the ledger but neither
   grooms it (that's /dev-kit:handle-task-tracking, whose status-label model it reuses) nor does the
@@ -21,8 +21,9 @@ Answer **"what should I pick up next?"** by reading the repo's open GitHub issue
 returning the **full ranked, reasoned list of ready work** — not the user eyeballing the whole
 issue list, and never a truncated top-N. The output **leads with your in-progress work to
 resume** — usually you finish what you started before starting something new — then every
-`status:ready` item ranked to start, with a one-line *why this one* for the standout picks,
-plus a short footer of what needs attention before it's pickable.
+ready and startable item ranked to start (`status:ready`, and not already claimed by someone
+else or blocked), with a one-line *why this one* for the standout picks, plus a short footer
+of what needs attention before it's pickable.
 
 This is the **select** verb in the dev-kit loop:
 
