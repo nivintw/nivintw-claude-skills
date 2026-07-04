@@ -114,9 +114,13 @@ same way for the rest of the run — pick the reasonable default, log it (see *D
 without asking* under Phase 8), and keep going, including when a delegated sub-flow would
 normally surface its own approach question (e.g. a plan-execution choice) — decide it
 yourself and log it rather than passing the question along. This carve-out is scoped to
-design and plan choices only: it never relaxes the standing rules around destructive or
-irreversible actions (force-push, hard resets, deletions), which still require the human's
-explicit go-ahead exactly as before.
+*how* to build the agreed plan, never to *whether* the plan itself still fits: it doesn't
+relax destructive/irreversible actions (force-push, hard resets, deletions), and it doesn't
+relax **"Confirm scope before you build it"** below or the Guardrails' **"if real scope
+turns out much larger than the ask, stop and check in"** — discovering the ask is actually
+bigger, or conflicts with itself in a way no default resolves, isn't a design choice to log
+and proceed past; it's the same "genuinely blocked, still ask" category destructive actions
+fall into, just for scope instead of git safety.
 
 ### Batching multiple items into minimal PRs
 
@@ -131,9 +135,10 @@ by combining — weigh that before defaulting). Split out a piece only for a con
 risk-isolation reason — a change unusually large, risky, or hard to revert relative to the
 rest of the batch — never for mere topical variety. Every grouping
 choice, including any split and why, is itself a decision made without asking: log it the
-same way (Phase 8), on the **tracking issue** rather than any one PR, since a grouping choice
-can span more than one. This default doesn't apply without `land` — a bare `ship` batch still
-ships each item as its own reviewable PR unless told otherwise.
+same way (Phase 8), on **every tracking issue involved** rather than any one PR, since a
+grouping choice spans the whole batch, not a single PR or a single issue. This default
+doesn't apply without `land` — a bare `ship` batch still ships each item as its own
+reviewable PR unless told otherwise.
 
 **Confirm scope before you build it.** A description of a desired end-state is not a license
 to build everything around it. In the plan, separate what the user is **describing as
@@ -294,8 +299,10 @@ needed; leave the branch green. Flip the tracking issue to `status:in-review` (v
 `/security-review` is the most frequent trap: it returns a self-contained markdown report
 that *looks* like a terminal deliverable, so the pull is to yield. Don't. When the review pass
 returns, synthesize it and continue straight to Phase 7 — the only stops in a default ship
-run are plan sign-off (Phase 1) and hand-off (Phase 8); under `land` the run continues past
-hand-off through merge to cleanup. The dev-kit Stop hook backstops this while `state` names an
+run are plan sign-off (Phase 1) and hand-off (Phase 8); under `land` granted up front, Phase
+1's stop doesn't happen at all (its own carve-out), and the run continues past hand-off
+through merge to cleanup instead of stopping there either. The dev-kit Stop hook backstops
+this while `state` names an
 active phase, but the discipline is yours.
 
 ## Phase 7 — Local gate
@@ -333,8 +340,11 @@ PR (or the tracking issue) alone, with no dependency on this conversation. Rules
   `Decision:` bullets in it) rather than one round-trip each — the requirement is that every
   decision is logged there, not one API call per decision. This is
   `/dev-kit:handle-task-tracking`'s existing "post a comment when a decision is made"
-  convention — a hard requirement here, not a soft norm. It's also where a batch-grouping
-  decision belongs, since it isn't scoped to any single PR.
+  convention — a hard requirement here, not a soft norm. **When a PR closes more than one
+  tracking issue** (a batch, per the section above), post batch-level decisions — the
+  grouping choice, what got split out — on **every** issue the PR closes, not just one:
+  each issue is a place someone might look, and the retrieval guarantee (any one of them,
+  alone, must answer "what did you decide and why") fails if the record only lives on one.
 
 ### Converge an automated review before handing off
 
@@ -404,8 +414,10 @@ and pushed (the PR holds all the work) before you stop. The worktree's teardown 
 ## Land the PR (on demand — the one path where ship merges)
 
 `land` is an **explicit, opt-in** verb, never auto-chosen: ship runs it only when the user
-asks ("land the PR", "land this", "land #N", "ship and land it"). It is invocable two ways,
-neither decided at `/ship`-invocation time:
+asks ("land the PR", "land this", "land #N", "ship and land it"). Most often it's granted
+**up front, at `/ship`-invocation time** ("ship and land it") — see Phase 1's carve-out for
+what that changes about the run itself. It can also be granted later, independently of when
+`ship` started:
 
 - **Mid or after a ship run** — the PR for this worktree's branch is already open; "land it"
   drives that PR.
@@ -414,7 +426,10 @@ neither decided at `/ship`-invocation time:
 
 Phase 1's carve-out applies here too, however `land` was invoked — including standalone,
 after the fact: CI fixes, review triage, and any other call this loop has to make get
-decided and logged (see Phase 1), not asked about.
+decided and logged (see Phase 1), not asked about. If the PR predates this run (a standalone
+`land #N` on a PR ship never authored, or one from before this convention existed) and has no
+`## Decisions made without asking` section yet, **create it** rather than assuming it's
+already there — the logging requirement doesn't depend on how the PR was opened.
 
 Both run the same idempotent loop: bring the branch up to date with its base → **watch CI on
 the current head, and on any red check fix it, push, and re-watch until green** (bounded —
@@ -480,7 +495,8 @@ feature/fix merges: release-please cuts no tag then, and the poll would run inde
   `/security-review`, `/pr-review-toolkit:review-pr`) returns, that output reads like
   end-of-turn but is **not** — synthesize it and proceed to the next phase instead of
   yielding. By default the only stops in a ship run are plan sign-off (`gate:plan-signoff`)
-  and hand-off (`done`); `land` carries the run past hand-off to the merge before `done`. Keep
+  and hand-off (`done`); `land` granted up front skips the first stop entirely (Phase 1's
+  carve-out) and carries the run past the second, through to the merge, before `done`. Keep
   `state` current so the dev-kit Stop hook can backstop a slip.
 - Task state is GitHub's job — delegate it to **`/dev-kit:handle-task-tracking`** throughout
   (establish the issue at Phase 1, `in-progress` at Phase 3, `in-review` at Phase 6,
