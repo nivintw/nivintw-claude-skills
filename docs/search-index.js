@@ -56,6 +56,12 @@ window.SEARCH_INDEX = [
     summary: "A health check for your installed plugins: flag when a stale cache is running an old skill despite a newer release, and inventory the plugins and their skills."
   },
   {
+    cmd: "/dev-kit:pre-public-hardening",
+    plugin: "dev-kit",
+    url: "dev-kit.html#pre-public-hardening",
+    summary: "A whole-repo, full-history readiness review before a private repo goes public: scans every commit for secrets, audits .gitignore, flushes private-context artifacts, verifies license completeness. Detects and prescribes; never flips visibility itself."
+  },
+  {
     cmd: "/dev-kit:dry-dock-overhaul",
     plugin: "dev-kit",
     url: "dev-kit.html#dry-dock-overhaul",
