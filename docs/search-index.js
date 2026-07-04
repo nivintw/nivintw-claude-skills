@@ -17,7 +17,13 @@ window.SEARCH_INDEX = [
     cmd: "/dev-kit:ship",
     plugin: "dev-kit",
     url: "dev-kit.html#ship",
-    summary: "Drive a change from idea to a review-ready PR: plan, isolate in a worktree, implement, simplify, refresh docs, review. Hands off by default; lands the PR (CI to green, converge, rebase-merge) only when you ask."
+    summary: "Drive a change from idea to a review-ready PR: plan, isolate in a worktree, implement, simplify, refresh docs, review. Hands off by default; lands the PR (CI to green, converge, rebase-merge) only when you ask. Land granted up front also covers design/plan choices for the run, logged to the PR and issue."
+  },
+  {
+    cmd: "/dev-kit:land",
+    plugin: "dev-kit",
+    url: "dev-kit.html#land",
+    summary: "A discoverable entry point to ship's land verb: drive an already-open PR to merged (CI to green, review converged, rebase-merge, cleanup). Multiple items at once auto-group into the fewest sensible PRs."
   },
   {
     cmd: "/dev-kit:review-pr",
