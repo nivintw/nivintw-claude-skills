@@ -44,7 +44,7 @@ single source of truth for the labels; open-work only *consumes* them to rank.
 
 The mechanical half of this skill — listing open issues, partitioning by status label,
 resolving a candidate's linked-PR merge state, resolving `Blocked by #N` references, and
-applying the priority × staleness sort — is **fully deterministic** and lives in
+applying the priority × staleness sort — is **mechanical, not judgment-based** and lives in
 [`scripts/rank_issues.py`](scripts/rank_issues.py), not in this prose. Run it (via `uv run`,
 which resolves the script's own PEP 723 header — no project install needed):
 
@@ -71,7 +71,10 @@ omitted; pass them explicitly if the cwd isn't the target repo. It prints one JS
 ```
 
 Each issue object carries `number`, `title`, `url`, `updated_at`, `assignee`, `status`,
-`priority`, and (on resume rows) a `stale` bool. **What the script does not do — because it's
+`priority`, `blocked_by` (a list of `{number, open}`, populated for `status:ready` issues),
+`linked_pr` (`{number, state, merged_at, url}` or `null`), and (on resume rows) a `stale`
+bool. Only the *first* assignee is tracked — a multi-assignee issue where the viewer isn't
+first is misclassified as someone else's. **What the script does not do — because it's
 judgment, not mechanics — stays your job**: read the body of each `start_next` /
 `needs_attention` candidate for the one-line rationale (a rationale needs more than a title),
 and in **degraded mode** (see below) read bodies to judge actionability, since the script has
@@ -261,10 +264,12 @@ Queue is dry. Capture new work with `/dev-kit:handle-task-tracking`, or tell me 
 
 ## Tooling — the script for gathering + ranking, MCP/gh for candidate bodies
 
-`scripts/rank_issues.py` (above) *is* the tested `gh`-CLI gather-and-rank path — it's what
-`tests/open_work_rank.bats` exercises, so prefer it over re-deriving the same `gh` calls by
-hand. Its `--input <fixture.json> --viewer <login>` mode is for testing only (bypasses live
-`gh`); a normal run always calls it with no `--input`.
+`scripts/rank_issues.py` (above) is the `gh`-CLI gather-and-rank path — prefer it over
+re-deriving the same `gh` calls by hand. `tests/open_work_rank.bats` exercises its `rank()`
+half (the pure partition/sort logic) via `--input`; the live `gh`-calling `gather()` half is
+not covered by automated tests (it was verified by hand against this repo instead). Its
+`--input <fixture.json> --viewer <login>` mode is for testing only (bypasses live `gh`); a
+normal run always calls it with no `--input`.
 
 For the judgment-only step layered on top — reading a `start_next` or `needs_attention`
 candidate's **body** to write its one-line rationale, or to judge actionability in degraded
