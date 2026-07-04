@@ -53,8 +53,9 @@ These are operating rules for every run, not history:
 
 - **Repo-agnostic, always.** Never assume this skill is auditing this specific marketplace —
   it classifies whatever repo it's pointed at (see Phase 0 below for how).
-- **Exhaustive coverage is non-negotiable.** Every tracked, `.gitignore`-respecting file gets
-  read and judged by some agent. Being cost-conscious means routing mechanical work (building
+- **Exhaustive coverage is non-negotiable.** Every tracked file gets read and judged by some
+  agent — `.gitignore`-excluded and untracked paths are the only exclusion. Being
+  cost-conscious means routing mechanical work (building
   the inventory, cheap candidate detection) to a fast or local tier and reserving expensive
   reasoning for genuine judgment — it never means sampling or skipping files.
 - **Report-only for every new dimension.** Code justification, test-suite architecture, and
@@ -100,10 +101,10 @@ tests at all is itself a candidate finding rather than a detection failure.
 Build the **unit map** — the one artifact every later phase refers to by this name. A "unit"
 is this repo's own natural seam, decided by Phase 0's classification: one unit per plugin in
 a marketplace, one per top-level package in a library, a language-appropriate directory
-heuristic in a generic repo. Only tracked, `.gitignore`-respecting files are in scope for the
-unit map and everything built from it — generated output, vendored dependencies, and binary
-artifacts sit outside the exhaustive-coverage guarantee, the same boundary git itself already
-draws.
+heuristic in a generic repo. Only tracked files are in scope for the unit map and everything
+built from it — `.gitignore`-excluded and untracked paths (generated output, vendored
+dependencies, binary artifacts) sit outside the exhaustive-coverage guarantee, the same
+boundary git itself already draws.
 
 For each unit, gather its file list, a rough size, and cheap mechanical candidate-detection —
 files with zero inbound references, obvious dead exports, TODO/FIXME density — via
