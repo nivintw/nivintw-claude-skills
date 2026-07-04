@@ -63,7 +63,13 @@ other standing safety rule (destructive actions) untouched.
 
 ## 4. What changes, and where
 
-All changes are prose in two already-existing files — no new component, no new tool surface:
+The behavioral change is prose in two already-existing files — no new component, no new tool
+surface. It also surfaces (and fixes) docs-site and manifest coverage gaps that predate this
+change but became conspicuous while making it: `/dev-kit:land` and `/dev-kit:template-reconcile`
+had zero presence in `docs/dev-kit.html`, `docs/index.html`, `docs/search-index.js`,
+`plugins/dev-kit/.claude-plugin/plugin.json`, and `.claude-plugin/marketplace.json` despite
+being real, shipped commands — those get their own entries here too, alongside this change's
+actual behavioral core:
 
 - **`plugins/dev-kit/skills/ship/SKILL.md`**
   - **Phase 1 — Plan**: add the design-autonomy carve-out. When `land` was granted as part
