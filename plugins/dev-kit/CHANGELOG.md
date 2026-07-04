@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.18.0](https://github.com/nivintw/nivintw-claude-skills/compare/dev-kit-v0.17.0...dev-kit-v0.18.0) (2026-07-04)
+
+
+### Features
+
+* **dev-kit:** complete dry-dock-overhaul with error handling and verification guidance ([5ecc5da](https://github.com/nivintw/nivintw-claude-skills/commit/5ecc5da099da16d9c45139b5aeede650f6ea4a47))
+* **dev-kit:** scaffold dry-dock-overhaul skill and register it ([94d5f6c](https://github.com/nivintw/nivintw-claude-skills/commit/94d5f6c4ff1b9975f86c182748a0e495a1720362))
+* **dev-kit:** write dry-dock-overhaul framing and Phases 0-2 ([496243a](https://github.com/nivintw/nivintw-claude-skills/commit/496243adce3d179d1ae88e82ddf124fb1279f205))
+* **dev-kit:** write dry-dock-overhaul Phases 3-5, execution model, components ([1f5daf5](https://github.com/nivintw/nivintw-claude-skills/commit/1f5daf51aa7499e954f6e63953711bb3c6601f84))
+
+
+### Bug Fixes
+
+* **dev-kit:** address Copilot review findings on PR [#101](https://github.com/nivintw/nivintw-claude-skills/issues/101) ([00f4bc2](https://github.com/nivintw/nivintw-claude-skills/commit/00f4bc2f243e486c3d0041b02c675093d4e41de1))
+* **dev-kit:** address review-pr findings on dry-dock-overhaul and open-work tests ([0d0c3d9](https://github.com/nivintw/nivintw-claude-skills/commit/0d0c3d9854c9c6de0aaeb64b227ee53fe120e894))
+* **dev-kit:** finish addressing Copilot's gitignore-wording and stale-metadata findings ([8c2c20c](https://github.com/nivintw/nivintw-claude-skills/commit/8c2c20cad6edb20f220ad9f7ce722ee706f69054))
+* **dev-kit:** open-work shows the entire ranked ready list, never capped ([502ad67](https://github.com/nivintw/nivintw-claude-skills/commit/502ad67179da0d07b54fde3aeb7042964ac469e3))
+
 ## [0.17.0](https://github.com/nivintw/nivintw-claude-skills/compare/dev-kit-v0.16.0...dev-kit-v0.17.0) (2026-07-04)
 
 
