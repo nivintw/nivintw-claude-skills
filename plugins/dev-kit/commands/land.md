@@ -16,10 +16,5 @@ CI to green, converges the automated (Copilot) review, then **rebase-merges** th
 (`gh pr merge --rebase`) and falls straight into Post-merge cleanup. Do not restate the
 loop here — ship owns it in full (its **Land the PR** section and landing-driver reference).
 
-**Granting `land` also means: don't stop to ask.** It extends "the human decides" from just
-the merge to every design/plan choice left in the loop (CI fixes, review triage, batch
-grouping if this is a multi-item request) — ship's own Phase 1 carve-out covers the details.
-The one thing this never touches is destructive/irreversible actions (force-push, resets,
-deletions), which still require explicit go-ahead. Every autonomous call gets logged where
-you'll actually look for it: the PR's `## Decisions made without asking` and a `Decision:`
-comment on the tracking issue — retrievable from either alone, in a brand-new session.
+**Granting `land` also means: don't stop to ask.** Ship's own Phase 1 carve-out and its
+*Decisions made without asking* section own this in full — don't restate them here either.
