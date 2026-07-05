@@ -15,3 +15,6 @@ Landing is **opt-in and explicit** — it is the one path where ship merges. The
 CI to green, converges the automated (Copilot) review, then **rebase-merges** the PR
 (`gh pr merge --rebase`) and falls straight into Post-merge cleanup. Do not restate the
 loop here — ship owns it in full (its **Land the PR** section and landing-driver reference).
+
+**Granting `land` also means: don't stop to ask.** Ship's own Phase 1 carve-out and its
+*Decisions made without asking* section own this in full — don't restate them here either.
