@@ -344,3 +344,13 @@ run_check() {
   run_check
   [ "$status" -eq 0 ]
 }
+
+@test "a file that fails to decode is reported as a violation, not a crash" {
+  write_mkdocs "  - Home: index.md
+  - Bad: bad.md"
+  printf '# Home\n\nok\n' >"$SITE/index.md"
+  printf '\xff\xfe not valid utf-8' >"$SITE/bad.md"
+  run_check
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"bad.md: could not read"* ]]
+}

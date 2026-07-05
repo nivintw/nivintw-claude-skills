@@ -243,9 +243,15 @@ def main(argv: list[str]) -> int:
 
     # Fenced code blocks are rendered examples, not live Markdown structure — strip them once
     # per file and scan the prose for headings/links/ids, so a `# comment` or an illustrative
-    # [link](...)/<a href> shown inside a fence isn't parsed as real page structure.
-    prose_texts = {md.resolve(): strip_fenced_code(text)
-                   for md, text in ((m, m.read_text(encoding="utf-8")) for m in md_files)}
+    # [link](...)/<a href> shown inside a fence isn't parsed as real page structure. A read
+    # failure (permission denied, bad encoding) is its own violation, not a crash — the file
+    # is simply absent from prose_texts afterward, same as if it had no anchors/links at all.
+    prose_texts: dict[Path, str] = {}
+    for md in md_files:
+        try:
+            prose_texts[md.resolve()] = strip_fenced_code(md.read_text(encoding="utf-8"))
+        except (OSError, UnicodeDecodeError) as e:
+            violations.append(f"{md}: could not read: {e}")
     anchors_by_file = {path: heading_anchors_from_prose(prose) for path, prose in prose_texts.items()}
 
     def check_anchor(referrer: Path, target: Path, frag: str, raw: str) -> None:
@@ -254,7 +260,9 @@ def main(argv: list[str]) -> int:
             violations.append(f"{referrer}: missing anchor #{frag}: {raw!r}")
 
     for md in md_files:
-        text = prose_texts[md.resolve()]
+        text = prose_texts.get(md.resolve())
+        if text is None:
+            continue  # already reported as a "could not read" violation above
         refs = [m.group(1) for m in MD_LINK_RE.finditer(text)]
         refs += [m.group(1) or m.group(2) for m in HTML_ATTR_RE.finditer(text)]
         for m in SRCSET_RE.finditer(text):
