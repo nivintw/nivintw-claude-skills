@@ -32,4 +32,4 @@ jobs:
       contents: read
       pages: write
       id-token: write
-    uses: nivintw/repo-management/.github/workflows/docs.yml@22812b52c1c212b57ddef29da6e18e96afce03c7 # main
+    uses: nivintw/repo-management/.github/workflows/docs.yml@864420032528f0d7339fe07a44630b620f16d88b # main
