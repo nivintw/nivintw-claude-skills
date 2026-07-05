@@ -103,3 +103,47 @@ project's license. If you run [REUSE](https://reuse.software/):
   annotate `**/*.cast` in `REUSE.toml` too (as your own copyright/license).
 - If you use a header tool (e.g. hawkeye), exclude the vendored player and the
   `.cast` files from it so it doesn't try to insert headers.
+
+## 6. MkDocs wiring
+
+On an MkDocs Material site the mechanics above are the same — vendor the player, drop the
+same `<figure class="cast">` mount markup, run the same init script — only *where things are
+declared* changes, since MkDocs owns the page shell instead of hand-authored HTML:
+
+- **Vendor under `docs/assets/`** (`docs_dir`'s conventional asset path), not a bespoke
+  `assets/` dir.
+- **Wire the CSS/JS via `mkdocs.yml`**, not a per-page `<link>`/`<script>` tag — MkDocs
+  injects these into every page's `<head>`/end-of-body itself:
+
+  ```yaml
+  extra_css:
+    - assets/asciinema-player.css
+  extra_javascript:
+    - assets/asciinema-player.min.js
+    - assets/main.js
+  ```
+
+- **Markup stays identical** — raw HTML passes through Markdown unmodified, so the same
+  `<figure class="cast">…</figure>` block from step 2 drops straight into a `.md` page with
+  no change.
+- **The init script itself is unchanged** *unless* the theme has `navigation.instant`
+  enabled (Material's SPA-style page-swap navigation). A `DOMContentLoaded` listener only
+  fires once per full page load, so it never re-fires after an instant-nav swap and casts on
+  a page you navigate *to* (not the first page loaded) silently fail to hydrate. Swap the
+  guard to Material's `document$` observable, which fires on every instant-nav swap too:
+
+  ```js
+  document$.subscribe(function () {
+    const mounts = document.querySelectorAll(".cast__player[data-cast]");
+    if (mounts.length && window.AsciinemaPlayer) {
+      mounts.forEach(function (el) {
+        const opts = { theme: "asciinema", fit: "width", controls: true };
+        // ...same as step 3
+        window.AsciinemaPlayer.create(el.getAttribute("data-cast"), el, opts);
+      });
+    }
+  });
+  ```
+
+  If `navigation.instant` is off, the plain `DOMContentLoaded` version from step 3 is
+  simpler and sufficient — only switch when that feature is actually enabled.
