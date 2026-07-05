@@ -3,23 +3,52 @@
 
 # MkDocs Material config — the one shared "Terminal Slate" theme reused identically across
 # every copier-everything-descended repo (fleet-wide docs design; see
-# docs/superpowers/specs/2026-07-04-mkdocs-fleet-epic-design.md in the template source for
-# the full rationale). This file only scaffolds the mechanism — real navigation and content
-# are authored per repo by the generate-docs skill, not here.
+# nivintw/repo-management#85 for the full rationale). This file only scaffolds the
+# mechanism — real navigation and content are authored per repo by the generate-docs
+# skill, not here. This repo's config has grown past the template's current baseline
+# (theme.features, markdown_extensions, edit_uri, overrides/404.html below) — proposed for
+# upstream folding at nivintw/copier-everything#178.
 site_name: "nivintw-claude-skills"
 site_description: "Tyler Nivin's Claude Code plugin marketplace."
 site_url: "https://nivintw.github.io/nivintw-claude-skills/"
 repo_url: "https://github.com/nivintw/nivintw-claude-skills"
 repo_name: "nivintw/nivintw-claude-skills"
+edit_uri: "edit/main/docs/"
 
 theme:
   name: material
+  # overrides/404.html — a custom not-found page. Material treats 404.html as a "static
+  # template" rendered straight from the theme, not from a docs/*.md source, so a theme
+  # override (not a docs page) is the only way to customize it.
+  custom_dir: overrides
   favicon: assets/favicon.svg
   logo: assets/favicon.svg
   features:
     # Copy-to-clipboard on every code block — a small thing, but this is a docs site made
     # almost entirely of shell snippets to paste.
     - content.code.copy
+    # Instant navigation (SPA-style: fetches and swaps content instead of a full page
+    # reload) + a slim top progress bar for the fetch. This is what actually cashes in the
+    # document$-based hydration casts.js/badges.js were already written around — without
+    # it those still work (document$ fires once on a normal load too) but every nav is a
+    # full reload; with it, every nav re-fires the same hydration on a swapped-in page.
+    - navigation.instant
+    - navigation.instant.progress
+    # Keeps the URL hash in sync with the heading scrolled into view, and a "back to top"
+    # button once you've scrolled past the first screen — both free wins on dev-kit.md,
+    # the one page long enough for either to matter.
+    - navigation.tracking
+    - navigation.top
+    - toc.follow
+    # Search-as-you-type suggestions, query-term highlighting on the result page, and a
+    # shareable #search-url — table stakes for a docs site's built-in search.
+    - search.suggest
+    - search.highlight
+    - search.share
+    # A small affordance for a reader who spots something to fix: jump straight to this
+    # page's source on GitHub (wired via edit_uri below) instead of hunting for the file.
+    - content.action.edit
+    - content.tooltips
   palette:
     # No `media:` binding on either entry: the FIRST scheme below is what every new visitor
     # sees regardless of OS preference (dark by design, not just by default-detection) — the
@@ -37,13 +66,42 @@ theme:
         icon: material/brightness-7
         name: Switch to dark mode
 
-# A small, safe baseline every real Material site wants: admonition unlocks proper callouts
-# (!!! note / !!! tip) instead of plain blockquotes, and pymdownx.superfences is what lets a
-# fenced code block nest cleanly inside an admonition. Nothing exotic (no emoji shortcodes,
-# no mermaid, no tabs) — kept deliberately minimal.
+# Superseded — this repo now goes further than "deliberately minimal" (see below). Each
+# addition earns its place with real content it enables, not just because Material
+# supports it (still no mermaid, and pymdownx.emoji below is scoped to Material's icon set
+# — :material-*:/:octicons-*: glyphs, never an actual emoji face — nothing added for its
+# own sake).
 markdown_extensions:
+  # Material's own icon set (nav icons, admonition icons, the homepage's card grid) — the
+  # emoji_index/generator pair is Material's documented way to wire :material-*: glyphs,
+  # not a general emoji picker; !!python/name: is a standard PyYAML tag Material's own
+  # docs use for this, and check_docs.py's tolerant YAML loader already ignores tags it
+  # doesn't need (it only reads docs_dir/nav/exclude_docs/validation).
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  # Callouts (!!! note / !!! tip / ??? details, collapsible) instead of plain blockquotes.
   - admonition
+  - pymdownx.details
+  # Fenced code blocks that nest cleanly inside an admonition or tab, proper syntax
+  # highlighting (line-anchored so a code line is linkable), and inline code that gets the
+  # same highlighting treatment as a fenced block.
   - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+  - pymdownx.inlinehilite
+  # Content tabs (used on the homepage's install instructions — marketplace vs. local
+  # clone) and grid-card layout (`{ .grid .cards }` on the homepage's plugin list), both of
+  # which need attr_list to attach a class/id to a Markdown block.
+  - pymdownx.tabbed:
+      alternate_style: true
+  - attr_list
+  # Lets Markdown syntax (bold, code spans, links) work *inside* a raw HTML block — the
+  # castify.md cast embed used hand-escaped `<code>` tags before this; now it's plain
+  # backtick spans like everywhere else.
+  - md_in_html
+  - footnotes
 
 # MkDocs' own nav/link/anchor validation (1.5+) — declared explicitly rather than relying on
 # its undocumented defaults, so `mkdocs build --strict` (generate-docs's SKILL.md Stage 4) is

@@ -1,0 +1,26 @@
+<!--
+
+    SPDX-FileCopyrightText: © 2026 Tyler Nivin
+    SPDX-License-Identifier: MIT
+
+-->
+{% extends "main.html" %}
+
+{# Material registers 404.html as a "static template" (rendered from this Jinja file, not
+   from a docs/404.md source) — a docs/404.md would build but its content is silently
+   discarded, since the static-template render overwrites the same output path afterward.
+   This override is the actual, documented way to customize the page. #}
+{% block content %}
+<h1>Page not found</h1>
+
+<p>That page doesn't exist — it may have moved, or the link is out of date.</p>
+
+<p>
+  <a href="{{ base_url }}" class="md-button md-button--primary">Back to the homepage</a>
+</p>
+
+<p>Looking for something specific? Try the search box above, or jump straight to a plugin:
+<a href="{{ base_url }}castify/">castify</a> ·
+<a href="{{ base_url }}dev-kit/">dev-kit</a> ·
+<a href="{{ base_url }}worktree-guard/">worktree-guard</a>.</p>
+{% endblock %}

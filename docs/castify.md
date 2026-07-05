@@ -19,11 +19,13 @@ not stdin, so you cannot pipe input to them.
 This is a real cast, recorded with castify itself against this repo's own plugin
 tree — no hand-crafted example, no editing:
 
-<figure class="cast">
+<figure class="cast" markdown="1">
   <div class="cast__player"
        data-cast="../assets/fzf-demo.cast" data-cols="92" data-rows="22"
        aria-label="Recorded terminal demo: fuzzy-finding a SKILL.md with fzf, then printing it"></div>
-  <figcaption>Fuzzy-finding <code>castify</code>'s own <code>SKILL.md</code> with <code>fzf</code>, then printing it — recorded with <code>/castify:record-terminal-casts</code>.</figcaption>
+
+  <figcaption markdown="span">Fuzzy-finding `castify`'s own `SKILL.md` with `fzf`, then
+  printing it — recorded with `/castify:record-terminal-casts`.</figcaption>
 </figure>
 
 ## Commands
