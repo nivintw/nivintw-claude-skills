@@ -17,6 +17,12 @@ style = "fenced"
 [per-file-ignores]
 # MD033 (no inline HTML): the docs site's landing/plugin pages rely on raw HTML passing
 # through Markdown unmodified for the per-plugin <span data-version="..."> version badges.
-# Scoped to just these files rather than disabled globally, so the rest of the repo's
-# Markdown (SKILL.md, README, reference docs) keeps the stricter default.
-"docs/*.md" = ["MD033"]
+# MD046 (fenced over indented): pymdownx.tabbed's content nesting under `=== "tab"` requires
+# 4-space indentation, same convention as a list continuation — rumdl's parser sees that
+# indentation ahead of an already-fenced block and mistakes the whole thing for an indented
+# code block, then "fixes" it by wrapping the tab's prose in stray fences too, destroying
+# the tab structure (confirmed: this is exactly what happened to docs/index.md's Install
+# tabs the first time the gate ran against them). Both scoped to just these files rather
+# than disabled globally, so the rest of the repo's Markdown (SKILL.md, README, reference
+# docs — none of which use tabs) keeps the stricter default.
+"docs/*.md" = ["MD033", "MD046"]
