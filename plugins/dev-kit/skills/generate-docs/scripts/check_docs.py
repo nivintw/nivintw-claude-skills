@@ -23,6 +23,11 @@ Reads <repo_root>/mkdocs.yml for `docs_dir` (default "docs") and `nav:`, then ch
 
 External refs (with a scheme), protocol-relative (//host), mailto:, and data: are ignored.
 Exit 0 = clean, 1 = violations found, 2 = usage / setup error (no mkdocs.yml, no docs_dir).
+
+Overlaps by design with MkDocs' own `validation:` config (nav/link/anchor checks, see
+mkdocs.yml) enforced by `mkdocs build --strict` — this script is the fast, offline-capable
+pre-check Stage 4 runs first; the real build is still the authoritative second pass, and
+also validates things this script doesn't (plugin config, MkDocs-side rendering).
 """
 
 import re
@@ -32,7 +37,6 @@ from urllib.parse import unquote, urlparse
 
 import yaml
 
-EXCLUDED_DIRS = {"superpowers"}  # docs/superpowers/** — dev specs, never reconciled
 DANGEROUS_SCHEMES = ("javascript:", "vbscript:", "file:")
 
 MD_LINK_RE = re.compile(r"!?\[[^\]]*\]\(([^)]+)\)")
@@ -133,9 +137,17 @@ def nav_targets(nav) -> set[str]:
     return targets
 
 
-def is_excluded(md_file: Path, docs_dir: Path) -> bool:
+def excluded_dirs(config: dict) -> set[str]:
+    """Directory-style entries (trailing "/") from mkdocs.yml's own exclude_docs — read from
+    the single source of truth instead of hardcoding a second copy that could drift from it."""
+    raw = config.get("exclude_docs") or ""
+    lines = raw.splitlines() if isinstance(raw, str) else raw
+    return {line.strip().rstrip("/") for line in lines if line.strip().endswith("/")}
+
+
+def is_excluded(md_file: Path, docs_dir: Path, excluded: set[str]) -> bool:
     rel_parts = md_file.relative_to(docs_dir).parts
-    return bool(EXCLUDED_DIRS & set(rel_parts[:-1]))
+    return bool(excluded & set(rel_parts[:-1]))
 
 
 def main(argv: list[str]) -> int:
@@ -160,8 +172,9 @@ def main(argv: list[str]) -> int:
         print(f"docs_dir {docs_dir} does not exist — nothing to validate", file=sys.stderr)
         return 2
 
+    excluded = excluded_dirs(config)
     md_files = [p for p in sorted(docs_dir.rglob("*.md"))
-                if p.is_file() and not is_excluded(p, docs_dir)]
+                if p.is_file() and not is_excluded(p, docs_dir, excluded)]
     if not md_files:
         print(f"no .md files under {docs_dir} — nothing to validate (did generation run?)",
               file=sys.stderr)
@@ -187,8 +200,8 @@ def main(argv: list[str]) -> int:
             continue  # MkDocs' implicit homepage — no nav: entry required
         violations.append(f"{md}: not reachable from mkdocs.yml's nav: tree")
 
-    anchors_by_file = {md.resolve(): heading_anchors(md.read_text(encoding="utf-8"))
-                       for md in md_files}
+    texts = {md.resolve(): md.read_text(encoding="utf-8") for md in md_files}
+    anchors_by_file = {path: heading_anchors(text) for path, text in texts.items()}
 
     def check_anchor(referrer: Path, target: Path, frag: str, raw: str) -> None:
         anchors = anchors_by_file.get(target.resolve())
@@ -196,7 +209,7 @@ def main(argv: list[str]) -> int:
             violations.append(f"{referrer}: missing anchor #{frag}: {raw!r}")
 
     for md in md_files:
-        text = md.read_text(encoding="utf-8")
+        text = texts[md.resolve()]
         refs = [m.group(1) for m in MD_LINK_RE.finditer(text)]
         refs += [m.group(1) or m.group(2) for m in HTML_ATTR_RE.finditer(text)]
         for raw in refs:
@@ -210,8 +223,7 @@ def main(argv: list[str]) -> int:
                 continue
             if v.startswith("#"):
                 _, frag = split_ref(v)
-                if frag and frag not in anchors_by_file[md.resolve()]:
-                    violations.append(f"{md}: missing anchor #{frag}: {raw!r}")
+                check_anchor(md, md, frag, raw)
                 continue
             if v.startswith("/"):
                 violations.append(

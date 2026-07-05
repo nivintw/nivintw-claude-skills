@@ -21,11 +21,12 @@ teardown() {
   rm -rf "$SANDBOX"
 }
 
-# write_mkdocs <nav-yaml-body> — writes mkdocs.yml with docs_dir: docs and the given nav:
-# body (already indented 2 spaces, one entry per line). Defaults to just Home: index.md.
+# write_mkdocs <nav-yaml-body> — writes mkdocs.yml with docs_dir: docs, the standard
+# exclude_docs: superpowers/ (matching every real mkdocs.yml this skill produces), and the
+# given nav: body (already indented 2 spaces, one entry per line). Defaults to Home: index.md.
 write_mkdocs() {
   local nav="${1:-  - Home: index.md}"
-  printf 'docs_dir: docs\nnav:\n%s\n' "$nav" >"$SANDBOX/mkdocs.yml"
+  printf 'docs_dir: docs\nexclude_docs: |\n  superpowers/\nnav:\n%s\n' "$nav" >"$SANDBOX/mkdocs.yml"
 }
 
 run_check() {
@@ -236,6 +237,18 @@ run_check() {
   printf '# Spec\n\n[x](missing.md)\n' >"$SITE/superpowers/spec.md"
   run_check
   [ "$status" -eq 0 ]
+}
+
+@test "exclusions are read from mkdocs.yml's exclude_docs, not hardcoded" {
+  # No exclude_docs at all this time — a docs/superpowers/*.md file must NOT be
+  # silently excluded, proving the exclusion set really comes from config.
+  printf 'docs_dir: docs\nnav:\n  - Home: index.md\n' >"$SANDBOX/mkdocs.yml"
+  printf '# Home\n\nok\n' >"$SITE/index.md"
+  mkdir -p "$SITE/superpowers"
+  printf '# Spec\n\nok\n' >"$SITE/superpowers/spec.md"
+  run_check
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"superpowers/spec.md: not reachable from mkdocs.yml's nav"* ]]
 }
 
 @test "no mkdocs.yml exits 2" {
