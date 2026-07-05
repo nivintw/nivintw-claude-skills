@@ -14,8 +14,8 @@ SPDX-License-Identifier: {{ props["spdxLicenseIdentifier"] }}
 """
 # REUSE-IgnoreEnd
 
-# Negations cancel hawkeye's built-in default excludes (which skip **/*.md and
-# **/.gitignore) so those get headered too.
+# Negations cancel hawkeye's built-in default excludes (which skip **/*.md) so those get
+# headered too.
 # This project has frontmatter-first markdown (YAML on line 1 — Claude Code skills,
 # Jekyll/Hugo), so markdown stays in hawkeye's default excludes (a line-1 SPDX comment
 # would break the frontmatter) and is licensed via REUSE.toml instead. Note hawkeye
@@ -27,17 +27,17 @@ excludes = [
   "LICENSES/**",
   "uv.lock",
   "**/*.json",
-  "!**/.gitignore",
   "**/.python-version",
   "**/.vscode/*",
   # CODEOWNERS has no extension hawkeye maps; it carries its own `#` header (reuse-verified).
   "**/CODEOWNERS",
 ]
 
-# '#'-comment files hawkeye doesn't map by default.
+# '#'-comment files hawkeye doesn't map by default. (.gitignore stays in hawkeye's default
+# excludes and is licensed via REUSE.toml instead — see that file.)
 [mapping.SCRIPT_STYLE]
 extensions = ["txt", "fish", "bats"]
-filenames = [".gitignore", ".envrc", ".dockerignore"]
+filenames = []
 
 [properties]
 inceptionYear = "2026"
