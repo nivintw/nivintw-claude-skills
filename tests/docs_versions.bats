@@ -47,7 +47,10 @@ setup() {
   local pages=("$ROOT"/docs/*.md)
   [ "${#pages[@]}" -gt 0 ]
 
-  grep -qE 'assets/badges\.js' "$ROOT/mkdocs.yml" \
+  # Anchored to an actual YAML list item (not just a substring match anywhere in the file,
+  # e.g. a comment mentioning the path), so the test asserts it's really wired into
+  # extra_javascript, not merely referenced in prose.
+  grep -qE '^[[:space:]]*-[[:space:]]+assets/badges\.js[[:space:]]*$' "$ROOT/mkdocs.yml" \
     || { echo "mkdocs.yml's extra_javascript is missing assets/badges.js (the hydration script)"; return 1; }
 
   local all_names=""
@@ -62,7 +65,7 @@ $names"
   while IFS= read -r name; do
     [ -n "$name" ] || continue
     [ -f "$ROOT/docs/versions/$name.js" ] || { echo "badge data-version=$name but docs/versions/$name.js is missing"; return 1; }
-    grep -qE "versions/$name\.js" "$ROOT/mkdocs.yml" \
+    grep -qE "^[[:space:]]*-[[:space:]]+versions/$name\.js[[:space:]]*\$" "$ROOT/mkdocs.yml" \
       || { echo "badge data-version=$name but mkdocs.yml's extra_javascript doesn't load versions/$name.js"; return 1; }
   done <<<"$(printf '%s\n' "$all_names" | sort -u)"
 }
