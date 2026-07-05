@@ -40,7 +40,40 @@ theme:
 extra_css:
   - assets/asciinema-player.css
 extra_javascript:
+  # Per-plugin version badges: each docs/versions/<name>.js shim carries one plugin's
+  # version (bumped independently by release-please — see those files); badges.js hydrates
+  # every [data-version] element from them. Appended here (not per-page) because MkDocs
+  # loads extra_javascript site-wide.
   - assets/asciinema-player.min.js
+  - assets/badges.js
+  - versions/castify.js
+  - versions/dev-kit.js
+  - versions/worktree-guard.js
+
+# Dev-only specs/plans that share the docs/ tree with the published site (the
+# superpowers:brainstorming/writing-plans convention, used across every copier-everything
+# repo) but were never meant to be site content. generate-docs never touches this
+# subtree; excluding it here too is what lets `mkdocs build --strict` pass instead of
+# erroring on "exists but not in nav" for every spec/plan file.
+#
+# The four legacy *.html pages/assets are the pre-migration hand-rolled site, kept
+# (not yet deleted) until the batch Pages-config flip (nivintw/repo-management#88) confirms
+# the new MkDocs build is actually live — excluded here so their basename collision with
+# the same-named .md pages doesn't fail the strict build in the meantime. Remove this
+# block (and the files themselves) once that issue lands.
+exclude_docs: |
+  superpowers/
+  index.html
+  castify.html
+  dev-kit.html
+  worktree-guard.html
+  app.js
+  style.css
+  search-index.js
 
 nav:
   - Home: index.md
+  - Plugins:
+      - castify: castify.md
+      - dev-kit: dev-kit.md
+      - worktree-guard: worktree-guard.md

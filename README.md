@@ -5,7 +5,8 @@ SPDX-License-Identifier: MIT
 
 # nivintw-claude-skills
 
-Tyler Nivin's [Claude Code](https://claude.com/claude-code) plugin marketplace.
+Tyler Nivin's [Claude Code](https://claude.com/claude-code) plugin marketplace. Full docs:
+[nivintw.github.io/nivintw-claude-skills](https://nivintw.github.io/nivintw-claude-skills/).
 
 ## Plugins
 
@@ -26,7 +27,8 @@ them. Turn the result into clean, embeddable casts. It's the pipeline behind the
 record → verify → embed.
 
 It ships one skill — **record-terminal-casts** — plus a reusable recording
-library and an end-to-end web-embedding guide:
+library, a noise-scrubbing script, and reference guides for viewing/exporting and
+web-embedding a cast:
 
 | Piece | What it is |
 |-------|------------|
@@ -34,30 +36,39 @@ library and an end-to-end web-embedding guide:
 | `…/scripts/cast-lib.sh` | tmux-driven recording harness (`start_rec`/`type_in`/`key`/`pause`/`end_rec`) |
 | `…/scripts/launch.sh` · `recprompt.fish` | Clean-shell recorder + on-brand prompt |
 | `…/scripts/example-fixtures.sh` · `example-record.sh` | A complete, runnable worked example |
-| `…/reference/embedding.md` | Vendoring asciinema-player + HTML/CSS/JS + REUSE licensing |
+| `…/scripts/cast-scrub.py` | Strip noisy output events from a recorded `.cast` without re-recording |
+| `…/reference/viewing-casts.md` | Playing/quitting a cast, checking it without watching, exporting to GIF |
+| `…/reference/embedding.md` | Vendoring asciinema-player onto a web page (MkDocs or hand-rolled) + REUSE licensing |
 
 ### `dev-kit`
 
 **A Human + AI teaming development workflow.** Take a change from idea to a reviewed
 pull request — with the human in control at the ends (plan sign-off, final merge)
-and rigorous, token-aware work in the middle. It ships six composable commands;
-`/dev-kit:ship` is the orchestrator and calls the others, but each stands alone:
+and rigorous, token-aware work in the middle. `/dev-kit:ship` is the orchestrator
+and calls the others, but each stands alone:
 
 | Command | What it does |
 |---------|--------------|
-| `/dev-kit:ship` | Idea → review-ready PR: plan in a worktree, implement with tiered subagent delegation, simplify, refresh docs, review, open the PR. Never auto-merges. |
+| `/dev-kit:ship` | Idea → review-ready PR: plan in a worktree, implement with tiered subagent delegation, simplify, refresh docs, review, open the PR. Never auto-merges — unless asked to `land`. |
 | `/dev-kit:review-pr` | One review entry point — the full battery (code-review, security-review, pr-review-toolkit) plus a context-chosen adversarial pass, synthesized into one report. |
-| `/dev-kit:generate-docs` | Reconcile the whole docs set against the whole codebase every run, catching drift and omission, and author a docs site shaped to the repo (file:// and GitHub Pages). |
+| `/dev-kit:generate-docs` | Reconcile the whole docs set against the whole codebase every run, catching drift and omission, and author an MkDocs Material site (Markdown + nav) shaped to the repo. |
 | `/dev-kit:handle-task-tracking` | A repeatable workflow for tracking work as GitHub issues — the durable ledger `ship` delegates to. |
 | `/dev-kit:open-work` | Read the open issues, call out any in-progress work to resume, then return a ranked "pick up next" shortlist with rationale — the select step between tracking and shipping. |
 | `/dev-kit:cleanup-locally` | Prune merged branches and worktrees and bring the default branch up to date, without clobbering local work. |
+
+Five more — `land` (a discoverable entry point to ship's merge verb),
+`doctor`, `pre-public-hardening`, `dry-dock-overhaul`, and `template-reconcile` —
+are occasional or standalone checks; see the
+[full dev-kit docs](https://nivintw.github.io/nivintw-claude-skills/dev-kit/) for
+all eleven.
 
 ### `worktree-guard`
 
 **A safety net for git-worktree work.** A single `PreToolUse` hook that catches the classic
 footgun: when your session is inside a `.claude/worktrees/<name>/` worktree, it blocks a
 `Write`/`Edit`/`MultiEdit` whose path resolves into the **parent checkout** outside the
-worktree — the main copy you didn't mean to touch, usually a stray absolute path — while
+worktree — the main copy you didn't mean to touch, usually a stray absolute path, but a
+relative path that walks out of the worktree is caught too — while
 leaving the worktree's own files writable. It's inert
 unless you're in a worktree, and fail-open on any error, so it can't get in your way
 elsewhere. A natural companion to `/dev-kit:ship`, which works inside worktrees (and whose
@@ -93,7 +104,7 @@ asciinema convert -f txt ./casts/fco.cast /dev/stdout   # verify
 ```
 
 See `plugins/castify/skills/record-terminal-casts/reference/embedding.md` to put
-the resulting `.cast` files on a web page.
+the resulting `.cast` files on a web page (including this repo's own MkDocs site).
 
 A few hooks shell out to **system tools** prek can't bootstrap — CI installs them for
 you, but install them locally too (most are in Homebrew): `hawkeye`, `taplo`.
