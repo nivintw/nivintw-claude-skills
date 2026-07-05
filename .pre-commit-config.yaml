@@ -168,7 +168,7 @@ repos:
   # the bare type. cz_conventional_commits also rejects a leading emoji, so a stray one
   # can't silently slip a release.
   - repo: https://github.com/commitizen-tools/commitizen
-    rev: v4.16.3
+    rev: v4.16.4
     hooks:
       - id: commitizen
         name: "✨ commit-msg · Enforce Conventional Commits"
