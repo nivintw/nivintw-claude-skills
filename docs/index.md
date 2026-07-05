@@ -28,6 +28,9 @@ human in control at the ends.
 - [`/dev-kit:ship`](dev-kit.md#ship)
 - [`/dev-kit:review-pr`](dev-kit.md#review-pr)
 - [`/dev-kit:generate-docs`](dev-kit.md#generate-docs)
+- …and 8 more (`land`, `handle-task-tracking`, `open-work`, `cleanup-locally`, `doctor`,
+  `pre-public-hardening`, `dry-dock-overhaul`, `template-reconcile`) — see the
+  [full dev-kit page](dev-kit.md) for all eleven.
 
 ### [worktree-guard](worktree-guard.md) <span data-version="worktree-guard"></span>
 
