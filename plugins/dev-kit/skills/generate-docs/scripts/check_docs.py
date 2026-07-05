@@ -9,10 +9,12 @@
 
 Reads <repo_root>/mkdocs.yml for `docs_dir` (default "docs") and `nav:`, then checks every
 *.md file under docs_dir (excluding docs/superpowers/**, which this skill never touches):
-  1. internal-link integrity — relative Markdown links (`[text](target)`) and raw HTML
-     href/src attributes must resolve to a file that exists on disk, case-sensitively (so a
-     link that works on a case-insensitive macOS FS but would 404 on case-sensitive GitHub
-     Pages is caught).
+  1. internal-link integrity — relative Markdown links (`[text](target)`), raw HTML href/src
+     attributes, and each candidate in a srcset must resolve to a file that exists on disk,
+     case-sensitively (so a link that works on a case-insensitive macOS FS but would 404 on
+     case-sensitive GitHub Pages is caught). Fenced code blocks (``` / ~~~) are excluded from
+     every check below — an illustrative `[link](...)`/`<a href>`/`# heading` shown as an
+     example isn't real page structure.
   2. anchor integrity — a #fragment must match a heading's slug on the target page (same-page
      or cross-page), using MkDocs/Python-Markdown's default slugify + de-dupe rules (lowercase,
      punctuation other than "_"/"-" stripped, whitespace -> hyphens, repeats suffixed _1, _2,
@@ -34,6 +36,7 @@ also validates things this script doesn't (plugin config, MkDocs-side rendering)
 
 import re
 import sys
+import unicodedata
 from pathlib import Path
 from urllib.parse import unquote, urlparse
 
@@ -42,9 +45,21 @@ import yaml
 DANGEROUS_SCHEMES = ("javascript:", "vbscript:", "file:")
 
 MD_LINK_RE = re.compile(r"!?\[[^\]]*\]\(([^)]+)\)")
-HTML_ATTR_RE = re.compile(r'\b(?:href|src)\s*=\s*"([^"]+)"|\b(?:href|src)\s*=\s*\'([^\']+)\'')
+HTML_ATTR_RE = re.compile(
+    r'\b(?:href|src)\s*=\s*"([^"]+)"|\b(?:href|src)\s*=\s*\'([^\']+)\''
+)
+SRCSET_RE = re.compile(r'\bsrcset\s*=\s*"([^"]+)"|\bsrcset\s*=\s*\'([^\']+)\'')
 HEADING_RE = re.compile(r"^(#{1,6})\s+(.+?)\s*#*$", re.MULTILINE)
 HTML_ID_RE = re.compile(r'\b(?:id|name)\s*=\s*"([^"]+)"|\b(?:id|name)\s*=\s*\'([^\']+)\'')
+# Fenced code blocks (``` or ~~~, 3+) — content inside is a rendered example, not live
+# Markdown structure, so a `#`-prefixed shell comment or an illustrative [link](...)/<a href>
+# inside one must not be parsed as a real heading/link. Requires a closing fence of the same
+# character repeated at least as many times, per CommonMark.
+FENCED_CODE_RE = re.compile(r"^(`{3,}|~{3,})[^\n]*\n.*?^\1[`~]*[ \t]*$", re.MULTILINE | re.DOTALL)
+
+
+def strip_fenced_code(text: str) -> str:
+    return FENCED_CODE_RE.sub("", text)
 
 
 class _TolerantLoader(yaml.SafeLoader):
@@ -66,17 +81,22 @@ def _tolerant_yaml_load(text: str) -> dict:
 
 
 def slugify(heading: str) -> str:
-    """Approximate Python-Markdown's default TOC slugify (lowercase, strip punctuation,
-    whitespace -> hyphens). Good enough for link validation, not byte-exact in every case."""
-    s = re.sub(r"[^\w\s-]", "", heading.strip().lower())
+    """Approximate Python-Markdown's default TOC slugify: NFKD-normalize and drop non-ASCII
+    (its default unicode=False behavior), lowercase, strip punctuation, whitespace -> hyphens.
+    Good enough for link validation, not byte-exact in every case."""
+    ascii_only = unicodedata.normalize("NFKD", heading).encode("ascii", "ignore").decode("ascii")
+    s = re.sub(r"[^\w\s-]", "", ascii_only.strip().lower())
     return re.sub(r"[\s]+", "-", s)
 
 
-def heading_anchors(text: str) -> set[str]:
-    """Every heading's slug, with MkDocs' duplicate-suffix rule (_1, _2, ...) applied."""
+def heading_anchors_from_prose(prose: str) -> set[str]:
+    """Every heading's slug, with MkDocs' duplicate-suffix rule (_1, _2, ...) applied, plus
+    any literal HTML id/name attribute. Expects fenced code blocks already stripped from
+    `prose` (via strip_fenced_code) — an example `# comment` or `<a id=...>` shown in a fence
+    isn't real page structure."""
     seen: dict[str, int] = {}
     anchors: set[str] = set()
-    for _, raw in HEADING_RE.findall(text):
+    for _, raw in HEADING_RE.findall(prose):
         base = slugify(raw)
         if base not in seen:
             seen[base] = 0
@@ -84,7 +104,7 @@ def heading_anchors(text: str) -> set[str]:
         else:
             seen[base] += 1
             anchors.add(f"{base}_{seen[base]}")
-    for m in HTML_ID_RE.finditer(text):
+    for m in HTML_ID_RE.finditer(prose):
         anchors.add(m.group(1) or m.group(2))
     return anchors
 
@@ -221,8 +241,12 @@ def main(argv: list[str]) -> int:
             continue  # MkDocs' implicit homepage — no nav: entry required
         violations.append(f"{md}: not reachable from mkdocs.yml's nav: tree")
 
-    texts = {md.resolve(): md.read_text(encoding="utf-8") for md in md_files}
-    anchors_by_file = {path: heading_anchors(text) for path, text in texts.items()}
+    # Fenced code blocks are rendered examples, not live Markdown structure — strip them once
+    # per file and scan the prose for headings/links/ids, so a `# comment` or an illustrative
+    # [link](...)/<a href> shown inside a fence isn't parsed as real page structure.
+    prose_texts = {md.resolve(): strip_fenced_code(text)
+                   for md, text in ((m, m.read_text(encoding="utf-8")) for m in md_files)}
+    anchors_by_file = {path: heading_anchors_from_prose(prose) for path, prose in prose_texts.items()}
 
     def check_anchor(referrer: Path, target: Path, frag: str, raw: str) -> None:
         anchors = anchors_by_file.get(target.resolve())
@@ -230,9 +254,15 @@ def main(argv: list[str]) -> int:
             violations.append(f"{referrer}: missing anchor #{frag}: {raw!r}")
 
     for md in md_files:
-        text = texts[md.resolve()]
+        text = prose_texts[md.resolve()]
         refs = [m.group(1) for m in MD_LINK_RE.finditer(text)]
         refs += [m.group(1) or m.group(2) for m in HTML_ATTR_RE.finditer(text)]
+        for m in SRCSET_RE.finditer(text):
+            # "url 1x, url2 2x" — each comma-separated candidate's URL token
+            for candidate in (m.group(1) or m.group(2)).split(","):
+                token = candidate.strip().split()
+                if token:
+                    refs.append(token[0])
         for raw in refs:
             v = raw.strip()
             if not v:
