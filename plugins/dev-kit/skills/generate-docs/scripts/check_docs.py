@@ -9,12 +9,17 @@
 
 Reads <repo_root>/mkdocs.yml for `docs_dir` (default "docs") and `nav:`, then checks every
 *.md file under docs_dir (excluding docs/superpowers/**, which this skill never touches):
-  1. internal-link integrity — relative Markdown links (`[text](target)`), raw HTML href/src
-     attributes, and each candidate in a srcset must resolve to a file that exists on disk,
-     case-sensitively (so a link that works on a case-insensitive macOS FS but would 404 on
-     case-sensitive GitHub Pages is caught). Fenced code blocks (``` / ~~~) are excluded from
-     every check below — an illustrative `[link](...)`/`<a href>`/`# heading` shown as an
-     example isn't real page structure.
+  1. internal-link integrity — relative Markdown links (`[text](target)`), raw HTML
+     href/src/data-cast attributes, and each candidate in a srcset must resolve to a file
+     that exists on disk, case-sensitively (so a link that works on a case-insensitive macOS
+     FS but would 404 on case-sensitive GitHub Pages is caught). A non-`.md` (asset) ref is
+     resolved relative to where MkDocs actually *serves* the referring page, not its source
+     file's directory — directory URLs (the default) turn any non-index page into its own
+     directory (`castify.md` -> `castify/index.html`), one level deeper than the flat source
+     tree, and a raw HTML/asset ref (unlike a `.md` cross-reference, which MkDocs itself
+     rewrites) is never adjusted for that by MkDocs. Fenced code blocks (``` / ~~~) are
+     excluded from every check below — an illustrative `[link](...)`/`<a href>`/`# heading`
+     shown as an example isn't real page structure.
   2. anchor integrity — a #fragment must match a heading's slug on the target page (same-page
      or cross-page), using MkDocs/Python-Markdown's default slugify + de-dupe rules (lowercase,
      punctuation other than "_"/"-" stripped, whitespace -> hyphens, repeats suffixed _1, _2,
@@ -46,7 +51,7 @@ DANGEROUS_SCHEMES = ("javascript:", "vbscript:", "file:")
 
 MD_LINK_RE = re.compile(r"!?\[[^\]]*\]\(([^)]+)\)")
 HTML_ATTR_RE = re.compile(
-    r'\b(?:href|src)\s*=\s*"([^"]+)"|\b(?:href|src)\s*=\s*\'([^\']+)\''
+    r'\b(?:href|src|data-cast)\s*=\s*"([^"]+)"|\b(?:href|src|data-cast)\s*=\s*\'([^\']+)\''
 )
 SRCSET_RE = re.compile(r'\bsrcset\s*=\s*"([^"]+)"|\bsrcset\s*=\s*\'([^\']+)\'')
 HEADING_RE = re.compile(r"^(#{1,6})\s+(.+?)\s*#*$", re.MULTILINE)
@@ -137,15 +142,23 @@ def within_root(target: Path, root: Path) -> bool:
 
 
 def exists_cs(target: Path, root: Path) -> bool:
-    """Existence check that is case-sensitive even on a case-insensitive filesystem."""
-    if not target.exists():
-        return False
+    """Existence check that is case-sensitive even on a case-insensitive filesystem.
+
+    Resolves (collapsing any "..") *before* checking existence, not after: a served_dir()
+    base for a directory-URL page is a virtual path with no real directory on the source
+    tree (e.g. docs/castify/ for castify.md), so a "../" escaping it can only be traversed
+    by Python's lexical path-stack resolution — the OS itself can't stat through a ".." in a
+    directory that was never actually created on disk."""
     try:
-        rel = target.resolve().relative_to(root.resolve())
-    except ValueError:
-        return False
+        resolved = target.resolve()
     except OSError as e:
         print(f"warning: could not resolve {target}: {e}", file=sys.stderr)
+        return False
+    if not resolved.exists():
+        return False
+    try:
+        rel = resolved.relative_to(root.resolve())
+    except ValueError:
         return False
     cur = root.resolve()
     for part in rel.parts:
@@ -190,6 +203,17 @@ def is_excluded(md_file: Path, docs_dir: Path, excluded: set[str]) -> bool:
     return bool(excluded & set(rel_parts[:-1]))
 
 
+def served_dir(md_file: Path, docs_dir: Path, use_directory_urls: bool) -> Path:
+    """Directory a raw asset ref (non-.md) on this page resolves relative to once built.
+    MkDocs' directory URLs (default on) turn any non-index page into its own directory —
+    e.g. castify.md -> castify/index.html — one level deeper than the flat source tree.
+    A .md-to-.md doc link is unaffected (MkDocs rewrites those itself, on both ends), so
+    callers only use this for non-.md (asset) refs."""
+    if not use_directory_urls or md_file.name.lower() == "index.md":
+        return md_file.parent
+    return md_file.parent / md_file.stem
+
+
 def main(argv: list[str]) -> int:
     if len(argv) != 2:
         print("usage: check_docs.py <repo_root>", file=sys.stderr)
@@ -207,10 +231,12 @@ def main(argv: list[str]) -> int:
         print(f"could not parse {mkdocs_yml}: {e}", file=sys.stderr)
         return 2
 
-    # `or "docs"`, not a dict-get default: a swallowed custom YAML tag (see _TolerantLoader)
-    # on this key would leave it present but None, and a bare .get(..., "docs") default only
-    # applies when the key is absent — silently producing `repo_root / None` otherwise.
+    # `or "docs"`/`is not False`, not a dict-get default: a swallowed custom YAML tag (see
+    # _TolerantLoader) on either key would leave it present but None, and a bare
+    # .get(..., default) only applies when the key is absent — silently producing
+    # `repo_root / None`, or treating "swallowed to None" as "directory URLs off", otherwise.
     docs_dir = repo_root / (config.get("docs_dir") or "docs")
+    use_directory_urls = config.get("use_directory_urls") is not False
     if not docs_dir.is_dir():
         print(f"docs_dir {docs_dir} does not exist — nothing to validate", file=sys.stderr)
         return 2
@@ -294,7 +320,11 @@ def main(argv: list[str]) -> int:
             ref, frag = split_ref(v)
             if not ref:
                 continue
-            target = md.parent / ref
+            # A .md cross-reference is resolved from the source tree (MkDocs rewrites these
+            # itself, on both ends); any other ref is an asset, resolved from where MkDocs
+            # actually serves this page (see served_dir).
+            base_dir = md.parent if ref.lower().endswith(".md") else served_dir(md, docs_dir, use_directory_urls)
+            target = base_dir / ref
             if not within_root(target, docs_dir):
                 violations.append(f"{md}: link escapes docs root: {raw!r}")
                 continue

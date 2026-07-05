@@ -16,6 +16,10 @@ theme:
   name: material
   favicon: assets/favicon.svg
   logo: assets/favicon.svg
+  features:
+    # Copy-to-clipboard on every code block — a small thing, but this is a docs site made
+    # almost entirely of shell snippets to paste.
+    - content.code.copy
   palette:
     # No `media:` binding on either entry: the FIRST scheme below is what every new visitor
     # sees regardless of OS preference (dark by design, not just by default-detection) — the
@@ -33,6 +37,14 @@ theme:
         icon: material/brightness-7
         name: Switch to dark mode
 
+# A small, safe baseline every real Material site wants: admonition unlocks proper callouts
+# (!!! note / !!! tip) instead of plain blockquotes, and pymdownx.superfences is what lets a
+# fenced code block nest cleanly inside an admonition. Nothing exotic (no emoji shortcodes,
+# no mermaid, no tabs) — kept deliberately minimal.
+markdown_extensions:
+  - admonition
+  - pymdownx.superfences
+
 # MkDocs' own nav/link/anchor validation (1.5+) — declared explicitly rather than relying on
 # its undocumented defaults, so `mkdocs build --strict` (generate-docs's SKILL.md Stage 4) is
 # the authoritative check for exactly these four things, with check_docs.py as a faster,
@@ -47,18 +59,22 @@ validation:
     anchors: warn
     absolute_links: warn
 
+# asciinema-player, CDN-hosted (pinned version, not a moving tag) rather than vendored —
+# see castify's embedding.md, which permits either; this repo opted for the CDN to avoid
+# committing third-party JS/CSS. casts.js hydrates every .cast__player mount (see
+# castify.md) via Material's document$ observable, so a page navigated to via instant-nav
+# still gets its player.
+extra_css:
+  - https://cdn.jsdelivr.net/npm/asciinema-player@3.10.0/dist/bundle/asciinema-player.css
+  - assets/casts.css
+
 # Per-plugin version badges: each docs/versions/<name>.js shim carries one plugin's version
 # (bumped independently by release-please — see those files); badges.js hydrates every
 # [data-version] element from them. Appended here (not per-page) because MkDocs loads
 # extra_javascript site-wide.
-#
-# NOTE for whoever embeds this repo's first asciinema cast (per castify's embedding.md): add
-# assets/asciinema-player.css to extra_css and assets/asciinema-player.min.js to
-# extra_javascript THEN, alongside vendoring the actual files at those paths — not before.
-# extra_css/extra_javascript load site-wide on every page regardless of whether that page
-# embeds a cast, so wiring them ahead of the vendored files means every page 404s on both,
-# not just pages that would use them.
 extra_javascript:
+  - https://cdn.jsdelivr.net/npm/asciinema-player@3.10.0/dist/bundle/asciinema-player.min.js
+  - assets/casts.js
   - assets/badges.js
   - versions/castify.js
   - versions/dev-kit.js

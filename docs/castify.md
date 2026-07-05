@@ -14,6 +14,18 @@ with `tmux send-keys`, writing keystrokes into the session's real PTY. That is t
 to script **interactive TUIs like `fzf`, `less`, or `vim`** — they read the controlling TTY,
 not stdin, so you cannot pipe input to them.
 
+## See it in action
+
+This is a real cast, recorded with castify itself against this repo's own plugin
+tree — no hand-crafted example, no editing:
+
+<figure class="cast">
+  <div class="cast__player"
+       data-cast="../assets/fzf-demo.cast" data-cols="92" data-rows="22"
+       aria-label="Recorded terminal demo: fuzzy-finding a SKILL.md with fzf, then printing it"></div>
+  <figcaption>Fuzzy-finding <code>castify</code>'s own <code>SKILL.md</code> with <code>fzf</code>, then printing it — recorded with <code>/castify:record-terminal-casts</code>.</figcaption>
+</figure>
+
 ## Commands
 
 One skill — it activates when you ask Claude Code to record a cast.
@@ -43,8 +55,10 @@ Noisy recording (a shell greeting, a stray notification)? Clean it up without re
 with `scripts/cast-scrub.py IN.cast OUT.cast [--pattern REGEX ...]` — it drops matching
 output events from the `.cast` file and leaves the original untouched.
 
-> Two reference guides round this out: `skills/record-terminal-casts/reference/viewing-casts.md`
-> covers playing/quitting a cast, checking its duration or content without watching, and
-> exporting to GIF or other formats; `skills/record-terminal-casts/reference/embedding.md` covers
-> vendoring asciinema-player onto a web page (including an MkDocs-specific wiring section —
-> `extra_css`/`extra_javascript` instead of per-page tags) and licensing it correctly.
+!!! note "Two reference guides round this out"
+    `skills/record-terminal-casts/reference/viewing-casts.md` covers playing/quitting a
+    cast, checking its duration or content without watching, and exporting to GIF or other
+    formats; `skills/record-terminal-casts/reference/embedding.md` covers embedding
+    asciinema-player onto a web page (including an MkDocs-specific wiring section —
+    `extra_css`/`extra_javascript` instead of per-page tags, vendored or CDN-hosted) and
+    licensing it correctly.

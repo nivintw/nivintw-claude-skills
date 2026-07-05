@@ -31,9 +31,10 @@ more:
   worktree's `.git` pointer file.
 - **Everything else** — scratch dirs, `~/.claude` memory, other repos, `/tmp`. Untouched.
 
-> Two safety properties by design: it is **inert** unless you're in a worktree (it can never
-> false-positive on a normal checkout), and it is **fail-open** — any error or unexpected
-> input lets the write through, so the guard can't wedge your session.
+!!! tip "Two safety properties by design"
+    It is **inert** unless you're in a worktree (it can never false-positive on a normal
+    checkout), and it is **fail-open** — any error or unexpected input lets the write
+    through, so the guard can't wedge your session.
 
 ## Install
 
