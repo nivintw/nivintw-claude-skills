@@ -39,20 +39,30 @@ setup() {
   done
 }
 
-@test "every [data-version] badge loads its versions/<name>.js shim on the same page" {
+@test "every [data-version] badge has its versions/<name>.js shim wired into mkdocs.yml" {
+  # MkDocs pages are Markdown, and the shims load once site-wide via mkdocs.yml's
+  # extra_javascript (badges.js hydrates every badge from them) rather than a per-page
+  # <script> tag, so the check moves from "same page" to "same mkdocs.yml".
   shopt -s nullglob
-  local pages=("$ROOT"/docs/*.html)
+  local pages=("$ROOT"/docs/*.md)
   [ "${#pages[@]}" -gt 0 ]
 
+  grep -qE 'assets/badges\.js' "$ROOT/mkdocs.yml" \
+    || { echo "mkdocs.yml's extra_javascript is missing assets/badges.js (the hydration script)"; return 1; }
+
+  local all_names=""
   for page in "${pages[@]}"; do
-    # every distinct data-version="X" referenced on this page...
     local names
-    names="$(grep -oE 'data-version="[^"]+"' "$page" | sed -E 's/data-version="([^"]+)"/\1/' | sort -u)"
-    [ -n "$names" ] || continue
-    while IFS= read -r name; do
-      # ...must have its shim file, and a <script> loading it on this page.
-      [ -f "$ROOT/docs/versions/$name.js" ] || { echo "$(basename "$page"): badge data-version=$name but docs/versions/$name.js is missing"; return 1; }
-      grep -qE "versions/$name\.js" "$page" || { echo "$(basename "$page"): badge data-version=$name but no <script src=versions/$name.js> on the page"; return 1; }
-    done <<<"$names"
+    names="$(grep -oE 'data-version="[^"]+"' "$page" | sed -E 's/data-version="([^"]+)"/\1/')"
+    all_names="$all_names
+$names"
   done
+
+  local name
+  while IFS= read -r name; do
+    [ -n "$name" ] || continue
+    [ -f "$ROOT/docs/versions/$name.js" ] || { echo "badge data-version=$name but docs/versions/$name.js is missing"; return 1; }
+    grep -qE "versions/$name\.js" "$ROOT/mkdocs.yml" \
+      || { echo "badge data-version=$name but mkdocs.yml's extra_javascript doesn't load versions/$name.js"; return 1; }
+  done <<<"$(printf '%s\n' "$all_names" | sort -u)"
 }
