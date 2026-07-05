@@ -20,6 +20,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: link-check-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   lychee:
     runs-on: ubuntu-latest
@@ -32,12 +36,11 @@ jobs:
         uses: lycheeverse/lychee-action@8646ba30535128ac92d33dfc9133794bfdd9b411 # v2.8.0
         with:
           # --max-retries/--timeout keep a slow-but-valid host (a single transient TIMEOUT)
-          # from reddening the check. Self-referential links are otherwise validated (the repo
-          # exists on GitHub and GITHUB_TOKEN authenticates even a private repo's own URLs).
-          # Exclusions (this repo's own /compare/ URLs, plus any host that blocks CI runner IPs)
-          # live in .config/lychee.toml so they sit with the rest of the repo's tool config; the
-          # whole set is passed via --config rather than inline --exclude.
-          # (lychee excludes mailto: by default.) Scope to Markdown so LICENSES/lockfiles aren't crawled.
+          # from reddening the check. Excludes — this repo's own /compare/ URLs, the REUSE badge
+          # /info/ endpoint, plus any a consuming repo adds — live in .config/lychee.toml and are
+          # passed via --config; keeping ALL excludes in one source avoids lychee's CLI-vs-config
+          # merge ambiguity. (lychee excludes mailto: by default.) Scope to Markdown so
+          # LICENSES/lockfiles aren't crawled.
           args: "--no-progress --max-retries 5 --timeout 30 --config .config/lychee.toml '**/*.md'"
           fail: true
         env:

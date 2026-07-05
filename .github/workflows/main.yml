@@ -24,9 +24,10 @@
 #     installed on this repo, and in the bypass list of any ruleset that protects main.
 #   - A repository variable CI_CLIENT_ID (the App's Client ID — non-secret) and a
 #     repository secret CI_APP_PRIVATE_KEY (the App's private key).
-#   - "Allow auto-merge" + "Allow rebase merging" enabled, and main gated on REQUIRED
-#     STATUS CHECKS with 0 required approvals (the App can't approve its own Release PR;
-#     `--auto` also needs >=1 required check). The auto-merge step uses `--rebase`.
+#   - "Allow auto-merge" + "Allow rebase merging" enabled, and the ruleset gating main on
+#     REQUIRED STATUS CHECKS (`--auto` needs >=1 required check; a required approving review
+#     works only with approve-bot-prs.yml configured — the App can't approve its own Release
+#     PR). The auto-merge step uses `--rebase`.
 #   - If you don't want app releases, pass a PAT as `token` instead, or delete this job.
 #     For Release PRs you'd rather merge by hand, drop the "Auto-merge" step below.
 
