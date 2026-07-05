@@ -33,6 +33,20 @@ theme:
         icon: material/brightness-7
         name: Switch to dark mode
 
+# MkDocs' own nav/link/anchor validation (1.5+) — declared explicitly rather than relying on
+# its undocumented defaults, so `mkdocs build --strict` (generate-docs's SKILL.md Stage 4) is
+# the authoritative check for exactly these four things, with check_docs.py as a faster,
+# offline-capable pre-check over the same ground.
+validation:
+  nav:
+    omitted_files: warn
+    not_found: warn
+    absolute_links: warn
+  links:
+    not_found: warn
+    anchors: warn
+    absolute_links: warn
+
 # Wired for the vendored asciinema-player assets (see castify's embedding.md reference doc)
 # so a repo only needs to drop the vendored files at these conventional paths under
 # docs/assets/ to embed a `<figure class="cast">` terminal recording — a repo with no casts
@@ -63,6 +77,7 @@ extra_javascript:
 # block (and the files themselves) once that issue lands.
 exclude_docs: |
   superpowers/
+
   index.html
   castify.html
   dev-kit.html
