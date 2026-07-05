@@ -16,10 +16,12 @@
 # Tamper gate (automation): the caller sets BASE_REF=<git ref> to enforce supply-chain
 # safety. A SHA is then only re-pinned when the *_VERSION actually changed vs BASE_REF; a SHA
 # that differs from upstream while the version is UNCHANGED is treated as a tampered/swapped
-# release asset and fails the run — never silently re-pinned. The central self-hosted Renovate
-# runner must export BASE_REF (e.g. origin/<base-branch>) when it runs this as a postUpgradeTask,
-# or the gate is off. Without BASE_REF (a human running it locally after a deliberate bump) it
-# just recomputes every pin.
+# release asset and fails the run — never silently re-pinned. `.github/renovate.json`'s
+# postUpgradeTask sets BASE_REF=HEAD (the pre-bump commit — Renovate's version-bump edit is
+# still an uncommitted working-tree change at the point this runs, so HEAD is exactly "before
+# this update," with no dependency on knowing the default branch's name or it being fetched).
+# Without BASE_REF (a human running it locally after a deliberate bump) it just recomputes
+# every pin, gate off.
 #
 # Requirements: bash 4.4+, curl, sha256sum (or shasum), sed, grep, awk, mktemp, head; git when BASE_REF set.
 set -euo pipefail
