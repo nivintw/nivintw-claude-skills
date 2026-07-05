@@ -12,11 +12,13 @@
 # same as it does for every other `uses:` pin in this file (see main.yml/docs on Renovate's
 # GitHub Actions digest-pinning).
 #
-# MANUAL TRIGGER ONLY, for now: repo-management's `.github/workflows/docs.yml` doesn't exist
-# yet (tracked at nivintw/repo-management#86, part of the same fleet-wide rollout as the
-# design spec referenced above) — a `push` trigger here would fire on every new project's
-# first commit touching docs/**/mkdocs.yml and fail outright (a broken `uses:` target fails
-# the run, it doesn't no-op). Add the `push` trigger back once #86 ships.
+# MANUAL TRIGGER ONLY, for now: repo-management's `.github/workflows/docs.yml` exists and
+# this repo's build already works (verified via mkdocs build --strict + a live preview) —
+# the reusable workflow itself (nivintw/repo-management#86) is no longer what's blocking a
+# `push` trigger. What's still pending is the batch Pages-source flip across the whole fleet
+# (nivintw/repo-management#88): until that lands, this repo's Pages source still points at
+# the legacy hand-rolled site, so an automatic deploy here would build the new site but never
+# actually serve it. Add the `push` trigger back once #88 flips this repo's Pages source.
 name: docs
 
 on:
