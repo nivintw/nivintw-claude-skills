@@ -303,3 +303,44 @@ run_check() {
   run_check
   [ "$status" -eq 0 ]
 }
+
+@test "a shell comment inside a fenced code block is not parsed as a heading" {
+  write_mkdocs
+  printf '# Home\n\n~~~bash\n# not a real heading\necho hi\n~~~\n\n[x](#not-a-real-heading)\n' >"$SITE/index.md"
+  run_check
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"missing anchor #not-a-real-heading"* ]]
+}
+
+@test "an illustrative link inside a fenced code block is not validated" {
+  write_mkdocs
+  printf '# Home\n\n~~~markdown\n[broken](does-not-exist.md)\n~~~\n' >"$SITE/index.md"
+  run_check
+  [ "$status" -eq 0 ]
+}
+
+@test "a broken srcset candidate fails" {
+  write_mkdocs
+  printf '# Home\n\n<img src="a.png" srcset="a.png 1x, missing-2x.png 2x">\n' >"$SITE/index.md"
+  printf 'png' >"$SITE/a.png"
+  run_check
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"broken internal link"* ]]
+  [[ "$output" == *"missing-2x.png"* ]]
+}
+
+@test "a valid srcset passes" {
+  write_mkdocs
+  printf '# Home\n\n<img src="a.png" srcset="a.png 1x, a-2x.png 2x">\n' >"$SITE/index.md"
+  printf 'png' >"$SITE/a.png"
+  printf 'png' >"$SITE/a-2x.png"
+  run_check
+  [ "$status" -eq 0 ]
+}
+
+@test "an accented heading slugifies to its ASCII-folded form" {
+  write_mkdocs
+  printf '# Home\n\n[x](#naive-cafe)\n\n## Naïve café\n' >"$SITE/index.md"
+  run_check
+  [ "$status" -eq 0 ]
+}
