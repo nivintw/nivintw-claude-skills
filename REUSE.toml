@@ -16,6 +16,14 @@ path = "docs/assets/favicon.svg"
 SPDX-FileCopyrightText = "© 2026 Tyler Nivin"
 SPDX-License-Identifier = "MIT"
 
+# .cast files are JSON-lines with a leading JSON object — no comment syntax to carry a
+# header. Own content (a recording of this repo, not third-party), so same license as
+# everything else.
+[[annotations]]
+path = "**/*.cast"
+SPDX-FileCopyrightText = "© 2026 Tyler Nivin"
+SPDX-License-Identifier = "MIT"
+
 
 # Files that can't carry an SPDX header (no comment syntax / generated). Everything
 # else gets a real header from hawkeye (see .config/licenserc.toml).

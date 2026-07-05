@@ -391,3 +391,58 @@ MD
   run_check
   [ "$status" -eq 0 ]
 }
+
+@test "a non-index page's asset ref needs ../ to account for directory URLs" {
+  # castify.md builds to castify/index.html (MkDocs' default directory URLs), one level
+  # deeper than the flat source tree — a plain relative asset ref from that page is wrong.
+  write_mkdocs "  - Home: index.md
+  - Other: other.md"
+  printf '# Home\n\nok\n' >"$SITE/index.md"
+  printf '# Other\n\n<img src="assets/pic.png">\n' >"$SITE/other.md"
+  mkdir -p "$SITE/assets"
+  printf 'png' >"$SITE/assets/pic.png"
+  run_check
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"broken internal link"* ]]
+}
+
+@test "the same asset ref with ../ resolves correctly" {
+  write_mkdocs "  - Home: index.md
+  - Other: other.md"
+  printf '# Home\n\nok\n' >"$SITE/index.md"
+  printf '# Other\n\n<img src="../assets/pic.png">\n' >"$SITE/other.md"
+  mkdir -p "$SITE/assets"
+  printf 'png' >"$SITE/assets/pic.png"
+  run_check
+  [ "$status" -eq 0 ]
+}
+
+@test "index.md's own asset ref needs no ../ (it stays at depth 0)" {
+  write_mkdocs
+  printf '# Home\n\n<img src="assets/pic.png">\n' >"$SITE/index.md"
+  mkdir -p "$SITE/assets"
+  printf 'png' >"$SITE/assets/pic.png"
+  run_check
+  [ "$status" -eq 0 ]
+}
+
+@test "use_directory_urls: false disables the ../ adjustment" {
+  printf 'docs_dir: docs\nuse_directory_urls: false\nnav:\n  - Home: index.md\n  - Other: other.md\n' >"$SANDBOX/mkdocs.yml"
+  printf '# Home\n\nok\n' >"$SITE/index.md"
+  printf '# Other\n\n<img src="assets/pic.png">\n' >"$SITE/other.md"
+  mkdir -p "$SITE/assets"
+  printf 'png' >"$SITE/assets/pic.png"
+  run_check
+  [ "$status" -eq 0 ]
+}
+
+@test "a data-cast attribute is validated the same as href/src" {
+  write_mkdocs "  - Home: index.md
+  - Other: other.md"
+  printf '# Home\n\nok\n' >"$SITE/index.md"
+  printf '# Other\n\n<div class="cast__player" data-cast="missing.cast"></div>\n' >"$SITE/other.md"
+  run_check
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"broken internal link"* ]]
+  [[ "$output" == *"missing.cast"* ]]
+}

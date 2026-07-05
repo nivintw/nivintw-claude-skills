@@ -1,0 +1,27 @@
+/*
+ * SPDX-FileCopyrightText: © 2026 Tyler Nivin
+ * SPDX-License-Identifier: MIT
+ */
+
+/* Graceful fallback for a cast mount before asciinema-player hydrates it (or if it never
+   does — no JS, a failed CDN load). :empty stops matching once the player injects its DOM,
+   so this is purely a pre-hydration/no-JS state, not a permanent overlay. */
+.cast {
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-radius: 0.4rem;
+  overflow: hidden;
+  margin: 1em 0;
+}
+.cast figcaption {
+  padding: 0.5rem 1rem;
+  border-top: 1px solid var(--md-default-fg-color--lightest);
+  color: var(--md-default-fg-color--light);
+  font-size: 0.8rem;
+}
+.cast__player:empty::before {
+  content: "▶ terminal cast — enable JavaScript to play";
+  display: block;
+  padding: 2rem 1rem;
+  text-align: center;
+  color: var(--md-default-fg-color--light);
+}

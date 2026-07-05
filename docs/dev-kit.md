@@ -21,13 +21,28 @@ Track work as issues with `/dev-kit:handle-task-tracking`, pick what's next with
 `/dev-kit:open-work`, then `/dev-kit:ship` it — which reviews with `/dev-kit:review-pr`,
 refreshes docs with `/dev-kit:generate-docs`, and tidies up with `/dev-kit:cleanup-locally`.
 
-> dev-kit also ships a `Stop` hook (`ship-continue.sh`) that backstops this: it blocks a
-> premature stop only while a ship run's `state` names an active phase — e.g. right after a
-> delegated sub-skill like `/security-review` hands back mid-run — and default-allows
-> everywhere else (human gates, async waits, or no ship run at all), so it can never trap a
-> session or nag during a legitimate wait.
+!!! note "A Stop hook backstops this"
+    dev-kit also ships a `Stop` hook (`ship-continue.sh`) that blocks a premature stop only
+    while a ship run's `state` names an active phase — e.g. right after a delegated
+    sub-skill like `/security-review` hands back mid-run — and default-allows everywhere
+    else (human gates, async waits, or no ship run at all), so it can never trap a session
+    or nag during a legitimate wait.
 
 ## Commands
+
+| Command | One-liner |
+|---------|-----------|
+| [`ship`](#ship) | Idea → review-ready PR: plan, worktree, implement, simplify, docs, review, hand off (or `land`). |
+| [`land`](#land) | Discoverable entry point to `ship`'s merge verb — drives an open PR to merged. |
+| [`review-pr`](#review-pr) | The single review entry point — full battery + adversarial pass, one prioritized report. |
+| [`generate-docs`](#generate-docs) | Reconciles the whole docs set against the whole codebase; authors this site. |
+| [`handle-task-tracking`](#handle-task-tracking) | GitHub issues as the durable task ledger — capture, triage, decompose, close. |
+| [`open-work`](#open-work) | Ranked "pick up next" shortlist from the open issues, leading with in-flight work. |
+| [`cleanup-locally`](#cleanup-locally) | Reconciles your local clone with the remote after PRs land. |
+| [`doctor`](#doctor) | Health check for installed plugins — version drift + a skill inventory. |
+| [`pre-public-hardening`](#pre-public-hardening) | Full-history secrets/licensing readiness review before a repo goes public. |
+| [`dry-dock-overhaul`](#dry-dock-overhaul) | The most expensive skill by design — an exhaustive, human-triggered whole-repo audit. |
+| [`template-reconcile`](#template-reconcile) | For Copier-managed repos — verifies template infra survived an adopt/update. |
 
 ### ship
 
