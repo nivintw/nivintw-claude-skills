@@ -92,9 +92,17 @@ run_check() {
   [[ "$output" == *"not portable"* ]]
 }
 
-@test "unsafe javascript: and file: schemes are rejected" {
+@test "unsafe javascript: scheme is rejected" {
   write_mkdocs
   printf '# Home\n\n[x](javascript:alert(1))\n' >"$SITE/index.md"
+  run_check
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"unsafe or non-portable URL scheme"* ]]
+}
+
+@test "unsafe file: scheme is rejected" {
+  write_mkdocs
+  printf '# Home\n\n<a href="file:///etc/passwd">x</a>\n' >"$SITE/index.md"
   run_check
   [ "$status" -eq 1 ]
   [[ "$output" == *"unsafe or non-portable URL scheme"* ]]
@@ -275,4 +283,23 @@ run_check() {
   run_check
   [ "$status" -eq 2 ]
   [[ "$output" == *"does not exist"* ]]
+}
+
+@test "a malformed nav (not a list) reports every page unreachable instead of crashing" {
+  printf 'docs_dir: docs\nnav: "not a list"\n' >"$SANDBOX/mkdocs.yml"
+  printf '# Home\n\nok\n' >"$SITE/index.md"
+  printf '# Other\n\nok\n' >"$SITE/other.md"
+  run_check
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"other.md: not reachable from mkdocs.yml's nav"* ]]
+  [[ "$output" != *"missing file: 'a'"* ]]  # no character-by-character garbage
+}
+
+@test "a custom YAML tag on docs_dir doesn't crash on a swallowed None" {
+  # _TolerantLoader maps unknown tags to None; docs_dir must fall back to the default
+  # rather than becoming `repo_root / None`.
+  printf 'docs_dir: !!python/name:os.path\nnav:\n  - Home: index.md\n' >"$SANDBOX/mkdocs.yml"
+  printf '# Home\n\nok\n' >"$SITE/index.md"
+  run_check
+  [ "$status" -eq 0 ]
 }

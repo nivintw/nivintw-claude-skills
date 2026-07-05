@@ -47,18 +47,18 @@ validation:
     anchors: warn
     absolute_links: warn
 
-# Wired for the vendored asciinema-player assets (see castify's embedding.md reference doc)
-# so a repo only needs to drop the vendored files at these conventional paths under
-# docs/assets/ to embed a `<figure class="cast">` terminal recording — a repo with no casts
-# to embed never references them and is unaffected by the paths not existing yet.
-extra_css:
-  - assets/asciinema-player.css
+# Per-plugin version badges: each docs/versions/<name>.js shim carries one plugin's version
+# (bumped independently by release-please — see those files); badges.js hydrates every
+# [data-version] element from them. Appended here (not per-page) because MkDocs loads
+# extra_javascript site-wide.
+#
+# NOTE for whoever embeds this repo's first asciinema cast (per castify's embedding.md): add
+# assets/asciinema-player.css to extra_css and assets/asciinema-player.min.js to
+# extra_javascript THEN, alongside vendoring the actual files at those paths — not before.
+# extra_css/extra_javascript load site-wide on every page regardless of whether that page
+# embeds a cast, so wiring them ahead of the vendored files means every page 404s on both,
+# not just pages that would use them.
 extra_javascript:
-  # Per-plugin version badges: each docs/versions/<name>.js shim carries one plugin's
-  # version (bumped independently by release-please — see those files); badges.js hydrates
-  # every [data-version] element from them. Appended here (not per-page) because MkDocs
-  # loads extra_javascript site-wide.
-  - assets/asciinema-player.min.js
   - assets/badges.js
   - versions/castify.js
   - versions/dev-kit.js
@@ -70,11 +70,12 @@ extra_javascript:
 # subtree; excluding it here too is what lets `mkdocs build --strict` pass instead of
 # erroring on "exists but not in nav" for every spec/plan file.
 #
-# The four legacy *.html pages/assets are the pre-migration hand-rolled site, kept
-# (not yet deleted) until the batch Pages-config flip (nivintw/repo-management#88) confirms
-# the new MkDocs build is actually live — excluded here so their basename collision with
-# the same-named .md pages doesn't fail the strict build in the meantime. Remove this
-# block (and the files themselves) once that issue lands.
+# The four legacy *.html pages, and the *.js/*.css assets they load, are the pre-migration
+# hand-rolled site, kept (not yet deleted) until the batch Pages-config flip
+# (nivintw/repo-management#88) confirms the new MkDocs build is actually live — excluded
+# here so the four pages' basename collision with the same-named .md pages doesn't fail the
+# strict build in the meantime. Remove this block (and the files themselves) once that issue
+# lands.
 exclude_docs: |
   superpowers/
 

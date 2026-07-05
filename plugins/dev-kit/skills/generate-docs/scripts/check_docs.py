@@ -13,15 +13,17 @@ Reads <repo_root>/mkdocs.yml for `docs_dir` (default "docs") and `nav:`, then ch
      href/src attributes must resolve to a file that exists on disk, case-sensitively (so a
      link that works on a case-insensitive macOS FS but would 404 on case-sensitive GitHub
      Pages is caught).
-  2. anchor integrity — a #fragment must match a heading's slug on the target page
-     (same-page or cross-page), using MkDocs/Python-Markdown's default slugify + de-dupe
-     rules (lowercase, non-alnum stripped, whitespace -> hyphens, repeats suffixed _1, _2, ...).
+  2. anchor integrity — a #fragment must match a heading's slug on the target page (same-page
+     or cross-page), using MkDocs/Python-Markdown's default slugify + de-dupe rules (lowercase,
+     punctuation other than "_"/"-" stripped, whitespace -> hyphens, repeats suffixed _1, _2,
+     ...), or a literal HTML id/name attribute found anywhere on the page.
   3. nav completeness — every *.md file under docs_dir must be reachable from `nav:`
      (docs_dir/index.md is exempt: MkDocs uses it as the implicit homepage even when absent
      from nav), and every `nav:` entry must point at a file that exists.
-  4. dual-target portability — no absolute (leading-slash) local refs.
+  4. dual-target portability — no absolute (leading-slash) local refs. Protocol-relative
+     (//host) refs fall into this bucket too (empty URL scheme, so NOT treated as external).
 
-External refs (with a scheme), protocol-relative (//host), mailto:, and data: are ignored.
+External refs (with a scheme), mailto:, and data: are ignored.
 Exit 0 = clean, 1 = violations found, 2 = usage / setup error (no mkdocs.yml, no docs_dir).
 
 Overlaps by design with MkDocs' own `validation:` config (nav/link/anchor checks, see
@@ -45,15 +47,22 @@ HEADING_RE = re.compile(r"^(#{1,6})\s+(.+?)\s*#*$", re.MULTILINE)
 HTML_ID_RE = re.compile(r'\b(?:id|name)\s*=\s*"([^"]+)"|\b(?:id|name)\s*=\s*\'([^\']+)\'')
 
 
+class _TolerantLoader(yaml.SafeLoader):
+    """A SafeLoader whose unknown-tag handling is local to this class, not the shared
+    yaml.SafeLoader — mutating that global would leak into any other consumer that imports
+    this module."""
+
+
+def _ignore_unknown_tag(loader: yaml.SafeLoader, suffix: str, node: yaml.Node) -> None:
+    return None
+
+
+_TolerantLoader.add_multi_constructor("", _ignore_unknown_tag)
+
+
 def _tolerant_yaml_load(text: str) -> dict:
     """Load mkdocs.yml tolerating custom tags (e.g. !!python/name:...) we don't need."""
-    loader = yaml.SafeLoader
-
-    def _ignore_unknown(loader, suffix, node):
-        return None
-
-    loader.add_multi_constructor("", _ignore_unknown)
-    return yaml.load(text, Loader=loader) or {}
+    return yaml.load(text, Loader=_TolerantLoader) or {}
 
 
 def slugify(heading: str) -> str:
@@ -96,7 +105,12 @@ def within_root(target: Path, root: Path) -> bool:
     try:
         target.resolve().relative_to(root.resolve())
         return True
-    except (ValueError, OSError):
+    except ValueError:
+        return False  # genuinely outside root — the common, expected case
+    except OSError as e:
+        # An I/O error (permission denied, symlink loop) is not "outside root" — the caller
+        # still reports it as a violation, but distinctly, so it isn't mistaken for one.
+        print(f"warning: could not resolve {target}: {e}", file=sys.stderr)
         return False
 
 
@@ -106,14 +120,18 @@ def exists_cs(target: Path, root: Path) -> bool:
         return False
     try:
         rel = target.resolve().relative_to(root.resolve())
-    except (ValueError, OSError):
+    except ValueError:
+        return False
+    except OSError as e:
+        print(f"warning: could not resolve {target}: {e}", file=sys.stderr)
         return False
     cur = root.resolve()
     for part in rel.parts:
         try:
             if part not in (e.name for e in cur.iterdir()):
                 return False
-        except OSError:
+        except OSError as e:
+            print(f"warning: could not list {cur}: {e}", file=sys.stderr)
             return False
         cur = cur / part
     return True
@@ -123,8 +141,8 @@ def nav_targets(nav) -> set[str]:
     """Flatten mkdocs.yml's nav: tree (list of str | {title: path} | {title: [nested]}) to
     the set of docs_dir-relative paths it references."""
     targets: set[str] = set()
-    if nav is None:
-        return targets
+    if not isinstance(nav, list):
+        return targets  # absent, None, or malformed (e.g. a bare string) — nothing to flatten
     for entry in nav:
         if isinstance(entry, str):
             targets.add(entry)
@@ -167,7 +185,10 @@ def main(argv: list[str]) -> int:
         print(f"could not parse {mkdocs_yml}: {e}", file=sys.stderr)
         return 2
 
-    docs_dir = repo_root / config.get("docs_dir", "docs")
+    # `or "docs"`, not a dict-get default: a swallowed custom YAML tag (see _TolerantLoader)
+    # on this key would leave it present but None, and a bare .get(..., "docs") default only
+    # applies when the key is absent — silently producing `repo_root / None` otherwise.
+    docs_dir = repo_root / (config.get("docs_dir") or "docs")
     if not docs_dir.is_dir():
         print(f"docs_dir {docs_dir} does not exist — nothing to validate", file=sys.stderr)
         return 2
