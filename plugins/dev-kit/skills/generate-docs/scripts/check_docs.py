@@ -3,67 +3,84 @@
 
 # /// script
 # requires-python = ">=3.11"
+# dependencies = ["pyyaml"]
 # ///
-"""Validate a generated docs site.
+"""Validate an MkDocs-based docs site's Markdown source.
 
-Checks every *.html file under <docs_dir>, plus a search-index.js if present:
-  1. internal-link integrity — relative href/src/srcset targets must exist on disk,
-     case-sensitively (so a link that works on a case-insensitive macOS FS but would
-     404 on case-sensitive GitHub Pages is caught).
-  2. anchor integrity — a #fragment must point at an id/name that exists on the
-     target page (same-page or cross-page).
-  3. dual-target portability — no absolute (leading-slash) local refs, so the site
-     renders from a file:// path and from GitHub Pages alike.
+Reads <repo_root>/mkdocs.yml for `docs_dir` (default "docs") and `nav:`, then checks every
+*.md file under docs_dir (excluding docs/superpowers/**, which this skill never touches):
+  1. internal-link integrity — relative Markdown links (`[text](target)`) and raw HTML
+     href/src attributes must resolve to a file that exists on disk, case-sensitively (so a
+     link that works on a case-insensitive macOS FS but would 404 on case-sensitive GitHub
+     Pages is caught).
+  2. anchor integrity — a #fragment must match a heading's slug on the target page
+     (same-page or cross-page), using MkDocs/Python-Markdown's default slugify + de-dupe
+     rules (lowercase, non-alnum stripped, whitespace -> hyphens, repeats suffixed _1, _2, ...).
+  3. nav completeness — every *.md file under docs_dir must be reachable from `nav:`
+     (docs_dir/index.md is exempt: MkDocs uses it as the implicit homepage even when absent
+     from nav), and every `nav:` entry must point at a file that exists.
+  4. dual-target portability — no absolute (leading-slash) local refs.
 
-External refs (with a scheme), protocol-relative (//host), mailto:, and data: are
-ignored. Exit 0 = clean, 1 = violations found, 2 = usage / nothing to validate.
+External refs (with a scheme), protocol-relative (//host), mailto:, and data: are ignored.
+Exit 0 = clean, 1 = violations found, 2 = usage / setup error (no mkdocs.yml, no docs_dir).
 """
 
 import re
 import sys
-from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import unquote, urlparse
 
-REF_ATTRS = {"href", "src"}
-# Schemes that are unsafe (script execution) or non-portable (local file paths) in a
-# shipped docs site — flagged rather than silently skipped as "external".
+import yaml
+
+EXCLUDED_DIRS = {"superpowers"}  # docs/superpowers/** — dev specs, never reconciled
 DANGEROUS_SCHEMES = ("javascript:", "vbscript:", "file:")
 
+MD_LINK_RE = re.compile(r"!?\[[^\]]*\]\(([^)]+)\)")
+HTML_ATTR_RE = re.compile(r'\b(?:href|src)\s*=\s*"([^"]+)"|\b(?:href|src)\s*=\s*\'([^\']+)\'')
+HEADING_RE = re.compile(r"^(#{1,6})\s+(.+?)\s*#*$", re.MULTILINE)
+HTML_ID_RE = re.compile(r'\b(?:id|name)\s*=\s*"([^"]+)"|\b(?:id|name)\s*=\s*\'([^\']+)\'')
 
-class PageParser(HTMLParser):
-    def __init__(self) -> None:
-        super().__init__()
-        self.refs: list[tuple[str, str, str]] = []  # (tag, attr, value)
-        self.ids: set[str] = set()                  # id/name anchor targets
 
-    def handle_starttag(self, tag, attrs):
-        for name, value in attrs:
-            if value is None:
-                continue
-            if name in REF_ATTRS:
-                self.refs.append((tag, name, value))
-            elif name == "srcset":
-                # "url 1x, url2 2x" → take each candidate's URL token
-                for cand in value.split(","):
-                    parts = cand.split()
-                    if parts:
-                        self.refs.append((tag, "srcset", parts[0]))
-            elif name in ("id", "name"):
-                self.ids.add(value)
+def _tolerant_yaml_load(text: str) -> dict:
+    """Load mkdocs.yml tolerating custom tags (e.g. !!python/name:...) we don't need."""
+    loader = yaml.SafeLoader
+
+    def _ignore_unknown(loader, suffix, node):
+        return None
+
+    loader.add_multi_constructor("", _ignore_unknown)
+    return yaml.load(text, Loader=loader) or {}
+
+
+def slugify(heading: str) -> str:
+    """Approximate Python-Markdown's default TOC slugify (lowercase, strip punctuation,
+    whitespace -> hyphens). Good enough for link validation, not byte-exact in every case."""
+    s = re.sub(r"[^\w\s-]", "", heading.strip().lower())
+    return re.sub(r"[\s]+", "-", s)
+
+
+def heading_anchors(text: str) -> set[str]:
+    """Every heading's slug, with MkDocs' duplicate-suffix rule (_1, _2, ...) applied."""
+    seen: dict[str, int] = {}
+    anchors: set[str] = set()
+    for _, raw in HEADING_RE.findall(text):
+        base = slugify(raw)
+        if base not in seen:
+            seen[base] = 0
+            anchors.add(base)
+        else:
+            seen[base] += 1
+            anchors.add(f"{base}_{seen[base]}")
+    for m in HTML_ID_RE.finditer(text):
+        anchors.add(m.group(1) or m.group(2))
+    return anchors
 
 
 def is_external(url: str) -> bool:
-    # Only an explicit scheme (https/mailto/data/…) counts as external. Protocol-relative
-    # "//host" refs are NOT skipped — they break from file:// and get flagged as non-portable.
     return bool(urlparse(url).scheme)
 
 
 def split_ref(value: str) -> tuple[str, str]:
-    """Return (decoded path, decoded fragment), tolerating ?query and #frag in either order.
-
-    Both parts are percent-decoded so they match the on-disk name and the id/name the
-    browser resolves (e.g. "page.html#my%20id" → fragment "my id")."""
     rest, frag = value, ""
     if "#" in rest:
         rest, frag = rest.split("#", 1)
@@ -72,7 +89,6 @@ def split_ref(value: str) -> tuple[str, str]:
 
 
 def within_root(target: Path, root: Path) -> bool:
-    """True if target stays inside the docs root — links must not escape it (Pages serves /docs)."""
     try:
         target.resolve().relative_to(root.resolve())
         return True
@@ -87,7 +103,7 @@ def exists_cs(target: Path, root: Path) -> bool:
     try:
         rel = target.resolve().relative_to(root.resolve())
     except (ValueError, OSError):
-        return False  # outside the docs root is never a valid in-site target
+        return False
     cur = root.resolve()
     for part in rel.parts:
         try:
@@ -99,113 +115,129 @@ def exists_cs(target: Path, root: Path) -> bool:
     return True
 
 
+def nav_targets(nav) -> set[str]:
+    """Flatten mkdocs.yml's nav: tree (list of str | {title: path} | {title: [nested]}) to
+    the set of docs_dir-relative paths it references."""
+    targets: set[str] = set()
+    if nav is None:
+        return targets
+    for entry in nav:
+        if isinstance(entry, str):
+            targets.add(entry)
+        elif isinstance(entry, dict):
+            for value in entry.values():
+                if isinstance(value, str):
+                    targets.add(value)
+                elif isinstance(value, list):
+                    targets |= nav_targets(value)
+    return targets
+
+
+def is_excluded(md_file: Path, docs_dir: Path) -> bool:
+    rel_parts = md_file.relative_to(docs_dir).parts
+    return bool(EXCLUDED_DIRS & set(rel_parts[:-1]))
+
+
 def main(argv: list[str]) -> int:
     if len(argv) != 2:
-        print("usage: check_docs.py <docs_dir>", file=sys.stderr)
+        print("usage: check_docs.py <repo_root>", file=sys.stderr)
         return 2
-    root = Path(argv[1])
-    if not root.is_dir():
-        print(f"not a directory: {root}", file=sys.stderr)
+    repo_root = Path(argv[1])
+    mkdocs_yml = repo_root / "mkdocs.yml"
+    if not mkdocs_yml.is_file():
+        print(f"no mkdocs.yml under {repo_root} — nothing to validate "
+              "(this skill requires an existing MkDocs scaffold)", file=sys.stderr)
         return 2
 
-    html_files = [p for p in sorted(root.rglob("*.html")) if p.is_file()]
-    if not html_files:
-        print(f"no .html files under {root} — nothing to validate (did generation run?)",
+    try:
+        config = _tolerant_yaml_load(mkdocs_yml.read_text(encoding="utf-8"))
+    except yaml.YAMLError as e:
+        print(f"could not parse {mkdocs_yml}: {e}", file=sys.stderr)
+        return 2
+
+    docs_dir = repo_root / config.get("docs_dir", "docs")
+    if not docs_dir.is_dir():
+        print(f"docs_dir {docs_dir} does not exist — nothing to validate", file=sys.stderr)
+        return 2
+
+    md_files = [p for p in sorted(docs_dir.rglob("*.md"))
+                if p.is_file() and not is_excluded(p, docs_dir)]
+    if not md_files:
+        print(f"no .md files under {docs_dir} — nothing to validate (did generation run?)",
               file=sys.stderr)
         return 2
 
     violations: list[str] = []
-    pages: dict[Path, PageParser] = {}
-    for hp in html_files:
-        try:
-            parser = PageParser()
-            parser.feed(hp.read_text(encoding="utf-8"))
-            pages[hp.resolve()] = parser
-        except (OSError, UnicodeDecodeError) as e:
-            violations.append(f"{hp}: could not read/parse: {e}")
+
+    # nav completeness: every non-excluded page reachable, index.md exempt (implicit homepage)
+    nav_refs = nav_targets(config.get("nav"))
+    resolved_nav_paths: set[Path] = set()
+    for ref in nav_refs:
+        path, _ = split_ref(ref)
+        if not path:
+            continue
+        target = docs_dir / path
+        resolved_nav_paths.add(target.resolve())
+        if not exists_cs(target, docs_dir):
+            violations.append(f"mkdocs.yml: nav entry points at missing file: {ref!r}")
+    for md in md_files:
+        if md.resolve() in resolved_nav_paths:
+            continue
+        if md.parent == docs_dir and md.name == "index.md":
+            continue  # MkDocs' implicit homepage — no nav: entry required
+        violations.append(f"{md}: not reachable from mkdocs.yml's nav: tree")
+
+    anchors_by_file = {md.resolve(): heading_anchors(md.read_text(encoding="utf-8"))
+                       for md in md_files}
 
     def check_anchor(referrer: Path, target: Path, frag: str, raw: str) -> None:
-        page = pages.get(target.resolve())
-        if page is not None and frag and frag not in page.ids:
+        anchors = anchors_by_file.get(target.resolve())
+        if anchors is not None and frag and frag not in anchors:
             violations.append(f"{referrer}: missing anchor #{frag}: {raw!r}")
 
-    for hp in html_files:
-        page = pages.get(hp.resolve())
-        if page is None:
-            continue
-        for tag, attr, value in page.refs:
-            v = value.strip()
+    for md in md_files:
+        text = md.read_text(encoding="utf-8")
+        refs = [m.group(1) for m in MD_LINK_RE.finditer(text)]
+        refs += [m.group(1) or m.group(2) for m in HTML_ATTR_RE.finditer(text)]
+        for raw in refs:
+            v = raw.strip()
             if not v:
                 continue
             if v.lower().startswith(DANGEROUS_SCHEMES):
-                violations.append(
-                    f"{hp}: unsafe or non-portable URL scheme: <{tag} {attr}={value!r}>"
-                )
+                violations.append(f"{md}: unsafe or non-portable URL scheme: {raw!r}")
                 continue
             if is_external(v):
                 continue
-            if v.startswith("#"):  # same-page anchor — reuse split_ref for query/percent handling
+            if v.startswith("#"):
                 _, frag = split_ref(v)
-                if frag and frag not in page.ids:
-                    violations.append(f"{hp}: missing anchor #{frag}: <{tag} {attr}={value!r}>")
+                if frag and frag not in anchors_by_file[md.resolve()]:
+                    violations.append(f"{md}: missing anchor #{frag}: {raw!r}")
                 continue
-            if v.startswith("/"):  # absolute (/x) or protocol-relative (//host)
+            if v.startswith("/"):
                 violations.append(
-                    f"{hp}: absolute or protocol-relative path not portable to file://: "
-                    f"<{tag} {attr}={value!r}>"
+                    f"{md}: absolute or protocol-relative path not portable: {raw!r}"
                 )
                 continue
             ref, frag = split_ref(v)
             if not ref:
                 continue
-            target = hp.parent / ref
-            if not within_root(target, root):
-                violations.append(
-                    f"{hp}: link escapes docs root (404s on Pages): <{tag} {attr}={value!r}>"
-                )
+            target = md.parent / ref
+            if not within_root(target, docs_dir):
+                violations.append(f"{md}: link escapes docs root: {raw!r}")
                 continue
-            if not exists_cs(target, root):
-                violations.append(f"{hp}: broken internal link: <{tag} {attr}={value!r}>")
+            if not exists_cs(target, docs_dir):
+                violations.append(f"{md}: broken internal link: {raw!r}")
                 continue
             if frag:
-                check_anchor(hp, target, frag, value)
-
-    # The command-palette index, if the site emits one: its url fields drive navigation
-    # but live in JS, so the HTML scan above never sees them — validate them too.
-    idx = root / "search-index.js"
-    if idx.is_file():
-        try:
-            text = idx.read_text(encoding="utf-8")
-        except (OSError, UnicodeDecodeError) as e:
-            violations.append(f"{idx}: could not read: {e}")
-            text = ""
-        for m in re.finditer(r'url\s*:\s*"([^"]+)"', text):
-            u = m.group(1)
-            if u.lower().startswith(DANGEROUS_SCHEMES):
-                violations.append(f"{idx}: unsafe or non-portable URL scheme: {u!r}")
-                continue
-            if is_external(u):
-                continue
-            if u.startswith("/"):  # absolute or protocol-relative
-                violations.append(f"{idx}: absolute or protocol-relative path not portable: {u!r}")
-                continue
-            ref, frag = split_ref(u)
-            target = root / ref
-            if not within_root(target, root):
-                violations.append(f"{idx}: search url escapes docs root: {u!r}")
-                continue
-            if not exists_cs(target, root):
-                violations.append(f"{idx}: broken search url: {u!r}")
-                continue
-            if frag:
-                check_anchor(idx, target, frag, u)
+                check_anchor(md, target, frag, raw)
 
     for v in violations:
         print(v)
     if violations:
         print(f"\n{len(violations)} doc validation issue(s) found.", file=sys.stderr)
         return 1
-    print(f"OK: {root} — {len(html_files)} HTML file(s), no broken links/anchors, all refs portable.")
+    print(f"OK: {docs_dir} — {len(md_files)} Markdown file(s), no broken links/anchors, "
+          "nav complete, all refs portable.")
     return 0
 
 

@@ -5,12 +5,14 @@ description: >-
   site", "refresh the docs", "reconcile the docs", "publish to GitHub Pages", or "make a
   docs page" for a repo. It reconciles the WHOLE documentation set against the WHOLE
   codebase every run — catching both drift (docs that no longer match the code) and omission
-  (code with no docs) — and authors a bespoke, human-first static documentation site (a
-  landing page plus per-topic pages) shaped to whatever the repo is: a Claude Code plugin
-  marketplace, a Copier template, a library or CLI, or a generic project. Code is the source
-  of truth and Claude authors the prose; the site renders identically from a local file://
-  path and from GitHub Pages. Reach for it to create, refresh, or reconcile a repo's docs
-  site, including as part of shipping a change (dev-kit:ship runs it automatically).
+  (code with no docs) — and authors a bespoke, human-first MkDocs Material site (a landing
+  page plus per-topic pages, as Markdown + a `mkdocs.yml` nav tree) shaped to whatever the
+  repo is: a Claude Code plugin marketplace, a Copier template, a library or CLI, or a
+  generic project. Code is the source of truth and Claude authors the prose. Requires the
+  repo to already have an `mkdocs.yml` (from the copier-everything template's
+  `include_docs_site` feature, or hand-authored) — reach for it to create, refresh, or
+  reconcile a repo's docs content, including as part of shipping a change (dev-kit:ship runs
+  it automatically).
 ---
 
 # generate-docs
@@ -19,10 +21,18 @@ description: >-
 that are wrong, missing, or badly communicated.** This skill is not a template engine that
 prints manifests — *you* are the author. Every run reads the whole repo and the whole
 existing docs set, decides what no longer tells the truth and what was never told at all,
-and writes a bespoke static site (plus the `README.md`) shaped to that specific repo.
+and writes Markdown pages + a `mkdocs.yml` `nav:` tree (plus the `README.md`) shaped to that
+specific repo.
 
 It runs as Phase 5 of `dev-kit:ship`, and stands alone whenever docs need to catch up to
 code.
+
+**Requires `mkdocs.yml` to already exist.** This skill authors content and navigation; it
+does not scaffold the MkDocs mechanism itself (theme, `extra_css`/`extra_javascript` wiring,
+the Pages build workflow) — that's the copier-everything template's `include_docs_site`
+feature. If a repo has no `mkdocs.yml`, stop and say so rather than authoring content with
+nowhere to render: the fix is `copier update` (or, outside the fleet, hand-authoring a
+minimal `mkdocs.yml`), not something this skill does for you.
 
 ## Core philosophy
 
@@ -59,17 +69,20 @@ and the final synthesis with the driver.
 
 ### Stage 0 — Inventory & classify
 
-Find the repo root (`.git`). Walk the tree and **classify the repo kind** by sentinel files
-— this *seeds* the site shape, it never gates:
+Find the repo root (`.git`). Confirm `mkdocs.yml` exists at the root — if not, stop (see
+above). Walk the tree and **classify the repo kind** by sentinel files — this *seeds* the
+site shape, it never gates:
 
 - `.claude-plugin/marketplace.json` → **marketplace**
 - `copier.yml` → **Copier template**
 - a package manifest (`pyproject.toml`, `package.json`, …) → **library / CLI**
 - otherwise → **generic**
 
-Locate the existing docs surface to reconcile against: a `docs/` site (if any), `README.md`,
-hand-written guides, and the per-repo design system (`docs/style.css` + `docs/app.js`) if
-present.
+Locate the existing docs surface to reconcile against: `mkdocs.yml`'s `docs_dir` (default
+`docs`) and its current `nav:` tree, the Markdown pages under it, and `README.md`. The
+theme, `extra_css`/`extra_javascript` wiring, and any vendored assets (e.g. the
+asciinema-player, per castify's `embedding.md`) are **template-owned or hand-wired
+separately** — read them to know what's available, but this skill doesn't author them.
 
 ### Stage 1 — Map the codebase (cheap tier, parallel)
 
@@ -86,66 +99,87 @@ Diff the facts model against the current site + `README.md`. Produce a **work-li
 - **Omission** — code surface with no coverage → author.
 - **Communication** — covered but poorly (wrong altitude, buried, better as a table/diagram)
   → restructure.
-- **Design-system needs** — components the changed pages will require.
+- **Nav needs** — a new or moved page has no `nav:` entry, or a `nav:` entry points at a page
+  that no longer exists.
 - Everything accurate and well-said → **leave byte-identical**.
 
 ### Stage 3 — Author (mid tier, parallel)
 
-One author per work-listed page: write/update **semantic HTML composed against the per-repo
-design system** (see below), choosing the best structure for that topic. Reconcile
-`README.md` **as a concise entry point** — keep it the tight GitHub landing, not a dump of
-the whole site.
+One author per work-listed page: write/update **Markdown**, choosing the best structure for
+that topic (tables, callouts via Material's admonition syntax, code blocks — whatever
+communicates best; raw HTML is also fair game since it passes through Markdown unmodified,
+e.g. castify's `<figure class="cast">` embeds). Maintain `mkdocs.yml`'s `nav:` tree to match
+— add entries for new pages, remove entries for deleted ones, reorganize sections when that
+communicates better. Reconcile `README.md` **as a concise entry point** — keep it the tight
+GitHub landing, not a dump of the whole site.
+
+Only touch `mkdocs.yml`'s `nav:` list (and, rarely, append an `extra_css`/`extra_javascript`
+entry when a page newly needs a vendored asset, e.g. its first embedded cast). The theme
+block and everything else in `mkdocs.yml` is template-owned — leave it alone; a needed
+change there belongs upstream in copier-everything, not as a local edit here.
 
 ### Stage 4 — Validate
 
-Run the docs validator on the output (broken internal links + non-portable absolute refs):
+Run the docs validator on the output (broken internal links, missing anchors, nav
+completeness, non-portable absolute refs):
 
 ```bash
-uv run "${CLAUDE_PLUGIN_ROOT}/skills/generate-docs/scripts/check_docs.py" docs
+uv run "${CLAUDE_PLUGIN_ROOT}/skills/generate-docs/scripts/check_docs.py" .
 ```
 
-Exit 0 = clean; 1 = violations (one per line); fix and re-run until clean. Licensing,
-linting, formatting, markdown, TOML, and secrets are **the repo's existing gate's job** (see
-*Licensing & tooling*) — don't re-implement them here.
+(Pass the repo root — it locates `mkdocs.yml` and reads `docs_dir` from it.) Exit 0 = clean;
+1 = violations (one per line); fix and re-run until clean. Licensing, linting, formatting,
+markdown, TOML, and secrets are **the repo's existing gate's job** (see *Licensing &
+tooling*) — don't re-implement them here.
 
-**Then render the built site and confirm it actually loads.** `check_docs.py` catches broken
-links and absolute refs *statically*, but only a real render catches a missing embed, a
-relative path that resolves wrong in a browser, or a script/asset that fails to load — the breakage
-the user otherwise discovers only *after* publishing. Open the built site from a **`file://`
-path with no server** using the available Playwright tooling (the `mcp__playwright__*` MCP, or
-the Playwright CLI) and smoke-check:
+**Then build the site and confirm it actually renders.** `check_docs.py` catches broken
+links, missing anchors, and orphaned pages *statically* against the Markdown source, but
+only a real build catches a broken `nav:` reference, a plugin misconfiguration, or an asset
+that fails to resolve once MkDocs processes it — the breakage the user otherwise discovers
+only *after* publishing:
 
-- **Pages load.** Navigate to `file://…/docs/index.html` and each key per-topic page it links
+```bash
+uvx --with mkdocs-material mkdocs build --strict -d /tmp/mkdocs-build-check
+```
+
+`--strict` turns MkDocs' own warnings (broken `nav:` entries, unresolved cross-references)
+into a hard failure. Then smoke-check the **built** output (not the raw Markdown source)
+from a `file://` path with no server, using the available Playwright tooling (the
+`mcp__playwright__*` MCP, or the Playwright CLI):
+
+- **Pages load.** Navigate to the built `index.html` and each key per-topic page it links
   (`mcp__playwright__browser_navigate`); confirm each renders content, not a blank page or an
   error.
 - **Assets and embeds resolve.** Inspect the browser's network requests and console for failed
   loads (`mcp__playwright__browser_network_requests`,
   `mcp__playwright__browser_console_messages`) — over `file://` a missing local asset surfaces
-  as `ERR_FILE_NOT_FOUND`, not an HTTP 404. Everything the page references — its stylesheet,
-  scripts (`app.js`), the search index, embedded media (e.g. asciinema casts) — must actually
-  load, not just be referenced. Check whatever the built pages link rather than a fixed list of
-  filenames.
+  as `ERR_FILE_NOT_FOUND`, not an HTTP 404. Everything the page references — the theme's CSS/JS,
+  search, embedded media (e.g. asciinema casts) — must actually load, not just be referenced.
 
 A blank page, a failed asset load, or a missing embed is a **hand-off blocker**: fix the
-relative path or restore the embed and re-render. This is the whole point of doing it from
-`file://` *before* publishing — GitHub Pages serves these same files, so if it's broken
-locally it's broken live (the parity the *Publishing* section promises). It's a **load/parity
-smoke check, not visual regression** — confirm pages and assets resolve; don't diff pixels. If
-no Playwright tooling is available, say so and fall back to the static check rather than
-skipping silently.
+source and rebuild. This is the whole point of doing it from `file://` *before* publishing —
+the reusable build-and-deploy workflow (`repo-management`) serves this same build output, so
+if it's broken locally it's broken live. It's a **load/parity smoke check, not visual
+regression** — confirm pages and assets resolve; don't diff pixels. If no Playwright tooling
+is available, say so and fall back to the static check + `mkdocs build --strict` rather than
+skipping silently. If `uvx`/network access isn't available, say so and fall back to the
+static check alone.
 
 ### Stage 5 — Synthesize + reconciliation report
 
 Emit a human-facing **reconciliation report**: what drifted, what was missing, what you
-restructured and *why*. This is the review aid that makes an HTML/README diff tractable.
-Print it in the run; when running inside `dev-kit:ship`, also save it under ship's run dir
-(`"$(git rev-parse --git-dir)/ship/"`) so it survives for the human's review without ever
-landing in the working tree. It is **not** part of the published site.
+restructured and *why*. This is the review aid that makes a Markdown/`nav:`/README diff
+tractable. Print it in the run; when running inside `dev-kit:ship`, also save it under
+ship's run dir (`"$(git rev-parse --git-dir)/ship/"`) so it survives for the human's review
+without ever landing in the working tree. It is **not** part of the published site.
 
 ## Repo-kind shaping (zero-config)
 
 Classification seeds a starting shape; then shape to what the repo actually contains. No
-config file, no persisted structure manifest to drift — re-derive structure from the code.
+config file, no persisted structure manifest to drift — re-derive structure from the code
+(the `nav:` tree in `mkdocs.yml` is the one exception, since MkDocs needs it to render
+navigation — but it's derived from and kept in sync with the code each run, not a separate
+source of truth).
 
 - **Marketplace** — landing overview + a page per plugin (manifest facts,
   skills/commands/agents, rendered README). Authored, not mechanically templated, so it can
@@ -161,39 +195,22 @@ config file, no persisted structure manifest to drift — re-derive structure fr
 library-and-CLI gets both; a marketplace with rich guides gets a guides section; an
 unrecognized repo degrades to generic rather than failing.
 
-## The per-repo design system
-
-This skill ships **no** `style.css` or `app.js`. Author a design system **into the repo**
-and maintain it as a reconciliation target like everything else. Repos may look different
-from each other; coherence is *within* a repo.
-
-- **`docs/style.css`** — the visual contract: light/dark via `prefers-color-scheme`, system
-  fonts (no required web fonts), and a small component vocabulary the pages compose (page
-  shell + nav, cards, callouts, tables, code blocks, badges, breadcrumbs). Author it to the
-  repo's character.
-- **`docs/app.js`** — vanilla JS, vendored, no build step, no framework: client-side search
-  (over a small index the run emits), section/collapsible nav, and a theme toggle. Load it
-  as a classic `<script src="app.js">` with a relative path so it works from `file://` and
-  Pages alike. (Sites need not run offline; external CDNs are permitted, but vendoring is
-  the default since the design system is local anyway.)
-- **Escape hatch** — pages compose the shared components by default, but add **page-local**
-  styles/markup for a genuinely special case (a bespoke diagram, an interactive widget),
-  layered on top of the system, not replacing it.
-- **First run** bootstraps `style.css` + `app.js` + the site; **later runs** treat them as
-  inputs to reconcile — extend for a new component, refactor if they've gone incoherent,
-  else leave alone. Treat "a page reinvents styling a shared component already covers" as a
-  consistency finding in Stage 2.
-
-## What a run writes (and what it never touches)
+## What this skill owns (and what it never touches)
 
 A run writes:
 
-- the **docs site** rooted at `docs/` (`docs/index.html`, per-topic pages, `docs/style.css`,
-  `docs/app.js`, a small search index),
-- the repo **`README.md`** (reconciled as a concise entry point),
-- hand-written **prose guides** (Claude-owned, reconcilable).
+- **Markdown pages** under `mkdocs.yml`'s `docs_dir` (default `docs/`) — landing page,
+  per-topic pages, hand-written prose guides,
+- `mkdocs.yml`'s **`nav:` list** (and, rarely, an appended `extra_css`/`extra_javascript`
+  entry for a newly-needed vendored asset),
+- the repo **`README.md`** (reconciled as a concise entry point).
 
-A run **never** modifies source code — it is the read-only source of truth.
+A run **never**:
+
+- modifies source code — it is the read-only source of truth,
+- touches `mkdocs.yml`'s theme block, plugin config, or anything outside `nav:` —
+  template-owned; a needed change belongs upstream in copier-everything,
+- touches the Pages build workflow or Pages configuration — see *Publishing* below.
 
 **Excluded from reconciliation:** developer specs and internal design docs — concretely
 `docs/superpowers/**` (specs and plans). The published site and dev specs share the `docs/`
@@ -203,22 +220,21 @@ tree; this skill owns the former, not the latter. Never rewrite or clobber them.
 
 Do **not** hand-manage SPDX or re-create checks the repo's gate already runs.
 
-- Generated **HTML/CSS/JS** get inline SPDX headers from **`hawkeye`** (run by the gate);
-  **Markdown** (`README.md`, guides) is covered via **`REUSE.toml`**, never inline
-  (frontmatter-first). If a generated file type isn't covered by the gate's config, fix that
-  config — don't inject headers from here.
+- Every file this skill writes is **Markdown**, covered via **`REUSE.toml`**, never an
+  inline header (frontmatter-first — a line-1 SPDX comment would break YAML frontmatter).
 - Run the repo's existing gate (e.g. `uvx prek run --all-files`) and `reuse lint` to enforce
   licensing/lint/format. The only script this skill ships is the docs validator above.
 
 ## Publishing (GitHub Pages)
 
-Point Pages at the `docs/` folder on the default branch (no Jekyll/baseurl, so project-pages
-URLs and local `file://` both resolve):
+This skill's job ends at authored content — it does not configure Pages itself. Publishing
+is two template-owned pieces, both outside this skill:
 
-```bash
-gh api -X POST repos/{owner}/{repo}/pages -f source[branch]=main -f source[path]=/docs 2>/dev/null \
-  || gh api -X PUT repos/{owner}/{repo}/pages -f source[branch]=main -f source[path]=/docs
-```
+- the copier-everything template's thin caller workflow (`.github/workflows/docs.yml`),
+  which delegates the actual build-and-deploy to `repo-management`'s reusable
+  `workflow_call` workflow (one `mkdocs`/`mkdocs-material` version pin for the whole fleet),
+- the repo's Pages source, declared as `pages: {enabled: true, build_type: workflow}` in its
+  `repo-management` config file and applied via `PagesManager`.
 
-Or set it in the UI (Settings → Pages → Deploy from a branch → `main` / `/docs`). Commit the
-generated `docs/` so Pages can serve it.
+If either is missing, that's a template-adoption or Pages-config gap to fix at that layer —
+not something to work around by hand-calling the Pages API from here.
