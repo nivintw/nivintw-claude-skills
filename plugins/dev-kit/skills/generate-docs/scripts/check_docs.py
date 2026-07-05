@@ -53,9 +53,11 @@ HEADING_RE = re.compile(r"^(#{1,6})\s+(.+?)\s*#*$", re.MULTILINE)
 HTML_ID_RE = re.compile(r'\b(?:id|name)\s*=\s*"([^"]+)"|\b(?:id|name)\s*=\s*\'([^\']+)\'')
 # Fenced code blocks (``` or ~~~, 3+) — content inside is a rendered example, not live
 # Markdown structure, so a `#`-prefixed shell comment or an illustrative [link](...)/<a href>
-# inside one must not be parsed as a real heading/link. Requires a closing fence of the same
-# character repeated at least as many times, per CommonMark.
-FENCED_CODE_RE = re.compile(r"^(`{3,}|~{3,})[^\n]*\n.*?^\1[`~]*[ \t]*$", re.MULTILINE | re.DOTALL)
+# inside one must not be parsed as a real heading/link. Leading whitespace on both fence lines
+# so a fence indented inside a list item is stripped too; the closing fence must match the
+# opening run exactly (same character, same count) — narrower than CommonMark's "at least as
+# many", but that also rules out a backtick-opened block wrongly closed by a tilde run.
+FENCED_CODE_RE = re.compile(r"^[ \t]*(`{3,}|~{3,})[^\n]*\n.*?^[ \t]*\1[ \t]*$", re.MULTILINE | re.DOTALL)
 
 
 def strip_fenced_code(text: str) -> str:

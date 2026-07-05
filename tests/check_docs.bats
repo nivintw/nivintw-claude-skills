@@ -354,3 +354,40 @@ run_check() {
   [ "$status" -eq 1 ]
   [[ "$output" == *"bad.md: could not read"* ]]
 }
+
+@test "a fence indented inside a list item is stripped too" {
+  write_mkdocs
+  # Heredoc (quoted delimiter, no expansion) rather than a single-quoted printf string, so
+  # the literal backticks below don't trip shellcheck's SC2016.
+  cat <<'MD' >"$SITE/index.md"
+# Home
+
+1. Step one
+
+   ```bash
+   [broken](does-not-exist.md)
+   ```
+
+2. Step two
+MD
+  run_check
+  [ "$status" -eq 0 ]
+}
+
+@test "a backtick-opened fence is not closed early by a mismatched tilde line" {
+  # Regression guard: the closing fence must match the opening character exactly. A ~~~ line
+  # inside a ``` fence is just content, not a closer — so the [broken] link on the next line
+  # is still inside the (one, continuous) fenced block and must not be validated.
+  write_mkdocs
+  cat <<'MD' >"$SITE/index.md"
+# Home
+
+```bash
+echo hi
+~~~
+[broken](does-not-exist.md)
+```
+MD
+  run_check
+  [ "$status" -eq 0 ]
+}

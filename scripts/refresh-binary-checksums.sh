@@ -35,8 +35,8 @@ if [ -n "$BASE_REF" ] && ! git rev-parse --verify --quiet "${BASE_REF}^{commit}"
   # ^{commit} requires a commit-ish (not just any resolvable object, e.g. a blob or tree SHA
   # passed by mistake), matching what pinned_value_at_base()'s `git show "$BASE_REF:$file"`
   # actually needs.
-  echo "ERROR: BASE_REF '${BASE_REF}' does not resolve to a valid commit — refusing to run with a" >&2
-  echo "  broken tamper gate (fix the ref, or fetch enough history for it to resolve)." >&2
+  echo "ERROR: BASE_REF '${BASE_REF}' does not resolve to a valid commit — refusing to run" >&2
+  echo "  with a broken tamper gate (fix the ref, or fetch enough history for it to resolve)." >&2
   exit 1
 fi
 
