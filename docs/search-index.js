@@ -17,7 +17,13 @@ window.SEARCH_INDEX = [
     cmd: "/dev-kit:ship",
     plugin: "dev-kit",
     url: "dev-kit.html#ship",
-    summary: "Drive a change from idea to a review-ready PR: plan, isolate in a worktree, implement, simplify, refresh docs, review. Hands off by default; lands the PR (CI to green, converge, rebase-merge) only when you ask."
+    summary: "Drive a change from idea to a review-ready PR: plan, isolate in a worktree, implement, simplify, refresh docs, review. Hands off by default; lands the PR (CI to green, converge, rebase-merge) only when you ask. Land granted up front also covers design/plan choices for the run, logged to the PR and issue."
+  },
+  {
+    cmd: "/dev-kit:land",
+    plugin: "dev-kit",
+    url: "dev-kit.html#land",
+    summary: "A discoverable entry point to ship's land verb: drive an already-open PR to merged (CI to green, review converged, rebase-merge, cleanup)."
   },
   {
     cmd: "/dev-kit:review-pr",
@@ -41,7 +47,7 @@ window.SEARCH_INDEX = [
     cmd: "/dev-kit:open-work",
     plugin: "dev-kit",
     url: "dev-kit.html#open-work",
-    summary: "Read the open issues, call out any in-progress work to resume, then return a short, ranked \"pick up next\" shortlist with a one-line rationale each."
+    summary: "Read the open issues, call out any in-progress work to resume, then return the full ranked \"pick up next\" list — never truncated — with rationale for the standout picks."
   },
   {
     cmd: "/dev-kit:cleanup-locally",
@@ -54,6 +60,24 @@ window.SEARCH_INDEX = [
     plugin: "dev-kit",
     url: "dev-kit.html#doctor",
     summary: "A health check for your installed plugins: flag when a stale cache is running an old skill despite a newer release, and inventory the plugins and their skills."
+  },
+  {
+    cmd: "/dev-kit:pre-public-hardening",
+    plugin: "dev-kit",
+    url: "dev-kit.html#pre-public-hardening",
+    summary: "A whole-repo, full-history readiness review before a private repo goes public: scans every commit for secrets, audits .gitignore, flushes private-context artifacts, verifies license completeness. Detects and prescribes; never flips visibility itself."
+  },
+  {
+    cmd: "/dev-kit:dry-dock-overhaul",
+    plugin: "dev-kit",
+    url: "dev-kit.html#dry-dock-overhaul",
+    summary: "An exhaustive, occasional, human-triggered whole-repo audit: every tracked file read and judged, plus a discovered \"10,000-foot\" pass on communication and UX, orchestrating /dev-kit:review-pr, /dev-kit:generate-docs, and /dev-kit:pre-public-hardening."
+  },
+  {
+    cmd: "/dev-kit:template-reconcile",
+    plugin: "dev-kit",
+    url: "dev-kit.html#template-reconcile",
+    summary: "For Copier-templated repos: reconciles against the upstream template after an adopt or update, verifying no template infra was silently dropped, and prompts to file upstream when a change touches a template-owned file."
   },
   {
     cmd: "worktree-guard",
