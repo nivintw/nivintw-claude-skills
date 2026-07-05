@@ -285,6 +285,14 @@ run_check() {
   [[ "$output" == *"does not exist"* ]]
 }
 
+@test "mkdocs.yml that isn't a mapping exits 2 instead of crashing" {
+  printf -- '- just a list\n' >"$SANDBOX/mkdocs.yml"
+  printf '# Home\n\nok\n' >"$SITE/index.md"
+  run_check
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"does not parse to a mapping"* ]]
+}
+
 @test "a malformed nav (not a list) reports every page unreachable instead of crashing" {
   printf 'docs_dir: docs\nnav: "not a list"\n' >"$SANDBOX/mkdocs.yml"
   printf '# Home\n\nok\n' >"$SITE/index.md"

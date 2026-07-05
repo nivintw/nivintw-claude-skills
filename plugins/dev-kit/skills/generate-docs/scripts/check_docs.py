@@ -231,6 +231,14 @@ def main(argv: list[str]) -> int:
         print(f"could not parse {mkdocs_yml}: {e}", file=sys.stderr)
         return 2
 
+    # _tolerant_yaml_load can return any YAML type, not just a mapping (e.g. mkdocs.yml is
+    # accidentally a bare list or scalar) — every config.get(...) below assumes a dict, so
+    # this is a real setup error to report, not a crash to let propagate as a traceback.
+    if not isinstance(config, dict):
+        print(f"{mkdocs_yml} does not parse to a mapping (got {type(config).__name__}) "
+              "— malformed mkdocs.yml", file=sys.stderr)
+        return 2
+
     # `or "docs"`/`is not False`, not a dict-get default: a swallowed custom YAML tag (see
     # _TolerantLoader) on either key would leave it present but None, and a bare
     # .get(..., default) only applies when the key is absent — silently producing
