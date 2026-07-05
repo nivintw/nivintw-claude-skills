@@ -14,14 +14,14 @@ SPDX-License-Identifier: {{ props["spdxLicenseIdentifier"] }}
 """
 # REUSE-IgnoreEnd
 
-# Negations cancel hawkeye's built-in default excludes (which skip **/*.md) so those get
-# headered too.
-# This project has frontmatter-first markdown (YAML on line 1 — Claude Code skills,
-# Jekyll/Hugo), so markdown stays in hawkeye's default excludes (a line-1 SPDX comment
-# would break the frontmatter) and is licensed via REUSE.toml instead. Note hawkeye
-# can't re-exclude a file once an include (`!`) matches it, so there's no `!**/*.md`.
-# For the same reason the markdown-header mapping (additionalHeaders + MARKDOWN_CUSTOM)
-# is omitted below — it would never fire — and markdown-header.toml isn't shipped.
+# Markdown stays in hawkeye's default excludes (**/*.md is never negated below) and is
+# licensed via REUSE.toml instead — this project has frontmatter-first markdown (YAML on
+# line 1 — Claude Code skills, Jekyll/Hugo), and a line-1 SPDX comment would break that
+# frontmatter. A `!**/*.md` negation would cancel the default exclude and header it
+# inline, which is exactly what we don't want here; hawkeye also can't re-exclude a file
+# once an include (`!`) matches it, so there's no way to negate only some markdown. For
+# the same reason the markdown-header mapping (additionalHeaders + MARKDOWN_CUSTOM) is
+# omitted below — it would never fire — and markdown-header.toml isn't shipped.
 excludes = [
   "LICENSE",
   "LICENSES/**",
