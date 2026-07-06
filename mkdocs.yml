@@ -5,9 +5,11 @@
 # every copier-everything-descended repo (fleet-wide docs design; see
 # nivintw/repo-management#85 for the full rationale). This file only scaffolds the
 # mechanism — real navigation and content are authored per repo by the generate-docs
-# skill, not here. This repo's config has grown past the template's current baseline
-# (theme.features, markdown_extensions, edit_uri, overrides/404.html below) — proposed for
-# upstream folding at nivintw/copier-everything#178.
+# skill, not here. theme.features, markdown_extensions, edit_uri, and overrides/404.html
+# below now match the fleet-general baseline — this repo proved them out first and they've
+# since been folded upstream (nivintw/copier-everything#178). The one deliberate remaining
+# difference is exclude_docs's legacy *.html exclusions further down, kept until the batch
+# Pages-config flip (nivintw/repo-management#88) lands.
 site_name: "nivintw-claude-skills"
 site_description: "Tyler Nivin's Claude Code plugin marketplace."
 site_url: "https://nivintw.github.io/nivintw-claude-skills/"
@@ -66,8 +68,7 @@ theme:
         icon: material/brightness-7
         name: Switch to dark mode
 
-# Superseded — this repo now goes further than "deliberately minimal" (see below). Each
-# addition earns its place with real content it enables, not just because Material
+# Each addition earns its place with real content it enables, not just because Material
 # supports it (still no mermaid, and pymdownx.emoji below is scoped to Material's icon set
 # — :material-*:/:octicons-*: glyphs, never an actual emoji face — nothing added for its
 # own sake).
