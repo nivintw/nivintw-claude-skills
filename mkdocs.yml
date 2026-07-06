@@ -35,8 +35,8 @@ theme:
     - navigation.instant
     - navigation.instant.progress
     # Keeps the URL hash in sync with the heading scrolled into view, and a "back to top"
-    # button once you've scrolled past the first screen — both free wins on dev-kit.md,
-    # the one page long enough for either to matter.
+    # button once you've scrolled past the first screen — free wins on any page that runs
+    # long, and cost nothing on the ones that don't.
     - navigation.tracking
     - navigation.top
     - toc.follow
@@ -165,5 +165,17 @@ nav:
   - Home: index.md
   - Plugins:
       - castify: castify.md
-      - dev-kit: dev-kit.md
+      - dev-kit:
+          - Overview: dev-kit/index.md
+          - ship: dev-kit/ship.md
+          - land: dev-kit/land.md
+          - review-pr: dev-kit/review-pr.md
+          - generate-docs: dev-kit/generate-docs.md
+          - handle-task-tracking: dev-kit/handle-task-tracking.md
+          - open-work: dev-kit/open-work.md
+          - cleanup-locally: dev-kit/cleanup-locally.md
+          - doctor: dev-kit/doctor.md
+          - pre-public-hardening: dev-kit/pre-public-hardening.md
+          - dry-dock-overhaul: dev-kit/dry-dock-overhaul.md
+          - template-reconcile: dev-kit/template-reconcile.md
       - worktree-guard: worktree-guard.md

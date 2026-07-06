@@ -22,7 +22,13 @@ style = "fenced"
 # indentation ahead of an already-fenced block and mistakes the whole thing for an indented
 # code block, then "fixes" it by wrapping the tab's prose in stray fences too, destroying
 # the tab structure (confirmed: this is exactly what happened to docs/index.md's Install
-# tabs the first time the gate ran against them). Both scoped to just these files rather
-# than disabled globally, so the rest of the repo's Markdown (SKILL.md, README, reference
-# docs — none of which use tabs) keeps the stricter default.
-"docs/*.md" = ["MD033", "MD046"]
+# tabs the first time the gate ran against them).
+# MD025 (single H1): rumdl counts a frontmatter `title:` key as an implicit top-level
+# heading, so a page carrying both `title:` (controls the browser tab/nav label — see
+# docs/dev-kit/*.md) and a real `# heading` in the body (the page's actual visible title —
+# MkDocs never auto-renders frontmatter title into the body) reads as two H1s to rumdl. It
+# "fixed" this the first time the gate ran by demoting every affected page's visible heading
+# to H2, silently breaking their visual hierarchy — reverted by hand, then this added.
+# All three scoped to just these files rather than disabled globally, so the rest of the
+# repo's Markdown (SKILL.md, README, reference docs) keeps the stricter default.
+"docs/*.md" = ["MD033", "MD046", "MD025"]
