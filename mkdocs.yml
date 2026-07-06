@@ -68,6 +68,45 @@ theme:
         icon: material/brightness-7
         name: Switch to dark mode
 
+# Adding this key at all switches MkDocs off its implicit default plugin set (just
+# `search`), so `search` is listed explicitly below or built-in search silently
+# disappears (nivintw/repo-management#85 fleet epic; #94/#95/#97 for the other three).
+plugins:
+  - search
+  # Per-page "last updated" date derived from git history (nivintw/repo-management#94).
+  # Needs full git history to compute correct per-page dates — the reusable Pages build
+  # workflow already checks out with fetch-depth: 0 for this reason.
+  - git-revision-date-localized:
+      type: date
+  # Branded social-card (og:image) generation per page (nivintw/repo-management#95).
+  # Needs cairosvg + pillow, which need native cairo/freetype libs the reusable Pages
+  # build workflow already apt-installs — cairosvg's ctypes loader can't resolve
+  # Homebrew's libcairo on macOS, so this can only be verified on the Linux CI build, not
+  # a local `mkdocs build`.
+  - social
+  # Publishes an llms.txt (per https://llmstxt.org/) so LLM tooling can fetch the docs
+  # directly instead of scraping themed HTML (nivintw/repo-management#97). `sections`
+  # mirrors the nav tree below — kept in sync by hand for now; a future generate-docs run
+  # authoring/reorganizing nav should update this list to match.
+  - llmstxt:
+      sections:
+        Documentation:
+          - index.md
+          - castify.md
+          - dev-kit/index.md
+          - dev-kit/ship.md
+          - dev-kit/land.md
+          - dev-kit/review-pr.md
+          - dev-kit/generate-docs.md
+          - dev-kit/handle-task-tracking.md
+          - dev-kit/open-work.md
+          - dev-kit/cleanup-locally.md
+          - dev-kit/doctor.md
+          - dev-kit/pre-public-hardening.md
+          - dev-kit/dry-dock-overhaul.md
+          - dev-kit/template-reconcile.md
+          - worktree-guard.md
+
 # Each addition earns its place with real content it enables, not just because Material
 # supports it (still no mermaid, and pymdownx.emoji below is scoped to Material's icon set
 # — :material-*:/:octicons-*: glyphs, never an actual emoji face — nothing added for its
@@ -105,6 +144,20 @@ markdown_extensions:
   # backtick spans like everywhere else.
   - md_in_html
   - footnotes
+  # Shared content fragments (`--8<-- "install.md"`) so e.g. install instructions can't
+  # drift between the homepage and per-plugin pages (nivintw/repo-management#96,
+  # config-only). base_path is relative to docs/includes/ — a snippet reference is just
+  # the filename within that dir, not the full docs/includes/... path.
+  - pymdownx.snippets:
+      base_path: docs/includes
+      check_paths: true
+  # Auto-links bare `owner/repo#N` issue/PR references and commit SHAs
+  # (nivintw/repo-management#96, config-only).
+  - pymdownx.magiclink:
+      repo_url_shortener: true
+      repo_url_shorthand: true
+      user: "nivintw"
+      repo: "nivintw-claude-skills"
 
 # MkDocs' own nav/link/anchor validation (1.5+) — declared explicitly rather than relying on
 # its undocumented defaults, so `mkdocs build --strict` (generate-docs's SKILL.md Stage 4) is
@@ -120,12 +173,15 @@ validation:
     anchors: warn
     absolute_links: warn
 
-# asciinema-player, CDN-hosted (pinned version, not a moving tag) rather than vendored —
-# see castify's embedding.md, which permits either; this repo opted for the CDN to avoid
-# committing third-party JS/CSS. casts.js hydrates every .cast__player mount (see
-# castify.md) via Material's document$ observable, so a page navigated to via instant-nav
-# still gets its player.
+# stylesheets/extra.css overrides Material's default `code { word-break: break-word }`,
+# which otherwise breaks long identifiers (e.g. `project_name`) mid-word inside narrow
+# table columns. The rest are asciinema-player, CDN-hosted (pinned version, not a moving
+# tag) rather than vendored — see castify's embedding.md, which permits either; this repo
+# opted for the CDN to avoid committing third-party JS/CSS. casts.js hydrates every
+# .cast__player mount (see castify.md) via Material's document$ observable, so a page
+# navigated to via instant-nav still gets its player.
 extra_css:
+  - stylesheets/extra.css
   - https://cdn.jsdelivr.net/npm/asciinema-player@3.10.0/dist/bundle/asciinema-player.css
   - assets/casts.css
   - assets/diagrams.css
@@ -149,6 +205,10 @@ extra_javascript:
 # subtree; excluding it here too is what lets `mkdocs build --strict` pass instead of
 # erroring on "exists but not in nav" for every spec/plan file.
 #
+# includes/ holds pymdownx.snippets fragments (see markdown_extensions above) — they're
+# spliced into other pages via `--8<--`, not standalone nav pages, so they're excluded here
+# the same way superpowers/ is.
+#
 # The four legacy *.html pages, and the *.js/*.css assets they load, are the pre-migration
 # hand-rolled site, kept (not yet deleted) until the batch Pages-config flip
 # (nivintw/repo-management#88) confirms the new MkDocs build is actually live — excluded
@@ -157,6 +217,7 @@ extra_javascript:
 # lands.
 exclude_docs: |
   superpowers/
+  includes/
 
   index.html
   castify.html

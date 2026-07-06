@@ -35,3 +35,5 @@ __pycache__/
 
 ### MkDocs ###
 site/
+# The social-cards plugin caches generated og:image renders here across builds.
+.cache/

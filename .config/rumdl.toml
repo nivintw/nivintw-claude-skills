@@ -44,3 +44,9 @@ style = "fenced"
 "docs/*.md" = ["MD033", "MD046", "MD025", "MD037"]
 "docs/dev-kit/*.md" = ["MD033", "MD046", "MD025", "MD037"]
 "docs/**/*.md" = ["MD033", "MD046", "MD025", "MD037"]
+# MD041 (first line must be a level-1 heading): a pymdownx.snippets fragment isn't a
+# standalone page — it's spliced into whatever page includes it via `--8<--`, so forcing
+# an H1 here would inject a duplicate/wrong-level heading wherever it's included. Both glob
+# forms again, same reasoning as above.
+"docs/includes/*.md" = ["MD041"]
+"docs/includes/**/*.md" = ["MD041"]
