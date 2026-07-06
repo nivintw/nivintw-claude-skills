@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.20.1](https://github.com/nivintw/nivintw-claude-skills/compare/dev-kit-v0.20.0...dev-kit-v0.20.1) (2026-07-06)
+
+
+### Bug Fixes
+
+* **dev-kit:** clarify batch decisions log in the PR and mirror on issues ([481961f](https://github.com/nivintw/nivintw-claude-skills/commit/481961fa3e08820c710dd57e79c3ca094ee4f1de))
+* **dev-kit:** cover the multi-PR batch-split case in decision logging ([047a084](https://github.com/nivintw/nivintw-claude-skills/commit/047a084237b9555737812f3300f3d6c05a0fcec9))
+* **dev-kit:** decouple ship's PR-batching decision from land ([9d0735e](https://github.com/nivintw/nivintw-claude-skills/commit/9d0735e8f8747f0e3e9955fe85629084911e6eba)), closes [#112](https://github.com/nivintw/nivintw-claude-skills/issues/112)
+* **dev-kit:** scope batching decision-logging to the land path only ([7e8e0ad](https://github.com/nivintw/nivintw-claude-skills/commit/7e8e0ad10241b21810be0b3bdbb71d99e09258c4))
+
 ## [0.20.0](https://github.com/nivintw/nivintw-claude-skills/compare/dev-kit-v0.19.0...dev-kit-v0.20.0) (2026-07-06)
 
 
