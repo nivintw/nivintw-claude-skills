@@ -15,9 +15,69 @@ It never auto-merges — unless you explicitly tell it to `land` the PR.
 
 ## The loop
 
+Eleven commands aren't eleven unrelated tools — they're one iterative-delivery loop, with
+`ship` as the orchestrator that drives most of it directly:
+
+<div class="dk-loop">
+  <div class="dk-flow">
+    <a class="dk-node" href="handle-task-tracking/">handle-task-tracking</a>
+    <div class="dk-edge">
+      <span class="dk-line" aria-hidden="true"></span>
+      <span class="dk-cap">track work as issues</span>
+      <span class="dk-line" aria-hidden="true"></span>
+      <span class="dk-arrow" aria-hidden="true">▾</span>
+    </div>
+    <a class="dk-node" href="open-work/">open-work</a>
+    <div class="dk-edge">
+      <span class="dk-line" aria-hidden="true"></span>
+      <span class="dk-cap">pick what's next</span>
+      <span class="dk-line" aria-hidden="true"></span>
+      <span class="dk-arrow" aria-hidden="true">▾</span>
+    </div>
+    <div class="dk-shiprow">
+      <a class="dk-node dk-node--ship" href="ship/">ship</a>
+      <span class="dk-side dk-side--left">
+        <a class="dk-node dk-node--ghost" href="handle-task-tracking/">handle-task-tracking</a>
+        <span class="dk-sidelink">
+          <span class="dk-sidecap">status updates</span>
+          <span class="dk-dash" aria-hidden="true"></span>
+        </span>
+      </span>
+      <span class="dk-side">
+        <span class="dk-sidelink">
+          <span class="dk-sidecap">entry point</span>
+          <span class="dk-dash" aria-hidden="true"></span>
+        </span>
+        <a class="dk-node dk-node--ghost" href="land/">land</a>
+      </span>
+    </div>
+    <span class="dk-drop" aria-hidden="true"></span>
+    <div class="dk-fan">
+      <div class="dk-branch">
+        <span class="dk-cap">review battery</span>
+        <span class="dk-arrow" aria-hidden="true">▾</span>
+        <a class="dk-node" href="review-pr/">review-pr</a>
+      </div>
+      <div class="dk-branch">
+        <span class="dk-cap">refresh docs</span>
+        <span class="dk-arrow" aria-hidden="true">▾</span>
+        <a class="dk-node" href="generate-docs/">generate-docs</a>
+      </div>
+      <div class="dk-branch">
+        <span class="dk-cap">tidy up</span>
+        <span class="dk-arrow" aria-hidden="true">▾</span>
+        <a class="dk-node" href="cleanup-locally/">cleanup-locally</a>
+      </div>
+    </div>
+    <div class="dk-loopnote">↺ then back to open-work for the next item</div>
+  </div>
+</div>
+
 `/dev-kit:ship` is the orchestrator and calls the others directly; each also stands alone.
 `/dev-kit:land` is a discoverable entry point to ship's own merge verb, not a separate loop
-step. Three more sit deliberately outside this loop — `/dev-kit:dry-dock-overhaul`,
+step. And `/dev-kit:handle-task-tracking` appears twice for a reason: it opens the loop by
+capturing work as issues, and ship keeps delegating to it for the whole run — opening the
+tracking issue at plan time, flipping its status labels as phases pass, logging decisions. Three more sit deliberately outside this loop — `/dev-kit:dry-dock-overhaul`,
 `/dev-kit:pre-public-hardening`, and `/dev-kit:template-reconcile` — occasional checks you
 reach for on your own schedule, never called automatically.
 

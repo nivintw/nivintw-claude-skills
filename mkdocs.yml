@@ -85,7 +85,9 @@ markdown_extensions:
   - pymdownx.details
   # Fenced code blocks that nest cleanly inside an admonition or tab, proper syntax
   # highlighting (line-anchored so a code line is linkable), and inline code that gets the
-  # same highlighting treatment as a fenced block.
+  # same highlighting treatment as a fenced block. (No Mermaid custom fence on purpose:
+  # the site's diagrams are hand-built HTML/CSS components — see assets/diagrams.css —
+  # which own their look and stay legible in both color schemes.)
   - pymdownx.superfences
   - pymdownx.highlight:
       anchor_linenums: true
@@ -125,6 +127,8 @@ validation:
 extra_css:
   - https://cdn.jsdelivr.net/npm/asciinema-player@3.10.0/dist/bundle/asciinema-player.css
   - assets/casts.css
+  - assets/diagrams.css
+  - assets/cards.css
 
 # Per-plugin version badges: each docs/versions/<name>.js shim carries one plugin's version
 # (bumped independently by release-please — see those files); badges.js hydrates every

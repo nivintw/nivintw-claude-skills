@@ -1,0 +1,36 @@
+/*
+ * SPDX-FileCopyrightText: © 2026 Tyler Nivin
+ * SPDX-License-Identifier: MIT
+ */
+
+/* Homepage plugin cards: make the whole card the click target, not just the name.
+   Stretched-link pattern — the card's title link (first link in the first paragraph)
+   grows an ::after overlay covering the card. The li is the positioned ancestor, and the
+   title link itself is deliberately NOT positioned, so the overlay resolves against the
+   card. Links elsewhere in the card stay clickable above the overlay via z-index. */
+.md-typeset .grid.cards > ul > li {
+  position: relative;
+  transition: border-color 125ms;
+}
+
+.md-typeset .grid.cards > ul > li > p:first-child a::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+.md-typeset .grid.cards > ul > li p:not(:first-child) a {
+  position: relative;
+  z-index: 2;
+}
+
+.md-typeset .grid.cards > ul > li:hover {
+  border-color: var(--md-accent-fg-color);
+}
+
+/* Three cards in a two-column grid leave a dead cell; let the last card span the row so
+   the block closes cleanly instead of trailing a hole. */
+.md-typeset .grid.cards > ul > li:last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+}

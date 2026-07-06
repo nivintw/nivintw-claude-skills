@@ -1,4 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" role="img" aria-label=">">
+  <!-- On dark tab bars the chip's edge would melt into the browser chrome; browsers that
+       evaluate media queries inside SVG favicons (Chrome, Firefox) get a faint ring. -->
+  <style>@media (prefers-color-scheme: dark) { rect { stroke: #3d444d; stroke-width: 1; } }</style>
   <rect width="32" height="32" rx="6" fill="#0d1117"/>
   <path d="M10 9 L20 16 L10 23" fill="none" stroke="#79c0ff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>
