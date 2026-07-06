@@ -1,6 +1,6 @@
 {
   "name": "castify",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Make asciinema recordings scriptable. Instead of performing a session live by hand, script every keystroke and pause in a file via a tmux-driven harness — so casts are reproducible, deterministic, and automatable, and so interactive TUIs like fzf can be recorded at all. Includes the recording library, a clean recording prompt, a runnable example, and an end-to-end web-embedding guide.",
   "author": {
     "name": "Tyler Nivin"
