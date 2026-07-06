@@ -180,29 +180,20 @@ jobs:
           # substitution whose exit status `set -e` can't see) makes a `gh pr list` failure
           # (auth, API 5xx) abort the step loudly instead of silently reading as "none found".
           # --limit raised well past gh's 30-item default so a busier repo's stranded PR can't
-          # fall off the first page.
-          # commits is fetched here (not a separate gh pr view per candidate below) so the
-          # non-bot-commit check has no extra API round trip per stranded PR. gh caps this
-          # at the first 100 commits per PR — irrelevant in practice, since a release-please
-          # Release PR carries one generated bump commit (plus, rarely, a handful of manual
-          # fixups), nowhere near that limit.
+          # fall off the first page. commits is deliberately NOT fetched here — pulling it for
+          # every open PR just to filter almost all of them back out again below is wasted
+          # query cost on a hot path (this step runs on every push to main). It's fetched once
+          # per actual candidate, below, in the same fresh call that re-verifies
+          # mergeStateStatus.
           prs_json="$(gh pr list --state open --limit 100 \
-            --json number,author,labels,mergeStateStatus,commits)"
+            --json number,author,labels,mergeStateStatus)"
           # Same reasoning as above: a plain assignment (not `mapfile < <(...)`) so a jq
           # failure trips `set -e` too, instead of silently reading as "none found". An empty
           # filter result is a legitimate zero-matches outcome, not a failure — `mapfile` from
           # an empty string yields a one-element array holding "", so that case is normalized
-          # back to a true zero-length array below. Each stranded candidate's non-bot commit
-          # logins (if any) are computed here too and carried alongside the number as a TSV
-          # pair, rather than re-fetched per PR in the loop below.
-          # A commit author with no linked GitHub account (an unlinked git email) comes
-          # back with a null OR empty-string `.login` — falling straight to `.login` and
-          # joining would silently collapse a real human commit to an empty string (jq's
-          # `//` treats "" as truthy, so a bare `.login // .email` wouldn't fall through
-          # for that case either), defeating this whole check. Explicitly treat both null
-          # and "" as "no login" before falling back to `.email`/`.name`.
+          # back to a true zero-length array below.
           stranded_str="$(printf '%s' "$prs_json" | jq -r --arg app "${CI_APP_SLUG}[bot]" \
-            '.[] | select(.author.login == $app and (.labels[]?.name == "autorelease: pending") and .mergeStateStatus == "DIRTY") | [.number, ([.commits[].authors[]? | select(.login != $app) | ((.login | select(. != null and . != "")) // .email // .name // "unknown-author")] | unique | join(", "))] | @tsv')"
+            '.[] | select(.author.login == $app and (.labels[]?.name == "autorelease: pending") and .mergeStateStatus == "DIRTY") | .number')"
           stranded=()
           if [ -n "$stranded_str" ]; then
             mapfile -t stranded <<<"$stranded_str"
@@ -211,27 +202,38 @@ jobs:
             echo "No stranded Release PRs found."
             exit 0
           fi
-          for entry in "${stranded[@]}"; do
+          for num in "${stranded[@]}"; do
+            # Re-fetch mergeStateStatus AND commits together, from one fresh call, immediately
+            # before acting: the initial list above is a snapshot that can go stale mid-batch
+            # (e.g. a human pushes a rebase, or a fixup commit, between the list and this PR's
+            # turn in the loop). Checking the two conditions from two different reads — one
+            # fresh, one stale — would leave exactly the gap this closes: a human's fixup
+            # landing after the initial list but not flipping mergeStateStatus away from DIRTY
+            # would slip past a stale non-bot-commit check while still passing a fresh
+            # mergeStateStatus recheck. One fresh read backs both conditions.
+            current_json="$(gh pr view "$num" --json mergeStateStatus,commits)"
+            current_status="$(printf '%s' "$current_json" | jq -r '.mergeStateStatus')"
+            if [ "$current_status" != "DIRTY" ]; then
+              echo "::notice::PR #${num} is no longer DIRTY (now ${current_status}) — skipping, no longer stranded."
+              continue
+            fi
             # Never auto-close a stranded PR carrying a human's manual commit: the PR's
             # author field is immutable (release-please's bot login), so a maintainer's
             # fixup pushed directly onto the bot's branch still matches the filter above —
             # closing it under the "release-please will regenerate this PR" message would
-            # silently discard those commits, not just an auto-generated bump. Checked above
-            # from the branch's actual commits (a persistent record, unlike the mutable
-            # `author` field) rather than trusting the PR-level author.
-            IFS=$'\t' read -r num non_bot_logins <<<"$entry"
+            # silently discard those commits, not just an auto-generated bump. Checked from
+            # the branch's actual commits (a persistent record, unlike the mutable `author`
+            # field) rather than trusting the PR-level author. A commit author with no linked
+            # GitHub account (an unlinked git email) comes back with a null OR empty-string
+            # `.login` — falling straight to `.login` and joining would silently collapse a
+            # real human commit to an empty string (jq's `//` treats "" as truthy, so a bare
+            # `.login // .email` wouldn't fall through for that case either), defeating this
+            # whole check. Explicitly treat both null and "" as "no login" before falling back
+            # to `.email`/`.name`.
+            non_bot_logins="$(printf '%s' "$current_json" | jq -r --arg app "${CI_APP_SLUG}[bot]" \
+              '[.commits[].authors[]? | select(.login != $app) | ((.login | select(. != null and . != "")) // .email // .name // "unknown-author")] | unique | join(", ")')"
             if [ -n "$non_bot_logins" ]; then
               echo "::warning::Release PR #${num} is DIRTY but carries a commit from ${non_bot_logins} (not just ${CI_APP_SLUG}[bot]) — leaving it open rather than auto-closing, since that would discard those commits. Resolve the conflict manually."
-              continue
-            fi
-            # Re-check mergeStateStatus immediately before closing: the DIRTY snapshot above
-            # can go stale mid-batch (e.g. a human pushes a rebase between the list and this
-            # close), and closing a PR that's no longer DIRTY would silently discard a
-            # healthy Release PR with no warning — the race the close-failure fallback below
-            # doesn't cover (that one only catches "already closed/merged").
-            current_status="$(gh pr view "$num" --json mergeStateStatus --jq '.mergeStateStatus')"
-            if [ "$current_status" != "DIRTY" ]; then
-              echo "::notice::PR #${num} is no longer DIRTY (now ${current_status}) — skipping, no longer stranded."
               continue
             fi
             echo "Closing stranded Release PR #${num} (DIRTY against current main)."
