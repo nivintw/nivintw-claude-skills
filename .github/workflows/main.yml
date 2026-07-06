@@ -196,6 +196,16 @@ jobs:
             exit 0
           fi
           for num in "${stranded[@]}"; do
+            # Re-check mergeStateStatus immediately before closing: the DIRTY snapshot above
+            # can go stale mid-batch (e.g. a human pushes a rebase between the list and this
+            # close), and closing a PR that's no longer DIRTY would silently discard a
+            # healthy Release PR with no warning — the race the close-failure fallback below
+            # doesn't cover (that one only catches "already closed/merged").
+            current_status="$(gh pr view "$num" --json mergeStateStatus --jq '.mergeStateStatus')"
+            if [ "$current_status" != "DIRTY" ]; then
+              echo "::notice::PR #${num} is no longer DIRTY (now ${current_status}) — skipping, no longer stranded."
+              continue
+            fi
             echo "Closing stranded Release PR #${num} (DIRTY against current main)."
             # Tolerate ONLY the expected race (someone/something else already closed or
             # merged it between the list above and this close) so one benign race doesn't

@@ -128,13 +128,31 @@ pinned_value() { # <VAR> <file> -> value or empty
   printf '%s\n' "$matched" | head -n1 | sed -E 's/.*"([^"]+)".*/\1/'
 }
 pinned_value_at_base() { # <VAR> <file> <baseref> -> value at base or empty
-  # A path absent at BASE_REF (introduced since) is the one legitimate empty case here —
-  # check for it explicitly with git cat-file -e, rather than folding it into a blanket
-  # "swallow any git show failure," which would also mask a genuine read error (corrupted
-  # object, partial-clone missing blob) as an empty base_version — feeding the same tamper
-  # gate pinned_value()'s guard above protects for the plain-file case.
-  git cat-file -e "$3:$2" 2>/dev/null || return 0
-  git show "$3:$2" | grep -oE "^[[:space:]]*$1: \"[^\"]+\"" | head -n1 | sed -E 's/.*"([^"]+)".*/\1/' || true
+  # A path absent at BASE_REF (introduced since) is the one legitimate empty case here.
+  # `git cat-file -e` can't distinguish that from a genuine read error (corrupted object,
+  # partial-clone missing blob): both return the same nonzero exit, so a blanket "swallow
+  # any failure" would mask a real error as an empty base_version — feeding the same tamper
+  # gate pinned_value()'s guard above protects for the plain-file case. `git ls-tree` can
+  # tell them apart: an empty match means the path really isn't in the tree at $3; an
+  # `ls-tree` failure, or a listed path `git show` still can't read, is a real error.
+  local in_tree
+  in_tree="$(git ls-tree -r --name-only "$3" -- "$2" 2>&1)" || {
+    echo "ERROR: pinned_value_at_base: git ls-tree failed reading $3:$2 (${in_tree})" >&2
+    exit 1
+  }
+  [ -n "$in_tree" ] || return 0
+
+  local content grep_rc matched
+  content="$(git show "$3:$2")" || {
+    echo "ERROR: pinned_value_at_base: git show failed reading $3:$2 despite it appearing in the tree at $3" >&2
+    exit 1
+  }
+  matched="$(printf '%s' "$content" | grep -oE "^[[:space:]]*$1: \"[^\"]+\"")" && grep_rc=0 || grep_rc=$?
+  if [ "$grep_rc" -gt 1 ]; then
+    echo "ERROR: pinned_value_at_base: grep failed reading $3:$2 (exit $grep_rc)" >&2
+    exit 1
+  fi
+  printf '%s\n' "$matched" | head -n1 | sed -E 's/.*"([^"]+)".*/\1/'
 }
 
 if [ "$#" -gt 0 ]; then
