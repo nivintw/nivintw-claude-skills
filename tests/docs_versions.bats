@@ -43,8 +43,13 @@ setup() {
   # MkDocs pages are Markdown, and the shims load once site-wide via mkdocs.yml's
   # extra_javascript (badges.js hydrates every badge from them) rather than a per-page
   # <script> tag, so the check moves from "same page" to "same mkdocs.yml".
-  shopt -s nullglob
-  local pages=("$ROOT"/docs/*.md)
+  # globstar (not just nullglob): docs/*.md alone is a bash glob, which never crosses a
+  # directory separator — it would silently skip nested pages like docs/dev-kit/index.md
+  # (confirmed: this test kept passing after the dev-kit split even though it had stopped
+  # scanning dev-kit's own data-version badge at all). docs/**/*.md needs globstar to reach
+  # them.
+  shopt -s nullglob globstar
+  local pages=("$ROOT"/docs/**/*.md)
   [ "${#pages[@]}" -gt 0 ]
 
   # Anchored to an actual YAML list item (not just a substring match anywhere in the file,
