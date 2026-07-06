@@ -8,7 +8,9 @@
 """Validate an MkDocs-based docs site's Markdown source.
 
 Reads <repo_root>/mkdocs.yml for `docs_dir` (default "docs") and `nav:`, then checks every
-*.md file under docs_dir (excluding docs/superpowers/**, which this skill never touches):
+*.md file under docs_dir — excluding any directory-style entry in mkdocs.yml's own
+`exclude_docs` (conventionally docs/superpowers/, which this skill never touches; this is
+config-driven, not hardcoded here — see excluded_dirs()):
   1. internal-link integrity — relative Markdown links (`[text](target)`), raw HTML
      href/src/data-cast attributes, and each candidate in a srcset must resolve to a file
      that exists on disk, case-sensitively (so a link that works on a case-insensitive macOS
