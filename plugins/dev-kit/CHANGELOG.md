@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.20.0](https://github.com/nivintw/nivintw-claude-skills/compare/dev-kit-v0.19.0...dev-kit-v0.20.0) (2026-07-06)
+
+
+### Features
+
+* **dev-kit:** retarget generate-docs to MkDocs Markdown + nav ([e11a3d3](https://github.com/nivintw/nivintw-claude-skills/commit/e11a3d3e1cb5463563043bf5c6e03931895beda9)), closes [#107](https://github.com/nivintw/nivintw-claude-skills/issues/107)
+* **dev-kit:** teach generate-docs the docs-site design playbook ([1e2a26b](https://github.com/nivintw/nivintw-claude-skills/commit/1e2a26bc4d51d8bb363f58662836a645f8c779d1))
+
+
+### Bug Fixes
+
+* address Copilot review findings on PR [#109](https://github.com/nivintw/nivintw-claude-skills/issues/109) ([2004844](https://github.com/nivintw/nivintw-claude-skills/commit/200484497becb3c1d4353eaba733667bf7de469d))
+* address further findings from a late-arriving review pass ([944ad3a](https://github.com/nivintw/nivintw-claude-skills/commit/944ad3a4dd4f1cd5038992cd31311d6fbf230182))
+* address review-pr findings from the mkdocs migration ([119ff7f](https://github.com/nivintw/nivintw-claude-skills/commit/119ff7f15092923f22c5af944aa951e58ad56d3a))
+* address round-2 Copilot findings on PR [#109](https://github.com/nivintw/nivintw-claude-skills/issues/109) ([5eee65a](https://github.com/nivintw/nivintw-claude-skills/commit/5eee65a83b5198d74b469ad7ab5fcd6d61ffaf37))
+* check_docs.py crashes instead of exiting 2 on a non-mapping mkdocs.yml ([1d5f808](https://github.com/nivintw/nivintw-claude-skills/commit/1d5f80814837458c4ff7f94f3b90250ef6ad1a83))
+* **dev-kit:** check_docs.py accepts raw-HTML directory-URL page links ([1b532d4](https://github.com/nivintw/nivintw-claude-skills/commit/1b532d4866629c2a8c4ca239f67d337680cc6fcb))
+
 ## [0.19.0](https://github.com/nivintw/nivintw-claude-skills/compare/dev-kit-v0.18.0...dev-kit-v0.19.0) (2026-07-04)
 
 
