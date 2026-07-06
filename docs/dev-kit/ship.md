@@ -50,10 +50,12 @@ The human holds exactly two gates: **plan sign-off** (Phase 1) and the **hand-of
 sign-off pause, decides-and-logs instead of asking (every call lands in the PR's *Decisions
 made without asking* section), and carries the run through the merge.
 
-!!! note "Batching only happens under `land`"
-    Naming several discrete items alongside a `land` grant auto-detects as a batch and
-    defaults to one minimal PR. Without `land`, a bare `ship` batch still ships each item as
-    its own reviewable PR.
+!!! note "Batching is a release question, not a `land` question"
+    Naming several discrete items auto-detects as a batch regardless of `land` — one PR vs.
+    several is decided by the repo's release/merge convention and risk-isolation, the same
+    way either way. `land` only governs whether ship drives the resulting PR(s) to merge:
+    without it, the grouping is proposed as part of the plan for sign-off; with it, the
+    grouping is logged as a decision instead.
 
 ## Related
 
