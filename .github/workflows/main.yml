@@ -203,18 +203,24 @@ jobs:
             exit 0
           fi
           for num in "${stranded[@]}"; do
-            # Re-fetch mergeStateStatus AND commits together, from one fresh call, immediately
-            # before acting: the initial list above is a snapshot that can go stale mid-batch
-            # (e.g. a human pushes a rebase, or a fixup commit, between the list and this PR's
-            # turn in the loop). Checking the two conditions from two different reads — one
-            # fresh, one stale — would leave exactly the gap this closes: a human's fixup
+            # Re-fetch mergeStateStatus, commits, AND labels together, from one fresh call,
+            # immediately before acting: the initial list above is a snapshot that can go
+            # stale mid-batch (e.g. a human pushes a rebase or fixup commit, or strips the
+            # autorelease: pending label to signal "leave this alone", between the list and
+            # this PR's turn in the loop). Checking these conditions from different reads —
+            # some fresh, some stale — would leave exactly the gap this closes: a change
             # landing after the initial list but not flipping mergeStateStatus away from DIRTY
-            # would slip past a stale non-bot-commit check while still passing a fresh
-            # mergeStateStatus recheck. One fresh read backs both conditions.
-            current_json="$(gh pr view "$num" --json mergeStateStatus,commits)"
+            # would slip past a stale check while still passing a fresh mergeStateStatus
+            # recheck. One fresh read backs all three conditions from the original filter.
+            current_json="$(gh pr view "$num" --json mergeStateStatus,commits,labels)"
             current_status="$(printf '%s' "$current_json" | jq -r '.mergeStateStatus')"
             if [ "$current_status" != "DIRTY" ]; then
               echo "::notice::PR #${num} is no longer DIRTY (now ${current_status}) — skipping, no longer stranded."
+              continue
+            fi
+            has_pending_label="$(printf '%s' "$current_json" | jq -r '[.labels[]?.name] | any(. == "autorelease: pending")')"
+            if [ "$has_pending_label" != "true" ]; then
+              echo "::notice::PR #${num} no longer carries the autorelease: pending label — skipping, no longer a release-please candidate."
               continue
             fi
             # Never auto-close a stranded PR carrying a human's manual commit: the PR's
@@ -225,13 +231,16 @@ jobs:
             # the branch's actual commits (a persistent record, unlike the mutable `author`
             # field) rather than trusting the PR-level author. A commit author with no linked
             # GitHub account (an unlinked git email) comes back with a null OR empty-string
-            # `.login` — falling straight to `.login` and joining would silently collapse a
-            # real human commit to an empty string (jq's `//` treats "" as truthy, so a bare
-            # `.login // .email` wouldn't fall through for that case either), defeating this
-            # whole check. Explicitly treat both null and "" as "no login" before falling back
-            # to `.email`/`.name`.
+            # `.login`/`.email`/`.name` — falling straight to any of them and joining would
+            # silently collapse a real human commit to an empty string (jq's `//` treats ""
+            # as truthy, so a bare `.login // .email` wouldn't fall through for that case
+            # either), defeating this whole check. Explicitly treat null and "" as "no value"
+            # at every fallback step. The final `gsub` strips embedded newlines: a commit's
+            # `user.name`/`user.email` is attacker-controlled by anyone with push access to
+            # the branch, and an unstripped newline followed by `::` could inject a forged
+            # workflow log annotation into this step's output.
             non_bot_logins="$(printf '%s' "$current_json" | jq -r --arg app "${CI_APP_SLUG}[bot]" \
-              '[.commits[].authors[]? | select(.login != $app) | ((.login | select(. != null and . != "")) // .email // .name // "unknown-author")] | unique | join(", ")')"
+              '[.commits[].authors[]? | select(.login != $app) | ((.login | select(. != null and . != "")) // (.email | select(. != null and . != "")) // (.name | select(. != null and . != "")) // "unknown-author")] | unique | join(", ") | gsub("[\r\n]+"; " ")')"
             if [ -n "$non_bot_logins" ]; then
               echo "::warning::Release PR #${num} is DIRTY but carries a commit from ${non_bot_logins} (not just ${CI_APP_SLUG}[bot]) — leaving it open rather than auto-closing, since that would discard those commits. Resolve the conflict manually."
               continue
