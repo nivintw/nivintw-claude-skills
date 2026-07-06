@@ -19,6 +19,11 @@
 # (nivintw/repo-management#88): until that lands, this repo's Pages source still points at
 # the legacy hand-rolled site, so an automatic deploy here would build the new site but never
 # actually serve it. Add the `push` trigger back once #88 flips this repo's Pages source.
+#
+# NOTE: the template itself re-added an unconditional `push` trigger in v1.9.1 (repo-management#86
+# shipping). Deliberately NOT taken here — repo-management#88 (the Pages-source flip for this
+# repo) is still open as of this update, so the override above still applies. Drop this note and
+# adopt the template's `push` trigger once #88 lands.
 name: docs
 
 on:
