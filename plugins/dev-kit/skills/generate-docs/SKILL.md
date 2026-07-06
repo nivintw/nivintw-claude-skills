@@ -253,12 +253,25 @@ only *after* publishing:
 uvx --with mkdocs-material mkdocs build --strict -d /tmp/mkdocs-build-check
 ```
 
-Add a `--with <package>` for every entry in `mkdocs.yml`'s `plugins:` list beyond
-`mkdocs-material` itself (read the file — don't assume it's bare) or the build fails
-immediately with "plugin is not installed." Material's `social` plugin is a special case: it
-needs `--with "mkdocs-material[imaging]"` (not the bare package) *and* native
-cairo/freetype libs it can't reliably load via Homebrew on macOS — expect this one plugin
-to only build clean in Linux CI, not locally, and don't treat that as a local-verification
+That bare form only works if `mkdocs.yml`'s `plugins:` list is just `search` (MkDocs'
+implicit default). Read the file first — for every *other* entry, add a matching
+`--with <package>`, and don't assume the plugin ID and its PyPI package share a name (e.g.
+the `git-revision-date-localized` plugin ships in the `mkdocs-git-revision-date-localized-plugin`
+package) — check the plugin's own docs/PyPI listing for the real package name, or the build
+fails immediately with "plugin is not installed." As of this repo's own docs-site plugins,
+a working invocation looks like:
+
+```bash
+uvx --with "mkdocs-material[imaging]" \
+  --with mkdocs-git-revision-date-localized-plugin \
+  --with mkdocs-llmstxt \
+  mkdocs build --strict -d /tmp/mkdocs-build-check
+```
+
+`[imaging]` (not the bare `mkdocs-material` package) is what Material's `social` plugin
+needs for cairosvg/Pillow — and even with it installed, `social` also needs native
+cairo/freetype libs it can't reliably load via Homebrew on macOS. Expect this one plugin to
+only build clean in Linux CI, not locally, and don't treat that as a local-verification
 failure.
 
 `--strict` turns MkDocs' own warnings (broken `nav:` entries, unresolved cross-references)
