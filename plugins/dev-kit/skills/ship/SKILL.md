@@ -125,20 +125,29 @@ fall into, just for scope instead of git safety.
 ### Batching multiple items into minimal PRs
 
 When the request names more than one discrete item (several issue numbers, "these five," "the
-batch") **and** `land` was granted, auto-detect it as a batch — no special phrasing needed
-beyond that. Default to **one PR for the whole batch** — check the repo's own release/version
-tooling and merge convention first (this repo's per-item conventional commits + rebase-merge
-already let release-please attribute version bumps correctly across multiple plugin paths
-inside one PR, so combining rarely costs anything real *here*; a repo with a single-package
-release process, a different release tool, or squash-only merges may genuinely lose something
-by combining — weigh that before defaulting). Split out a piece only for a concrete
-risk-isolation reason — a change unusually large, risky, or hard to revert relative to the
-rest of the batch — never for mere topical variety. Every grouping
-choice, including any split and why, is itself a decision made without asking: log it the
-same way (Phase 8), on **every tracking issue involved** rather than any one PR, since a
-grouping choice spans the whole batch, not a single PR or a single issue. This default
-doesn't apply without `land` — a bare `ship` batch still ships each item as its own
-reviewable PR unless told otherwise.
+batch"), auto-detect it as a batch — no special phrasing needed beyond that, and independent of
+whether `land` was granted. Whether one PR vs. several is the right split is a
+**release/repo-topology question, not a merge-authority question** — decide it the same way
+either way: check the repo's own release/version tooling and merge convention first (this
+repo's per-item conventional commits + rebase-merge already let release-please attribute
+version bumps correctly across multiple plugin paths inside one PR, so combining rarely costs
+anything real *here*; a repo with a single-package release process, a different release tool,
+or squash-only merges may genuinely lose something by combining — weigh that before
+defaulting). Default to **one PR for the whole batch** when that weighing comes out clean;
+split out a piece only for a concrete risk-isolation reason — a change unusually large, risky,
+or hard to revert relative to the rest of the batch — never for mere topical variety, and never
+because `land` was or wasn't granted. Every grouping choice, including any split and why, is
+itself a decision made without asking: log it the same way (Phase 8), on **every tracking issue
+involved** rather than any one PR, since a grouping choice spans the whole batch, not a single
+PR or a single issue.
+
+`land` governs one thing only: whether ship drives the resulting PR(s) to merge, never whether
+they're batched together in the first place. A bare `ship` batch (no `land`) can still land on
+one combined PR when the criteria above call for it — propose the grouping as part of the Phase
+1 plan and get sign-off on it like any other plan decision, rather than silently defaulting to
+one PR per item. A `land`-granted batch of unrelated items can just as validly land on several
+separate PRs when the criteria call for that — surfaced as a logged decision (Phase 8) rather
+than silently combined into one just because `land` was granted.
 
 **Confirm scope before you build it.** A description of a desired end-state is not a license
 to build everything around it. In the plan, separate what the user is **describing as
