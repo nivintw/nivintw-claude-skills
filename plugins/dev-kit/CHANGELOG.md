@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.20.2](https://github.com/nivintw/nivintw-claude-skills/compare/dev-kit-v0.20.1...dev-kit-v0.20.2) (2026-07-06)
+
+
+### Bug Fixes
+
+* **dev-kit:** address Copilot review on generate-docs build-check guidance ([347260c](https://github.com/nivintw/nivintw-claude-skills/commit/347260c8d028323660c6661663426f130524558e)), closes [#116](https://github.com/nivintw/nivintw-claude-skills/issues/116)
+* **dev-kit:** generalize generate-docs' stale Stage 4 build-check command ([aecfaf3](https://github.com/nivintw/nivintw-claude-skills/commit/aecfaf3f54579e1e71af17f31f910a70a41c7c58)), closes [#116](https://github.com/nivintw/nivintw-claude-skills/issues/116)
+
 ## [0.20.1](https://github.com/nivintw/nivintw-claude-skills/compare/dev-kit-v0.20.0...dev-kit-v0.20.1) (2026-07-06)
 
 
