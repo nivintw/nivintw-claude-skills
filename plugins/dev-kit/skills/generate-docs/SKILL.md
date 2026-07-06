@@ -253,6 +253,14 @@ only *after* publishing:
 uvx --with mkdocs-material mkdocs build --strict -d /tmp/mkdocs-build-check
 ```
 
+Add a `--with <package>` for every entry in `mkdocs.yml`'s `plugins:` list beyond
+`mkdocs-material` itself (read the file — don't assume it's bare) or the build fails
+immediately with "plugin is not installed." Material's `social` plugin is a special case: it
+needs `--with "mkdocs-material[imaging]"` (not the bare package) *and* native
+cairo/freetype libs it can't reliably load via Homebrew on macOS — expect this one plugin
+to only build clean in Linux CI, not locally, and don't treat that as a local-verification
+failure.
+
 `--strict` turns MkDocs' own warnings (broken `nav:` entries, unresolved cross-references)
 into a hard failure. Then smoke-check the **built** output (not the raw Markdown source)
 from a `file://` path with no server, using the available Playwright tooling (the
