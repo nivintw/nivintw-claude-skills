@@ -43,9 +43,11 @@ minimal `mkdocs.yml`), not something this skill does for you.
    surface (code with no docs) are *both* first-class findings.
 3. **Humans first, LLMs second.** Optimize every page for human comprehension; machine
    readability is secondary.
-4. **Always ask "is this the best way to communicate this?"** You have editorial authority
-   to restructure, re-level, and re-present — a table, a diagram, a callout, a worked
-   example — whatever communicates best.
+4. **Always ask "is this the best way to communicate this?" — and mean it.** You have
+   editorial authority to restructure, re-level, and re-present. This is not a rhetorical
+   nicety to nod at before defaulting to plain paragraphs — it has concrete, recurring
+   answers (see *Structural tools*, below) that a run should actually reach for when the
+   content shape calls for them, not just when told to.
 5. **Code is the single source of truth.** Where prose and code disagree, the prose is
    wrong. Fix the prose; never invent behavior the code doesn't have.
 6. **Analyze the whole, rewrite only what's wrong.** Whole-codebase *analysis* every run,
@@ -59,6 +61,109 @@ minimal `mkdocs.yml`), not something this skill does for you.
    docs set* is in scope, not just whatever a recent change touched. This sharpens #2, it does
    not soften #6: you still leave accurate pages byte-identical — the license is to *fix what's
    wrong*, never to regenerate what's already right.
+
+## Structural tools
+
+Material ships far more than paragraphs, tables, and admonitions — reach for the tool that
+matches the content's actual shape, not the one that's easiest to default to. Each earns its
+place with a concrete need already present in the content; don't add one speculatively.
+
+- **Grid cards** (`<div class="grid cards" markdown>` + attr_list) — a set of peer items
+  each worth a glance and a link (a landing page's list of plugins/modules/packages) reads
+  far better as a card grid with a one-line blurb each than a bulleted list. Needs
+  `attr_list` + `md_in_html` in `markdown_extensions`. Two finish details users notice:
+  make the **whole card** the click target, not just the title text (stretched-link
+  pattern: the title link grows an `::after` overlay with the card as positioned ancestor;
+  other links in the card stay clickable above it via `z-index`), and when the item count
+  leaves a dead cell in the grid (3 cards, 2 columns), let the last card span the row
+  (`li:last-child:nth-child(odd) { grid-column: 1 / -1 }`) so the block closes cleanly.
+- **Content tabs** (`=== "label"`, `pymdownx.tabbed` with `alternate_style: true`) — when a
+  reader picks exactly one of several equivalent paths (marketplace install vs. local clone;
+  per-OS commands), tabs let them see their own path without scanning past the others.
+  **Real footgun:** tab content nests like a list continuation (4-space indent) — a linter
+  that doesn't know this convention (rumdl's MD046, in this fleet) will "fix" the indentation
+  by wrapping the tab's prose in stray fences, destroying the structure. If the repo's
+  markdown linter flags this, that's a false positive to suppress for the affected files
+  (`per-file-ignores`), not a real formatting problem to fix in the content.
+- **A relationship diagram (hand-built HTML/CSS, not Mermaid)** — when several
+  commands/components delegate to, feed into, or gate each other (an orchestrator calling
+  sub-skills, a pipeline of stages), *that relationship is the actual point* and prose alone
+  under-sells it — a reader skimming separate per-item pages sees loosely related items, not
+  the system. For the small graphs docs actually need (≲10 nodes), **hand-build the diagram
+  as HTML/CSS styled from the theme's own CSS custom properties** rather than reaching for
+  Mermaid: generated Mermaid output reads as generated (boxy nodes, awkward routing, styling
+  you fight rather than own), and it has concrete failure modes — `click` directives wrap
+  node labels in `<a>` so the site's link color silently overrides the diagram's declared
+  text color (theme-dependent, uncontrolled contrast), edge labels hardcode a light
+  background while inheriting the page's text color (illegible in a dark scheme), and
+  Material force-shrinks wide SVGs until text is unreadable. The hand-built component gets
+  all of this right by construction: nodes styled in the site's existing visual language
+  (e.g. the inline-code chip look, if the items are commands), node text/fills from theme
+  variables so both color schemes work without theme-specific rules, at most one
+  accent-emphasized node (the orchestrator), nodes as real links, connectors via
+  borders/pseudo-elements, and `overflow-x: auto` on the container for narrow screens.
+  Mermaid remains acceptable only for genuinely large graphs where auto-layout is
+  unavoidable — and then never combine `click` directives with colored `classDef` fills.
+  Either way, draw the diagram from what the code actually does (which commands genuinely
+  call which), never from an idealized architecture.
+- **Icons** (`pymdownx.emoji` scoped to Material's own `material.extensions.emoji` index —
+  `:material-*:`/`:octicons-*:` glyphs, never literal emoji faces) — a small, real aid to
+  scanning a card grid or a nav tree; don't reach for these just to decorate a heading with
+  no comparison/scanning purpose.
+- **Tables** — comparing several peers across the same few dimensions (a command reference's
+  name + one-liner, a feature matrix). Don't use a table for a single flowing narrative.
+- **Admonitions** (`!!! note`/`!!! tip`, `??? note` for collapsible) — a caveat, a design
+  rationale, or a "how this backstops X" aside that would otherwise interrupt the main
+  narrative's flow. Not a substitute for actually explaining the main content well.
+
+**Treat the repo's markdown auto-fixer as part of the docs pipeline — and audit what it
+did.** Docs-site conventions trip general-purpose markdown linters in predictable ways, and
+an auto-fix can silently destroy structure: a frontmatter `title:` can count as an implicit
+H1 so the fixer demotes every real heading on the page (MD025-style); adjacent italic runs
+(`*"try this"*, *"or this"*`) can misparse so the fixer deletes the separator spaces
+(MD037-style); tab-content indentation gets rewrapped in stray fences (the MD046 case
+above). Suppress these per-file for the docs tree — and make sure the glob actually covers
+**subdirectories** (`docs/*.md` silently misses `docs/section/*.md`; a pinned linter version
+may not support `**`, so add explicit per-subdirectory globs when in doubt). After any gate
+run whose markdown fixer modified docs files, diff those files before shipping — never
+assume an auto-fix was harmless.
+
+**When a topic has many enumerable, individually-substantial sub-items — commands,
+subcommands, endpoints, config keys each with real detail to say — split into a landing page
+(the overview, shared context, and a summary table linking out) plus one page per sub-item,
+rather than defaulting to `###`-per-item on a single page.** A single page with a dozen
+`###` sections reads as a wall of text regardless of a summary table sitting above it — a
+reader still scrolls past everything else to reach the one item they want. Every serious
+CLI/API reference with a double-digit-plus item count (Docker CLI, kubectl, `gh`, git) does
+this for exactly that reason: a persistent sidebar entry per item beats a shared on-page TOC,
+a search hit lands directly on the right page, and no page can grow long regardless of how
+much detail any one item eventually needs. There's no hard threshold — a handful of short
+items is fine as sections on one page; use judgment on when the "wall of text" feeling
+actually kicks in, and default to splitting once it does rather than waiting to be asked.
+Splitting was tried against collapsible sections (`??? note` per item, one page) and
+rejected: collapsing hides the wall of text without removing it — reading more than one item
+still means opening each individually, worse than the flowing page it replaces.
+
+**Give every split-out page the same fixed anatomy.** Pages that each answer the same
+questions in the same order read as *complete* even when short — which is what cures the
+"now each subpage is bare" reaction without regrowing the wall of text. The anatomy that
+works for command/reference pages (modeled on Docker/`gh`/git command docs): a 1–3 sentence
+lead stating the item's role, **Usage** (a fenced block of invocation forms plus
+natural-language equivalents), **What it does** (the distilled mechanics — a numbered list
+for a sequence, a small table for modes/phases; pick the furniture that fits, keep the
+section names fixed), **When to reach for it** (the judgment guidance: when, when not,
+versus which sibling), and **Related** (2–4 links with a one-line why each). At most one
+boxed admonition per page, reserved for *the* gotcha. Keep Related links **bidirectional**
+— if A's page cites B, B's page almost always owes A a link back; sweep for one-way pairs.
+Each page must distill from the item's actual source of truth, readable in under two
+minutes — never paste the source wholesale.
+
+**Don't lock into "minimal" as a permanent stance.** A conservative baseline is a reasonable
+place to *start*, but re-ask "is this the best this can be?" as content accumulates — a site
+that was appropriately simple at 3 pages can look sparse and under-designed at 15. A
+structural tool added without a concrete need is speculative decoration; the same tool added
+because the content now actually has the shape it fits is the right call, even if an earlier
+run deliberately left it out.
 
 ## The reconciliation pipeline
 
@@ -113,10 +218,16 @@ e.g. castify's `<figure class="cast">` embeds). Maintain `mkdocs.yml`'s `nav:` t
 communicates better. Reconcile `README.md` **as a concise entry point** — keep it the tight
 GitHub landing, not a dump of the whole site.
 
-Only touch `mkdocs.yml`'s `nav:` list (and, rarely, append an `extra_css`/`extra_javascript`
-entry when a page newly needs a vendored asset, e.g. its first embedded cast). The theme
-block and everything else in `mkdocs.yml` is template-owned — leave it alone; a needed
-change there belongs upstream in copier-everything, not as a local edit here.
+**Default scope is `nav:`** (plus, rarely, an appended `extra_css`/`extra_javascript` entry
+for a newly-needed vendored asset, e.g. a page's first embedded cast) — the theme block and
+`markdown_extensions` are template-owned, and a routine reconciliation run leaves them alone.
+**That default lifts when a *Structural tool* the content now needs isn't yet enabled** (a
+first grid, first tabs, first diagram) — enable it locally in `markdown_extensions`/
+`theme.features` rather than working around its absence, and separately propose folding the
+addition into the copier-everything template baseline (via `dev-kit:handle-task-tracking`'s
+cross-repo filing) so the rest of the fleet inherits it too, rather than stranding a local-only
+divergence. This is a repo-wide-request-scale decision ("make the docs site excellent"), not
+something to reach for on an ordinary drift-fixing run.
 
 ### Stage 4 — Validate
 
@@ -155,13 +266,42 @@ from a `file://` path with no server, using the available Playwright tooling (th
   `mcp__playwright__browser_console_messages`) — over `file://` a missing local asset surfaces
   as `ERR_FILE_NOT_FOUND`, not an HTTP 404. Everything the page references — the theme's CSS/JS,
   search, embedded media (e.g. asciinema casts) — must actually load, not just be referenced.
+- **Interact with anything interactive — a load check alone misses this class of bug
+  entirely.** Click every content tab (confirm the content actually swaps), click any
+  embedded player's play control, click through an instant-nav transition (a link, not a
+  fresh `navigate` call) and re-check the console — a hydration script that only runs on
+  first load, not on an in-app transition, is a real and easy mistake. A real bug from
+  authoring this exact site was only found this way: a cast embed's asset path resolved
+  relative to the *source* file's directory, which is correct for a page served at
+  `docs_dir` root but wrong the moment MkDocs' directory URLs (the default) put the page
+  one level deeper — the built page loaded clean, zero console errors, and only 404'd
+  *after clicking Play*. `mkdocs build --strict` and `check_docs.py` cannot catch this
+  class of bug; only exercising the interaction does.
+- **Judge rendering by painted pixels, in both color schemes.** Take actual screenshots
+  (the Playwright CLI's `screenshot` command is the reliable, deterministic way) and *look*
+  at them — a `getComputedStyle` probe can measure the wrong element in a cascade and
+  report a color the paint never uses (an anchor's inherited link color beating a declared
+  text color is exactly such a case). When the theme ships a light/dark toggle, verify
+  styled components in **both** schemes: a hardcoded color that looks fine in one can be
+  illegible in the other, and the scheme the site defaults to is the one every new visitor
+  sees. And if the user says something looks wrong, their eyes are ground truth — reproduce
+  what they see before arguing with instruments.
+- **A known MkDocs/Material trap: `docs/404.md` is not what it looks like.** Material
+  registers `404.html` as a "static template" rendered straight from the theme, not from a
+  `docs/404.md` source — such a file builds without error and its content is silently
+  discarded (verified: the static-template render overwrites the same output path
+  afterward). A custom 404 page needs a real theme override (`theme.custom_dir` +
+  `overrides/404.html`, extending `main.html`), not a docs page. If a run ever needs a
+  custom not-found page, this is the mechanism — don't rediscover the discard-behavior the
+  hard way.
 
-A blank page, a failed asset load, or a missing embed is a **hand-off blocker**: fix the
-source and rebuild. This is the whole point of doing it from `file://` *before* publishing —
-the reusable build-and-deploy workflow (`repo-management`) serves this same build output, so
-if it's broken locally it's broken live. It's a **load/parity smoke check, not visual
-regression** — confirm pages and assets resolve; don't diff pixels. If no Playwright tooling
-is available, say so and fall back to the static check + `mkdocs build --strict` rather than
+A blank page, a failed asset load, a missing embed, or a click that does nothing/errors is a
+**hand-off blocker**: fix the source and rebuild. This is the whole point of doing it from
+`file://` *before* publishing — the reusable build-and-deploy workflow (`repo-management`)
+serves this same build output, so if it's broken locally it's broken live. It's a **load and
+interaction smoke check, not visual regression** — confirm pages, assets, and interactive
+elements actually work; don't diff pixels. If no Playwright tooling is available, say so and
+fall back to the static check + `mkdocs build --strict` rather than
 skipping silently. If `uvx`/network access isn't available, say so and fall back to the
 static check alone.
 
@@ -202,14 +342,17 @@ A run writes:
 - **Markdown pages** under `mkdocs.yml`'s `docs_dir` (default `docs/`) — landing page,
   per-topic pages, hand-written prose guides,
 - `mkdocs.yml`'s **`nav:` list** (and, rarely, an appended `extra_css`/`extra_javascript`
-  entry for a newly-needed vendored asset),
+  entry for a newly-needed vendored asset, or a new `markdown_extensions`/`theme.features`
+  entry for a newly-needed *Structural tool* — see Stage 3's default-scope note),
 - the repo **`README.md`** (reconciled as a concise entry point).
 
 A run **never**:
 
 - modifies source code — it is the read-only source of truth,
-- touches `mkdocs.yml`'s theme block, plugin config, or anything outside `nav:` —
-  template-owned; a needed change belongs upstream in copier-everything,
+- touches the theme block or `markdown_extensions` on an *ordinary* reconciliation run
+  (template-owned; the Stage 3 exception is for a deliberate "make this site excellent"
+  request, not a drift-fixing pass) — and even then, proposes folding the addition upstream
+  into copier-everything rather than leaving it a silent local divergence,
 - touches the Pages build workflow or Pages configuration — see *Publishing* below.
 
 **Excluded from reconciliation:** developer specs and internal design docs — concretely
