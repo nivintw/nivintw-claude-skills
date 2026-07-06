@@ -55,8 +55,8 @@ made without asking* section), and carries the run through the merge.
     several is decided by the repo's release/merge convention and risk-isolation, the same
     way either way. `land` only governs whether ship drives the resulting PR(s) to merge:
     without it, the grouping is proposed as part of the plan for sign-off; with it, the
-    grouping is logged as a decision — mirrored on every tracking issue the PR closes, not
-    just the PR itself.
+    grouping is logged as a decision — in each resulting PR if the batch splits into several,
+    and mirrored onto every tracking issue in the batch, not just the PR(s) themselves.
 
 ## Related
 
