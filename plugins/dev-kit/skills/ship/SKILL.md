@@ -136,18 +136,18 @@ or squash-only merges may genuinely lose something by combining — weigh that b
 defaulting). Default to **one PR for the whole batch** when that weighing comes out clean;
 split out a piece only for a concrete risk-isolation reason — a change unusually large, risky,
 or hard to revert relative to the rest of the batch — never for mere topical variety, and never
-because `land` was or wasn't granted. Every grouping choice, including any split and why, is
-itself a decision made without asking: log it the same way (Phase 8), on **every tracking issue
-involved** rather than any one PR, since a grouping choice spans the whole batch, not a single
-PR or a single issue.
+because `land` was or wasn't granted.
 
 `land` governs one thing only: whether ship drives the resulting PR(s) to merge, never whether
 they're batched together in the first place. A bare `ship` batch (no `land`) can still land on
-one combined PR when the criteria above call for it — propose the grouping as part of the Phase
-1 plan and get sign-off on it like any other plan decision, rather than silently defaulting to
-one PR per item. A `land`-granted batch of unrelated items can just as validly land on several
-separate PRs when the criteria call for that — surfaced as a logged decision (Phase 8) rather
-than silently combined into one just because `land` was granted.
+one combined PR when the criteria above call for it — propose the grouping, including any split
+and why, as part of the Phase 1 plan and get sign-off on it like any other plan decision, rather
+than silently defaulting to one PR per item. A `land`-granted batch of unrelated items can just
+as validly land on several separate PRs when the criteria call for that: log the grouping
+choice, including any split and why, as a decision made without asking (Phase 8), on **every
+tracking issue involved** rather than any one PR, since a grouping choice spans the whole batch,
+not a single PR or a single issue — rather than silently combining into one just because `land`
+was granted.
 
 **Confirm scope before you build it.** A description of a desired end-state is not a license
 to build everything around it. In the plan, separate what the user is **describing as
