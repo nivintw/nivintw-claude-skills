@@ -17,4 +17,13 @@ exclude = [
   # Actions runner IPs, so the valid asciinema.org link in README.md TIMEOUTs from CI on
   # every run even though it's a normal HTTP 200 from outside CI.
   "https://asciinema\\.org/",
+  # Raw-HTML components in MkDocs pages (the dev-kit loop diagram) must link with built-site
+  # directory URLs (`href="ship/"`) because MkDocs rewrites only Markdown links, never hrefs
+  # inside raw HTML — so lychee, which resolves them against the *source* tree, sees a
+  # nonexistent extensionless file. Scoped to the dev-kit page directory; the built-site
+  # validity of these same links is covered by `mkdocs build --strict` + the Playwright pass.
+  "file://.*/docs/dev-kit/[a-z-]+$",
+  # The published-site URL in README.md 404s until the batch Pages-source flip
+  # (nivintw/repo-management#88) points Pages at the MkDocs build. Remove once it lands.
+  "https://nivintw\\.github\\.io/nivintw-claude-skills/dev-kit/",
 ]
