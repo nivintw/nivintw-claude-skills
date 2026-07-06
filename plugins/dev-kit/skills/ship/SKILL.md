@@ -144,10 +144,10 @@ one combined PR when the criteria above call for it — propose the grouping, in
 and why, as part of the Phase 1 plan and get sign-off on it like any other plan decision, rather
 than silently defaulting to one PR per item. A `land`-granted batch of unrelated items can just
 as validly land on several separate PRs when the criteria call for that: log the grouping
-choice, including any split and why, as a decision made without asking (Phase 8), on **every
-tracking issue involved** rather than any one PR, since a grouping choice spans the whole batch,
-not a single PR or a single issue — rather than silently combining into one just because `land`
-was granted.
+choice, including any split and why, as a decision made without asking (Phase 8) in the PR
+body, and — since a grouping choice spans the whole batch, not a single issue — mirror it onto
+**every tracking issue involved**, not just one, rather than silently combining into one just
+because `land` was granted.
 
 **Confirm scope before you build it.** A description of a desired end-state is not a license
 to build everything around it. In the plan, separate what the user is **describing as
