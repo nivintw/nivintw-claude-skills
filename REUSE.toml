@@ -3,10 +3,11 @@
 
 version = 1
 
-# .gitignore stays in hawkeye's default excludes (not re-included via a negation) and is
-# licensed here instead of via an inline header.
+# .gitignore files (root and nested, e.g. .serena/.gitignore) stay in hawkeye's default
+# excludes (not re-included via a negation) and are licensed here instead of via an inline
+# header.
 [[annotations]]
-path = ".gitignore"
+path = "**/.gitignore"
 SPDX-FileCopyrightText = "© 2026 Tyler Nivin"
 SPDX-License-Identifier = "MIT"
 
