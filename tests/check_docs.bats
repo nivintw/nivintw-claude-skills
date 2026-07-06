@@ -434,6 +434,36 @@ MD
   [ "$status" -eq 0 ]
 }
 
+@test "a raw-HTML directory-URL page link resolves to its source .md" {
+  # Raw HTML can't use .md links (MkDocs rewrites Markdown links only, never hrefs inside
+  # raw HTML), so it links the built directory URL — other/ from a sibling page is source
+  # other.md. The checker must accept that, not report the nonexistent directory.
+  write_mkdocs "  - Home: index.md
+  - Other: other.md"
+  printf '# Home\n\n<a href="other/">other</a>\n' >"$SITE/index.md"
+  printf '# Other\n\nok\n' >"$SITE/other.md"
+  run_check
+  [ "$status" -eq 0 ]
+}
+
+@test "a raw-HTML directory-URL link to a section index resolves to its index.md" {
+  write_mkdocs "  - Home: index.md
+  - Sub: sub/index.md"
+  printf '# Home\n\n<a href="sub/">sub</a>\n' >"$SITE/index.md"
+  mkdir -p "$SITE/sub"
+  printf '# Sub\n\nok\n' >"$SITE/sub/index.md"
+  run_check
+  [ "$status" -eq 0 ]
+}
+
+@test "a raw-HTML directory-URL link to a missing page is still a violation" {
+  write_mkdocs
+  printf '# Home\n\n<a href="nope/">nope</a>\n' >"$SITE/index.md"
+  run_check
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"broken internal link"* ]]
+}
+
 @test "use_directory_urls: false disables the ../ adjustment" {
   printf 'docs_dir: docs\nuse_directory_urls: false\nnav:\n  - Home: index.md\n  - Other: other.md\n' >"$SANDBOX/mkdocs.yml"
   printf '# Home\n\nok\n' >"$SITE/index.md"

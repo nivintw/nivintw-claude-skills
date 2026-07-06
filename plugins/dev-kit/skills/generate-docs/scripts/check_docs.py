@@ -338,6 +338,16 @@ def main(argv: list[str]) -> int:
             if not within_root(target, docs_dir):
                 violations.append(f"{md}: link escapes docs root: {raw!r}")
                 continue
+            # A trailing-slash ref is a directory-URL *page* link — the only form raw HTML
+            # can use, since MkDocs rewrites Markdown links but never hrefs inside raw
+            # HTML. The built directory X/ is what source X.md (or X/index.md) becomes
+            # under directory URLs, so accept the ref when either source page exists.
+            if use_directory_urls and ref.endswith("/"):
+                page = target.with_suffix(".md")
+                page_index = target / "index.md"
+                if not (exists_cs(page, docs_dir) or exists_cs(page_index, docs_dir)):
+                    violations.append(f"{md}: broken internal link: {raw!r}")
+                continue
             if not exists_cs(target, docs_dir):
                 violations.append(f"{md}: broken internal link: {raw!r}")
                 continue
