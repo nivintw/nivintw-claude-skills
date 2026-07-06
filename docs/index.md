@@ -19,7 +19,7 @@ Three plugins — twelve commands and a worktree-safety hook.
 
     [`/castify:record-terminal-casts`](castify.md#commands)
 
--   :material-source-pull: **[dev-kit](dev-kit.md)** <span data-version="dev-kit"></span>
+-   :material-source-pull: **[dev-kit](dev-kit/index.md)** <span data-version="dev-kit"></span>
 
     ---
 
@@ -27,8 +27,8 @@ Three plugins — twelve commands and a worktree-safety hook.
     track the work as issues, pick what to do next, and keep your local clone and docs tidy
     — with the human in control at the ends.
 
-    [`/dev-kit:ship`](dev-kit.md#ship) · [`/dev-kit:review-pr`](dev-kit.md#review-pr) ·
-    [11 commands total](dev-kit.md#commands)
+    [`/dev-kit:ship`](dev-kit/ship.md) · [`/dev-kit:review-pr`](dev-kit/review-pr.md) ·
+    [11 commands total](dev-kit/index.md#commands)
 
 -   :material-shield-check-outline: **[worktree-guard](worktree-guard.md)**
     <span data-version="worktree-guard"></span>

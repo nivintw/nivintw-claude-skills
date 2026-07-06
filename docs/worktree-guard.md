@@ -27,7 +27,7 @@ more:
 - **The worktree's own git dir** — a linked worktree keeps its metadata at
   `<repo>/.git/worktrees/<name>/`, which sits outside the worktree tree but is still *this*
   worktree's private area. Tools that keep run state there (like
-  [`/dev-kit:ship`](dev-kit.md#ship)) write to it freely; the guard resolves it from the
+  [`/dev-kit:ship`](dev-kit/ship.md)) write to it freely; the guard resolves it from the
   worktree's `.git` pointer file.
 - **Everything else** — scratch dirs, `~/.claude` memory, other repos, `/tmp`. Untouched.
 
@@ -48,4 +48,4 @@ No commands to learn — install it and it just watches.
 
 The plugin ships one `PreToolUse` hook (matcher `Write|Edit|MultiEdit`, 10-second timeout);
 once installed it runs automatically. It pairs naturally with
-[`/dev-kit:ship`](dev-kit.md#ship), which does its work inside worktrees.
+[`/dev-kit:ship`](dev-kit/ship.md), which does its work inside worktrees.
