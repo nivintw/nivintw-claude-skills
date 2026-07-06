@@ -12,21 +12,20 @@
 # same as it does for every other `uses:` pin in this file (see main.yml/docs on Renovate's
 # GitHub Actions digest-pinning).
 #
-# MANUAL TRIGGER ONLY, for now: repo-management's `.github/workflows/docs.yml` exists and
-# this repo's build already works (verified via mkdocs build --strict + a live preview) —
-# the reusable workflow itself (nivintw/repo-management#86) is no longer what's blocking a
-# `push` trigger. What's still pending is the batch Pages-source flip across the whole fleet
-# (nivintw/repo-management#88): until that lands, this repo's Pages source still points at
-# the legacy hand-rolled site, so an automatic deploy here would build the new site but never
-# actually serve it. Add the `push` trigger back once #88 flips this repo's Pages source.
-#
-# NOTE: the template itself re-added an unconditional `push` trigger in v1.9.1 (repo-management#86
-# shipping). Deliberately NOT taken here — repo-management#88 (the Pages-source flip for this
-# repo) is still open as of this update, so the override above still applies. Drop this note and
-# adopt the template's `push` trigger once #88 lands.
+# This repo's Pages source has been flipped to "GitHub Actions" build mode
+# (nivintw/repo-management#88's acceptance criterion for this repo, confirmed via the
+# Pages API and a manual workflow_dispatch run that built and served the new MkDocs site
+# live) — the divergence that kept this on a manual-only trigger no longer applies, so the
+# `push` trigger is back to match the template.
 name: docs
 
 on:
+  push:
+    branches: [main]
+    # overrides/** is the theme-customization dir this same include_docs_site feature
+    # scaffolds (overrides/404.html) — a change there alone (the 404 page, or any future
+    # theme override) must trigger a redeploy too, or the live site silently goes stale.
+    paths: ['docs/**', 'mkdocs.yml', 'overrides/**']
   workflow_dispatch:
 
 concurrency:
