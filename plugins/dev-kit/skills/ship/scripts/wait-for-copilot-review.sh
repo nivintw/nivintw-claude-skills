@@ -30,14 +30,24 @@ repo="$1"
 pr="$2"
 timeout="${3:-900}"
 
-# Pin to the head SHA now; a review on a later push is checked against this exact commit.
-head_sha="$(gh pr view "$pr" --repo "$repo" --json headRefOid --jq '.headRefOid')"
+# Pin to the head SHA now; a review on a later push is checked against this exact commit. If
+# the head can't be read (transient/auth/404 under `set -e`), degrade to a TIMEOUT-style
+# exit(0) rather than dying non-zero — that would break the "always terminates cleanly, never
+# hangs, only two exit(0) states" contract and could trigger a misleading early resume.
+if ! head_sha="$(gh pr view "$pr" --repo "$repo" --json headRefOid --jq '.headRefOid' 2>/dev/null)" ||
+  [ -z "$head_sha" ]; then
+  echo "TIMEOUT: could not read the head SHA for $repo#$pr (treat as unavailable, land anyway)"
+  exit 0
+fi
 deadline=$((SECONDS + timeout))
 
 # The reviewer's login on the posted *review* is copilot-pull-request-reviewer[bot] — NOT the
 # login Copilot appears under in requested_reviewers. Match the review author, and pin commit_id.
+# The `gh api | grep` runs as the `until` CONDITION, which `set -e` deliberately does NOT abort
+# on: a transient gh/network/auth failure (or a plain "no review yet") just makes the condition
+# false, so the loop sleeps and retries until the deadline instead of exiting non-zero.
 until gh api "repos/$repo/pulls/$pr/reviews" \
-  --jq "any(.[]; .user.login==\"copilot-pull-request-reviewer[bot]\" and .commit_id==\"$head_sha\")" |
+  --jq "any(.[]; .user.login==\"copilot-pull-request-reviewer[bot]\" and .commit_id==\"$head_sha\")" 2>/dev/null |
   grep -q true; do
   if [ "$SECONDS" -ge "$deadline" ]; then
     echo "TIMEOUT: no Copilot review on $head_sha after ${timeout}s (treat as unavailable, land anyway)"
