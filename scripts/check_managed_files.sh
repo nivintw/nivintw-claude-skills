@@ -16,8 +16,9 @@
 #
 # Behaviour is FAIL-OPEN / advisory: if tests/template-owned-files.txt is absent it is a no-op
 # (prints an informational note and exits 0), so it does nothing harmful before the manifest
-# is adopted (that manifest + the registry land in a separate commit). It never blocks; its
-# purpose is reporting.
+# is adopted. The divergence registry (tests/template-divergences.txt) already ships in this
+# repo; the template-owned-files.txt manifest is the still-missing gate — a full
+# template-reconcile run derives it from the render. It never blocks; its purpose is reporting.
 #
 # Placement decision: this is a TEMPLATE-LAYER concern — it belongs in copier-everything
 # alongside template-reconcile (which can actually derive the template-owned set from the

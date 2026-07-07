@@ -27,7 +27,7 @@ offenders=()
 
 # Assert line 1 of a file is exactly the `---` frontmatter opener; record offenders.
 check_file() {
-  local f="$1"
+  local f="$1" first_line=""
   [ -f "$f" ] || return 0
   IFS= read -r first_line <"$f" || first_line=""
   if [ "$first_line" != "---" ]; then
