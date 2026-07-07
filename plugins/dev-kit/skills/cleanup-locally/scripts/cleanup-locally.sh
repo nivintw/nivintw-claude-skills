@@ -107,7 +107,10 @@ is_merged() {
   # on the base past the merge-base, so `git cherry` would print "-" and we'd delete an
   # unmerged branch (its commits are the only remaining ref to them). Nothing was actually
   # merged, so short-circuit and keep the branch.
-  [ "$(git rev-parse "$branch^{tree}")" = "$(git rev-parse "$mb^{tree}")" ] && return 1
+  local branch_tree mb_tree
+  branch_tree=$(git rev-parse "$branch^{tree}" 2>/dev/null) || return 1
+  mb_tree=$(git rev-parse "$mb^{tree}" 2>/dev/null) || return 1
+  [ "$branch_tree" = "$mb_tree" ] && return 1
   synth=$(git commit-tree "$branch^{tree}" -p "$mb" -m squash-check 2>/dev/null) || return 1
   [ -z "$synth" ] && return 1
   git cherry "$base" "$synth" 2>/dev/null | grep -q '^-'

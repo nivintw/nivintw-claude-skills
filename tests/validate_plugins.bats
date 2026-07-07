@@ -12,9 +12,17 @@ setup() {
 }
 
 @test "skips cleanly (exit 0 + notice) when the claude CLI is absent" {
-  # /usr/bin:/bin keeps coreutils (dirname/cd/etc.) available but excludes claude (installed
-  # under ~/.local/bin), forcing the not-available branch deterministically.
-  run env PATH="/usr/bin:/bin" "$SCRIPT"
+  # Build a minimal PATH with symlinks to ONLY the utilities the script needs, and nothing
+  # else — so `command -v claude` fails deterministically regardless of where claude is
+  # installed. A bare PATH=/usr/bin:/bin isn't safe: claude could be installed system-wide
+  # there (now or in a future CI image), which would flip this into the validate branch.
+  local bindir
+  bindir="$(mktemp -d)"
+  for util in bash dirname basename mktemp rm; do
+    ln -s "$(command -v "$util")" "$bindir/$util"
+  done
+  run env PATH="$bindir" "$SCRIPT"
+  rm -rf "$bindir"
   [ "$status" -eq 0 ]
   [[ "$output" == *"claude CLI not available — skipping"* ]]
 }

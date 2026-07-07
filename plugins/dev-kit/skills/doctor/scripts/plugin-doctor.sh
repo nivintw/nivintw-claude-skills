@@ -118,7 +118,7 @@ resolve_hook_script() {
 script_vetoes() {
   local f="$1"
   [ -f "$f" ] || return 1
-  grep -Eq '"permissionDecision"[[:space:]]*:[[:space:]]*"deny"|"decision"[[:space:]]*:[[:space:]]*"block"|"deny"|exit[[:space:]]+2([^0-9]|$)|sys\.exit\(2\)' "$f"
+  grep -Eq '"permissionDecision"[[:space:]]*:[[:space:]]*"deny"|"decision"[[:space:]]*:[[:space:]]*"block"|exit[[:space:]]+2([^0-9]|$)|sys\.exit\(2\)' "$f"
 }
 
 # Classify every hook in one plugin's newest cached version and append TSV rows
