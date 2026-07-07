@@ -100,6 +100,28 @@ merged_gone_branch() {
   [ "$status" -ne 0 ]
 }
 
+@test "keeps a net-zero branch (commit + revert) despite an --allow-empty commit on main" {
+  # Regression for the is_merged() empty-diff false positive (DATA-LOSS): a branch whose tip
+  # tree equals the merge-base tree (a commit and its revert) collapses to an EMPTY synthetic
+  # diff, whose empty patch-id matches ANY --allow-empty commit on main past the merge-base.
+  # git cherry would then report it as squash-merged and delete a branch that holds the only
+  # copy of its commits. It must be kept.
+  git checkout -q -b feat-netzero main
+  commit_on "$REPO" nz.txt content "add content"
+  git revert --no-edit HEAD >/dev/null                  # tip tree now == merge-base tree
+  git push -q -u origin feat-netzero
+  git push -q origin --delete feat-netzero              # upstream now [gone]
+  git checkout -q main
+  git commit -q --allow-empty -m "empty commit on main" # empty patch-id on the base
+  git push -q origin main
+
+  run "$SCRIPT"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"not in main"* ]] # reported as unmerged, not deleted
+  run git rev-parse --verify --quiet refs/heads/feat-netzero
+  [ "$status" -eq 0 ] # KEPT — its only copy was not destroyed
+}
+
 @test "keeps an unmerged branch even when its upstream is gone" {
   git checkout -q -b feat-orphan main
   commit_on "$REPO" orphan.txt o "orphan work"
