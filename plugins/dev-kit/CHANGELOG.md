@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.21.0](https://github.com/nivintw/nivintw-claude-skills/compare/dev-kit-v0.20.2...dev-kit-v0.21.0) (2026-07-07)
+
+
+### Features
+
+* **dev-kit:** Add generate-docs affordance rubric, completeness critic, target-state marker ([1cf414b](https://github.com/nivintw/nivintw-claude-skills/commit/1cf414b2c1408524313b49aac3026b7f10be58cc)), closes [#148](https://github.com/nivintw/nivintw-claude-skills/issues/148) [#149](https://github.com/nivintw/nivintw-claude-skills/issues/149)
+* **dev-kit:** First-class tracker reconcile + land skill, dry-dock/doctor/guard hardening ([5d1fd6e](https://github.com/nivintw/nivintw-claude-skills/commit/5d1fd6edc0241d8a8d336f5b3e44a15ba8211ac7)), closes [#128](https://github.com/nivintw/nivintw-claude-skills/issues/128) [#129](https://github.com/nivintw/nivintw-claude-skills/issues/129) [#130](https://github.com/nivintw/nivintw-claude-skills/issues/130) [#131](https://github.com/nivintw/nivintw-claude-skills/issues/131) [#132](https://github.com/nivintw/nivintw-claude-skills/issues/132) [#150](https://github.com/nivintw/nivintw-claude-skills/issues/150) [#151](https://github.com/nivintw/nivintw-claude-skills/issues/151) [#155](https://github.com/nivintw/nivintw-claude-skills/issues/155)
+* **dev-kit:** Harden review-pr — real PR tree, toolchain-deferred syntax, staged reviews ([8cb6507](https://github.com/nivintw/nivintw-claude-skills/commit/8cb6507c719cdcda65d3663bed8188a34b27dd1b)), closes [#139](https://github.com/nivintw/nivintw-claude-skills/issues/139) [#142](https://github.com/nivintw/nivintw-claude-skills/issues/142) [#152](https://github.com/nivintw/nivintw-claude-skills/issues/152)
+* **dev-kit:** Ship a real Copilot-review watch and harden ship's watcher guidance ([8cefacd](https://github.com/nivintw/nivintw-claude-skills/commit/8cefacd5395e3d6b121eec6329509016a570fbf7)), closes [#127](https://github.com/nivintw/nivintw-claude-skills/issues/127) [#138](https://github.com/nivintw/nivintw-claude-skills/issues/138) [#140](https://github.com/nivintw/nivintw-claude-skills/issues/140) [#141](https://github.com/nivintw/nivintw-claude-skills/issues/141)
+
+
+### Bug Fixes
+
+* **dev-kit:** Address Copilot review — tighten guards and clarify watch-script docs ([91561c6](https://github.com/nivintw/nivintw-claude-skills/commit/91561c69709285c822a28be6fed3dea722a94277))
+* **dev-kit:** Address Copilot round 2 — keep the watch and validator exit contracts ([576b892](https://github.com/nivintw/nivintw-claude-skills/commit/576b89213c1916639befaa551e9bd940cf2e0b14))
+* **dev-kit:** Address Copilot round 3 — validate the watch timeout, qualify its exit contract ([73b41a0](https://github.com/nivintw/nivintw-claude-skills/commit/73b41a044328825bd6588ae17169990d1e18befe))
+* **dev-kit:** Address Copilot round 4 — doctor mktemp failure degrades, never exits ([a570b9b](https://github.com/nivintw/nivintw-claude-skills/commit/a570b9bae225dcb4f560010738677e52b31712be))
+* **dev-kit:** Keep net-zero branches in cleanup-locally is_merged() ([0e33256](https://github.com/nivintw/nivintw-claude-skills/commit/0e3325669a6c7d61a69b4ef335385e5d2aa93225)), closes [#143](https://github.com/nivintw/nivintw-claude-skills/issues/143)
+* **dev-kit:** Reconcile against copier's render, not a raw-tree byte-diff ([97403fe](https://github.com/nivintw/nivintw-claude-skills/commit/97403fea8834c717abee1af2ad551021d51be7a9)), closes [#146](https://github.com/nivintw/nivintw-claude-skills/issues/146) [#147](https://github.com/nivintw/nivintw-claude-skills/issues/147)
+* **dev-kit:** Surface git's real reason and win the stash race in cleanup-locally ([7cdd395](https://github.com/nivintw/nivintw-claude-skills/commit/7cdd395c06bc90aed5452d51b46c3c698f1cd5fa)), closes [#144](https://github.com/nivintw/nivintw-claude-skills/issues/144) [#145](https://github.com/nivintw/nivintw-claude-skills/issues/145)
+
 ## [0.20.2](https://github.com/nivintw/nivintw-claude-skills/compare/dev-kit-v0.20.1...dev-kit-v0.20.2) (2026-07-06)
 
 
