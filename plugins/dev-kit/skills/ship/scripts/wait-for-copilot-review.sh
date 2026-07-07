@@ -6,8 +6,11 @@
 #
 # Blocks until copilot-pull-request-reviewer[bot] has a review on the head SHA captured when
 # this script STARTED (not re-read as the PR advances — see the pin note below),
-# then exits READY — or exits TIMEOUT if the bounded window elapses first. TWO terminal states,
-# both exit(0), so it can never hang. Run it via Bash with run_in_background: true so the
+# then exits READY — or exits TIMEOUT if the bounded window elapses first. TWO watch-outcome
+# states (READY / TIMEOUT), both exit(0), so once it's watching it can never hang. (A bad
+# invocation — missing args or a non-integer timeout — exits 2 up front, on purpose: a
+# misconfigured watch should fail loudly, not silently look like a clean TIMEOUT.) Run it via
+# Bash with run_in_background: true so the
 # harness re-invokes the session on exit — a completing background *process* generates a resume
 # event; a timed ScheduleWakeup does not (that mechanism stranded a merge-ready PR — see the
 # skill's watch-and-review reference). This is THE mechanism for the Copilot-review watch, the
@@ -29,6 +32,14 @@ fi
 repo="$1"
 pr="$2"
 timeout="${3:-900}"
+
+# Validate the timeout up front: it feeds `$((SECONDS + timeout))` under `set -e`, so a
+# non-integer would abort with a cryptic arithmetic error instead of a clear message. A bad
+# arg is a usage error (exit 2), deliberately NOT a silent TIMEOUT-style exit 0.
+if ! [[ "$timeout" =~ ^[0-9]+$ ]]; then
+  echo "usage: timeout-seconds must be a non-negative integer (got: $timeout)" >&2
+  exit 2
+fi
 
 # Pin to the head SHA now; a review on a later push is checked against this exact commit. If
 # the head can't be read (transient/auth/404 under `set -e`), degrade to a TIMEOUT-style
