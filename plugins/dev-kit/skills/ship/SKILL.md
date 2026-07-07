@@ -43,6 +43,11 @@ already merged. Two payoffs: the worktree this run creates in Phase 2 branches o
 conservative — anything unmerged, dirty, or checked out is kept — so this is always safe to
 run first. If it isn't installed, note the gap and continue.
 
+Also **reconcile the tracker** for the issue(s) this run is about — `handle-task-tracking`'s
+reconcile pass, kept cheap and scoped to the issues in play — so a stale `status:blocked` (its
+blocker already closed) or a `status:in-*` outliving a merged PR is corrected before the run
+starts rather than discovered later. The post-merge cleanup reconciles again once the PR lands.
+
 ## Phase 0 — Continuity setup (do this first, maintain throughout)
 
 Create a durable progress file at **`"$(git rev-parse --git-dir)/ship/progress.md"`** and

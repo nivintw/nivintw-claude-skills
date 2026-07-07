@@ -55,7 +55,19 @@ thing no script can see for you, and the one most likely to be silently stale.
 
 It prints a `PLUGIN / INSTALLED / LATEST / STATUS` table and a summary line (always exiting 0 —
 drift is reported in the output, not the exit code), noting how many versions are cached; a
-large cache is the breeding ground for the stale-load bug.
+large cache is the breeding ground for the stale-load bug. The **INSTALLED** version is read
+from each cached entry's `.claude-plugin/plugin.json` — the manifest is canonical — not from
+the cache directory's name, so a mislabeled or renamed cache dir can't misreport what's
+installed (it falls back to the dir name only when the manifest is unreadable).
+
+The **STATUS** column distinguishes two failure modes that used to collapse together:
+
+- **`no release yet (no <plugin>-v* tag)`** — the tag lookup *succeeded* but this plugin has
+  no matching release tag. Benign and per-plugin (a new plugin not yet cut).
+- **`release lookup failed … cached-only`** — the tag lookup itself *failed* (an `HTTP 404`
+  on the repo, or a network/auth error). Latest-released can't be resolved for *anyone*, so
+  drift can't be judged; the table degrades to cache-only and the summary says so explicitly.
+  This is a transport problem, not "no release."
 
 **Step 3 — reconcile running vs newest-cached vs latest-released** and prescribe the fix:
 
@@ -77,9 +89,27 @@ skill, surface its `name` and a trimmed first sentence of its `description`. Gro
 and mark which plugins/skills are **loaded in this session** versus merely installed, so the
 user can see the gap between available and active.
 
+### Classify installed hooks (blocking vs advisory)
+
+The helper's **HOOKS** section lists every hook each plugin installs (from its
+`hooks/hooks.json`) and classifies each as **blocking** or **advisory** — because a hook that
+can silently veto your actions is worth knowing about. The heuristic: a hook is **blocking**
+when it runs on a *decision-capable* event — one whose output or exit can veto an action
+(`PreToolUse`, `UserPromptSubmit`, `Stop`, `SubagentStop`) — **and** its command script emits
+a veto: a `deny` permission decision, a `block` decision, or a deliberate `exit 2` /
+`sys.exit(2)`. Everything else is **advisory**: a non-decision event (`PostToolUse`,
+`SessionStart`/`SessionEnd`, `Notification`, `PreCompact`) can only annotate, inject, or log,
+and a decision-capable event whose script never vetoes just observes. A decision-capable hook
+whose script can't be located to confirm is reported `blocking?` — the event gives it the
+power, we just couldn't verify use. (Classification needs `jq`, which ships with Claude Code;
+without it the section notes that it was skipped.)
+
 ## Tooling
 
 Prefer the **GitHub MCP** (or `gh`) to resolve the latest release tags; the helper script
-uses `gh api repos/<owner>/<repo>/tags`. If neither is available, the drift check degrades to
-"latest unknown" and the inventory still works from local files — don't fail the whole run
-over a missing release lookup.
+uses `gh api repos/<owner>/<repo>/tags`. If `gh` is absent the drift check degrades to
+"latest unknown"; if `gh` is present but the tags call *fails* (an `HTTP 404`, or a
+network/auth error) the check degrades to **cache-only** with an explicit "release lookup
+failed" message — kept distinct from a plugin that merely has no release yet. Either way the
+inventory still works from local files — don't fail the whole run over a missing release
+lookup.

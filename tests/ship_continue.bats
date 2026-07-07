@@ -163,9 +163,25 @@ run_hook() {
 }
 
 @test "emits nothing and succeeds on an empty stdin payload" {
-  # With no payload the hook falls back to $PWD; run from a non-repo dir so it allows.
-  cd "$SANDBOX"
+  # An empty payload has no `.cwd`, so the hook fails safe and allows (see below) — it must
+  # NOT guess the repo from $PWD. Run from inside the repo to prove it still allows even
+  # when $PWD *would* have resolved an armed ship state.
+  set_state "phase-3-implement"
+  cd "$REPO"
   run bash "$HOOK" <<<""
+  [ "$status" -eq 0 ]
+  [ -z "$output" ]
+}
+
+@test "fail-safe: empty/missing .cwd allows and never reads a \$PWD-derived state" {
+  # A Stop hook that can't confirm its repo must allow, never guess from $PWD. Arm an active
+  # phase in $PWD's repo; a payload with an empty (and a missing) .cwd must still allow.
+  set_state "phase-6-review"
+  cd "$REPO"
+  run bash "$HOOK" <<<"{\"cwd\":\"\",\"stop_hook_active\":false}"
+  [ "$status" -eq 0 ]
+  [ -z "$output" ]
+  run bash "$HOOK" <<<"{\"stop_hook_active\":false}"
   [ "$status" -eq 0 ]
   [ -z "$output" ]
 }

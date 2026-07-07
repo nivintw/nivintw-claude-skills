@@ -40,6 +40,30 @@ generated config expecting it to survive unless you're deliberately reconciling.
   (TOML), plus commit-message enforcement.
 - Tests: `bats tests/` (the gate runs them too; bats is the suite for shell scripts).
 
+### Dev-tooling guards
+
+Three net-new guards live under `scripts/`, each exercised by a bats file so they run in the
+gate via `bats tests/` (there are **no** `.claude/hooks/` and no new prek hooks wired for
+them):
+
+- `scripts/validate-plugins.sh` — runs `claude plugin validate --strict` over the
+  marketplace manifest and every `plugins/<name>` in a **hermetic temp HOME**, catching
+  manifest / registration errors pre-ship. Skips cleanly (exit 0) when `claude` isn't on
+  PATH. **Repo-local** (marketplace-specific; not promoted to the template).
+  Tests: `tests/validate_plugins.bats`.
+- `scripts/check_skill_frontmatter.sh` — fails if any loadable component markdown
+  (`plugins/*/skills/*/SKILL.md`, `plugins/*/commands/*.md`, `plugins/*/agents/*.md`) has its
+  YAML frontmatter not on line 1 (a misplaced `---` makes a skill silently fail to load).
+  Takes an optional single-file arg (hook-friendly). **Recommend promoting to the
+  copier-everything template** (useful to any skill-authoring repo); repo-local for now.
+  Tests: `tests/check_skill_frontmatter.bats`.
+- `scripts/check_managed_files.sh` — advisory: warns when a template-owned file is edited
+  outside the reconcile flow, driven by `tests/template-owned-files.txt` +
+  `tests/template-divergences.txt` (both adopted later; no-ops until they exist). Never
+  blocks. **Template-layer concern** — belongs in copier-everything alongside
+  template-reconcile; a thin repo-local advisory for now.
+  Tests: `tests/check_managed_files.bats`.
+
 ## Commits
 
 Commits are **plain Conventional Commits** (`cz_conventional_commits`), enforced by a

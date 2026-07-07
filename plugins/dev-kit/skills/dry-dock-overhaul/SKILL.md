@@ -172,6 +172,21 @@ lenses from what this repo actually contains, even when that means proposing som
 of the examples cover, or dropping a lens the examples show for a repo that doesn't have the
 shape it applies to.
 
+**Discovery must be as ambitious as the validation (Phase 5) is rigorous.** The pipeline can
+only validate findings the discovery was bold enough to raise, so the lenses must reach for
+**identity-level and unknown-unknown** findings, not just per-unit nits: "this repo wants a
+fundamentally different docs-site format," "a cross-cutting design tension the add-feature/
+fix-bug flow never catches," "the test suite is over-built — rethink the approach." *(Those are
+illustrative of the altitude, not checks to hard-code.)* A rigorous validator sitting on top of
+timid discovery is the failure mode to avoid — the altitude that surfaces "abandon mkdocs" or
+"rethink testing" lives here in discovery, not in the validator.
+
+**Loop-until-dry, not single-pass.** Discovery isn't one shot: keep spawning discovery/lens
+rounds until **K consecutive rounds surface nothing new** (K≈2), deduping each round's finds
+against everything already raised. Unknown unknowns live in the tail — a single pass that stops
+at the first quiet round misses them. Bound the loop by the run's agent budget (see Error
+handling), and log how many rounds ran and what the last productive round added.
+
 ## Phase 4 — Existing sub-passes (parallel, fully independent)
 
 Invoke the three existing whole-repo-capable skills — `review-pr` (Mode C), `generate-docs`,
@@ -195,13 +210,52 @@ cannot meaningfully bound. Both continue to run at full native cost and behave e
 they do standalone — including `generate-docs` writing its fixes directly to the working
 tree, which is why this skill runs inside a worktree (see Execution model below).
 
-## Phase 5 — Synthesis
+## Phase 5 — Adversarial validation & adjudication (before Synthesis)
+
+This is what makes the skill's promise — *after every valid finding is addressed, the repo is
+in the best possible state, barring a change in its identity* — credible rather than aspirational.
+Today's candidate→verdict step (Phase 1→2) is not enough: on a rare, expensive run the human
+must not be handed false positives, so **every** finding from Phases 2 and 3 (Phase 4's
+sub-passes do their own internal validation) passes an independent adversarial check before it
+reaches Synthesis.
+
+- **Independent adversarial validator per finding.** Spawn a *fresh* validator (not the agent
+  that raised it) whose job is to **refute** the finding — reproduce the claim, or show it's a
+  false positive. The context that raised a finding is the least able to see it's wrong.
+- **Steelman gate before any cut.** Before a finding is dropped, steelman it — argue its
+  strongest form — so a real issue isn't discarded because it was raised weakly. Only cut when
+  the steelman still fails.
+- **Severity-scaled two-validator escalation.** A single validator suffices for a minor/nit; a
+  **blocker or major** finding gets a *second, independent* validator, and survives only if both
+  agree it's real. Cost scales with stakes.
+- **Re-adjudicate.** Fold each validator's verdict back in: confirmed findings proceed to
+  Synthesis at their (possibly adjusted) severity; refuted ones are cut **with a recorded
+  reason**.
+- **"Raised but cut" ledger.** Everything considered and rejected — the finding, who raised it,
+  why it was cut — is recorded and carried into the report. What was *considered and dismissed*
+  is itself signal on a best-possible-state audit; a silently dropped false positive reads as
+  "never looked."
+
+Run this as its own stage: validators for independent findings run concurrently, and (with
+Phase 3's loop-until-dry) a finding that survives can spawn adjacent discovery — keep validating
+until the surviving set is stable.
+
+## Phase 6 — Synthesis
 
 Synthesis runs at the **main-conversation level**, not inside the Phase 0–3 `Workflow`
 script — the script has no access to Phase 4's output, since Phase 4's three `Skill`
 invocations are dispatched from the main conversation, alongside the `Workflow` script, not
 from within it. Synthesis begins only once **both** the `Workflow` script and all three
-Phase 4 `Skill` invocations have completed.
+Phase 4 `Skill` invocations have completed, and every net-new finding has cleared Phase 5's
+validation.
+
+**Completeness critic + known blind spots (final).** As the last step, run the shared
+completeness critic ([`../../reference/completeness-critic.md`](../../reference/completeness-critic.md))
+— the same primitive `generate-docs` uses — as an independent pass asking *"what's missing — a
+lens not run, a file not read, an identity-level question not asked, a finding asserted but not
+validated?"* A gap it can close feeds back into discovery (Phase 3's loop); a gap left open is
+stated as a **"known blind spots" footer** on the report — the honest bound on what even this
+expensive run didn't reach. The report also carries the Phase 5 **"raised but cut" ledger**.
 
 Phase 2's many per-unit results are rolled up mechanically — plain aggregation, not another
 agent call — as the `Workflow` script's last step before it returns, so the main-conversation
@@ -220,10 +274,10 @@ working tree different from how it started.
 executing Claude instance dispatches the three existing skills at the main-conversation
 level — preferably as concurrent background `Agent` invocations, per Phase 4 above — while a
 dedicated `Workflow` script implements this skill's own net-new phases — 0 through 3 — and
-returns its rolled-up result (Phase 5's structure) when it completes. The `Workflow` script
+returns its rolled-up result (Phase 6's structure) when it completes. The `Workflow` script
 and the three sub-skill dispatches are independent of each other, so nothing here forces them
 onto a single serial timeline. **Synthesis itself runs at the main-conversation level**,
-explicitly *not* inside the `Workflow` script, exactly as Phase 5 states above — it needs
+explicitly *not* inside the `Workflow` script, exactly as Phase 6 states above — it needs
 Phase 4's output, which the script has no way to see.
 
 **This assumes a top-level session, not a subagent.** `Workflow` (with the `resumeFromRunId`
@@ -259,11 +313,13 @@ timeline they like relative to, how they triage the rest of the report's finding
   so no special partial-write recovery logic is needed here.
 - **Report skeleton** — a fixed presentation contract, in the spirit of `open-work`'s output
   contract and `review-pr`'s severity-ranked synthesis: a scope/tally header, findings ranked
-  by severity across all phases with dimension labels, an explicit "already fixed by
-  generate-docs" callout, and a closing verdict paragraph. Ephemeral, per Core philosophy
-  above — printed, never committed.
+  by severity across all phases with dimension labels (each having cleared Phase 5's
+  validation), an explicit "already fixed by generate-docs" callout, the Phase 5 **"raised but
+  cut" ledger** (what was considered and dismissed, and why), a **"known blind spots" footer**
+  from the completeness critic (the honest bound on what this run didn't reach), and a closing
+  verdict paragraph. Ephemeral, per Core philosophy above — printed, never committed.
 - **A single shared severity scale across every phase and sub-pass** — reuse `review-pr`'s
-  existing **blocker → major → minor → nit** scale rather than defining a new one, so Phase 5
+  existing **blocker → major → minor → nit** scale rather than defining a new one, so Phase 6
   maps each source's native output onto it explicitly: `review-pr` and Phases 2/3's own
   findings already use this scale natively; `pre-public-hardening`'s checklist items map by
   whether they'd block going public (blocker) or are lower-stakes hygiene (minor/nit);
@@ -281,7 +337,7 @@ Phase 2 needs Phase 1 complete first, but nothing more than that. Phase 3 reads 
 0's and Phase 1's context to decide which lenses are worth running at all; it never waits on
 Phase 2's per-unit output, which is exactly why it runs fully in parallel with Phase 2 rather
 than behind a barrier on it. Phase 4's three sub-passes are independent of everything else in
-this skill and produce their own native output on their own schedule. Synthesis (Phase 5) is
+this skill and produce their own native output on their own schedule. Synthesis (Phase 6) is
 the only stage that reads across all of it — it is the sole consumer of the full picture.
 
 ## Error handling & degradation
@@ -301,7 +357,7 @@ the only stage that reads across all of it — it is the sole consumer of the fu
   itself errors or stops short — mark every phase it interrupted as incomplete in the final
   report rather than presenting whatever partial result came back as if it were the whole
   picture.
-- **A Phase 1, 2, or 3 agent itself fails, times out, or is denied.** Before Phase 5
+- **A Phase 1, 2, or 3 agent itself fails, times out, or is denied.** Before Phase 6
   synthesizes, reconcile the units that actually returned a result against Phase 1's unit
   map, and the lenses that actually returned against what Phase 3's discovery step
   dispatched. Any unit or lens missing a result gets named in the final report as a coverage

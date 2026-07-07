@@ -38,11 +38,23 @@ single source of truth for the labels; open-work only *consumes* them to rank.
 ## What this is not
 
 - **Not grooming.** Creating, triaging, decomposing, relabeling, or closing issues is
-  `/dev-kit:handle-task-tracking`. open-work reads; it doesn't mutate the ledger.
+  `/dev-kit:handle-task-tracking`. open-work's *ranking* reads; it doesn't mutate the ledger.
+  The **one** exception is the auto-reconcile below: before ranking, it triggers
+  `handle-task-tracking`'s **blocked-recheck slice** to clear a `status:blocked` whose blocker
+  already closed, so the ranking is computed on corrected state instead of merely *reporting*
+  drift it can't fix. That reconcile is a separate, clearly-attributed mutation — ranking itself
+  stays read-only.
 - **Not doing the work.** Executing the chosen item end to end is `/dev-kit:ship`.
 - **Single-repo.** Cross-repo aggregation is out of scope (possible later).
 
 ## Gather + Rank — run the script
+
+**Reconcile first (cheap, bounded).** Before ranking, trigger `handle-task-tracking`'s
+blocked-recheck reconcile so a `status:blocked` whose blocker already closed is cleared and
+ranks correctly this run — not re-surfaced as stale every time. The same
+`rank_issues.py` `reconcile` block that ranking reads (`unblock` / `close_done` /
+`stale_triage`) is what drives it; keep it bounded and skip it on a very large ledger so a quick
+`open-work` never turns into an expensive run.
 
 The mechanical half of this skill — listing open issues, partitioning by status label,
 resolving a candidate's linked-PR merge state, resolving `Blocked by #N` references, and
