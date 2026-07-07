@@ -364,6 +364,17 @@ PR (or the tracking issue) alone, with no dependency on this conversation. Rules
 
 ### Converge an automated review before handing off
 
+> **This section and *Hand off* run unconditionally — in *every* ship run, `land` or not.**
+> Converging the review and flipping draft → ready are Phase 8 steps that always happen; `land`
+> only changes what happens *after* hand-off (continue to merge vs. stop). Don't pause to ask
+> permission before these steps just because `land` was granted — the section that follows
+> (*Land the PR*) describes the tail past hand-off, not a gate on these steps. The **only**
+> expected reason to pause mid-Phase-8 under `land` is a tool/permission-system block (e.g. an
+> auto-mode classifier denying a specific `gh pr merge`); when that happens, surface that
+> specific block rather than turning it into a standing "ask before this class of action" habit
+> for the rest of the run. A routine draft→ready flip (`gh pr ready`) is reversible and is not
+> that pause.
+
 With the draft PR open, request an **automated Copilot review** (GitHub's `request_copilot_review`
 via the GitHub MCP or `gh`) and **iterate to convergence**. Before you touch the API, read
 [`reference/watch-and-review.md`](reference/watch-and-review.md) for the request/detection traps

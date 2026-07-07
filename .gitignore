@@ -22,6 +22,10 @@ casts/
 *.txt
 # ...but never the REUSE license texts — they're .txt and MUST be tracked.
 !LICENSES/*.txt
+# ...nor the template-reconcile manifests (divergence registry + template-owned list) that
+# the synced-files test and scripts/check_managed_files.sh read — they're .txt and MUST track.
+!tests/template-divergences.txt
+!tests/template-owned-files.txt
 
 ### Python (dev-kit's generate-docs build.py runs under uv) ###
 __pycache__/

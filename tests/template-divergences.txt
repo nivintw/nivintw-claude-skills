@@ -1,0 +1,23 @@
+# SPDX-FileCopyrightText: © 2026 Tyler Nivin
+# SPDX-License-Identifier: MIT
+
+# Template divergence registry
+#
+# The tracked home for every file that INTENTIONALLY differs from this repo's copier template
+# (nivintw/copier-everything, pinned in .copier-answers.yml). One entry per line:
+#
+#     <repo-relative path>    # why it intentionally differs from the template
+#
+# The invariant: a template-owned file NOT listed here is expected to match the template's
+# render at the pinned _commit. This file is the allow-list read by scripts/check_managed_files.sh
+# (the managed-files guard) and by any synced-files drift test — see
+# plugins/dev-kit/skills/template-reconcile/ for how the registry + a copier-render-based
+# synced-files test are meant to be scaffolded and enforced.
+#
+# There are currently NO registered divergences. The one this registry was created to track —
+# .github/workflows/docs.yml pinned to workflow_dispatch-only instead of the template's `push`
+# trigger — has been RESOLVED: repo-management#88 flipped this repo's Pages source to the
+# "GitHub Actions" build mode, so docs.yml re-adopted the template's `push` trigger and no
+# longer diverges (see the header comment in docs.yml). Add a line here the moment a real,
+# intentional divergence is introduced, with its reason and — if you've ported it upstream —
+# a "filed upstream: nivintw/copier-everything#N" note.
