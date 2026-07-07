@@ -145,6 +145,17 @@ jobs:
             gh pr merge "$n" --auto --rebase
           done
 
+      # Deliberately a SECOND step, not folded into the auto-merge above: the two act on
+      # Release PRs with fundamentally different inputs, so unifying them would trade an
+      # authoritative signal for a heuristic (evaluated and rejected — see below). The
+      # auto-merge step reads release-please's OWN `steps.release.outputs.prs` — the exact PRs
+      # it created/updated THIS run — which is authoritative for "arm auto-merge on what I just
+      # touched." This step instead needs a fresh `gh pr list` scan of ALL open PRs, because a
+      # PR stranded DIRTY by a sibling merge may be from a PRIOR run and absent from this run's
+      # `prs`. Collapsing both onto one `gh pr list` classifier (DIRTY → close, else →
+      # auto-merge) would force the auto-merge half onto the author+label heuristic and lose the
+      # authoritative per-run output — a downgrade, not a simplification. Kept as two.
+      #
       # This repo runs per-plugin release-please (separate-pull-requests: true, one
       # <plugin>-v<version> Release PR per changed plugin) rather than the template's
       # single-package default, so this guards against exactly the scenario release-please's
