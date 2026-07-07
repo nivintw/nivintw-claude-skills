@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.22.0](https://github.com/nivintw/nivintw-claude-skills/compare/dev-kit-v0.21.0...dev-kit-v0.22.0) (2026-07-07)
+
+
+### Features
+
+* **dev-kit:** Add fleet-ship — the cross-repo batch coordinator above ship ([528d41c](https://github.com/nivintw/nivintw-claude-skills/commit/528d41ce8595e52f9d1afd1fd8bb3f88355c00dd)), closes [#156](https://github.com/nivintw/nivintw-claude-skills/issues/156)
+
 ## [0.21.0](https://github.com/nivintw/nivintw-claude-skills/compare/dev-kit-v0.20.2...dev-kit-v0.21.0) (2026-07-07)
 
 
