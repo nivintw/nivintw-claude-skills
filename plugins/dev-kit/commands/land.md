@@ -1,20 +1,13 @@
 ---
-description: Land an open PR — drive CI to green, converge the automated review, rebase-merge, and clean up. Delegates to ship's land verb.
+description: Land an open PR (or ship-and-land) — drive CI to green, converge the automated review, rebase-merge, and clean up. Thin forwarder to the dev-kit land skill.
 argument-hint: "[PR number]"
 ---
 
-# Land a PR
+# Land
 
-Run the **land** verb of the dev-kit `ship` skill against `$ARGUMENTS`.
+Invoke the **`/dev-kit:land`** skill against `$ARGUMENTS` and follow it in full.
 
-Invoke the `ship` skill and follow its **Land the PR** section: if `$ARGUMENTS` is a PR
-number, drive that PR cold (standalone entry point); if empty, attach to the current
-branch's open PR and drive it from there. Either way, the same idempotent loop runs.
-
-Landing is **opt-in and explicit** — it is the one path where ship merges. The loop drives
-CI to green, converges the automated (Copilot) review, then **rebase-merges** the PR
-(`gh pr merge --rebase`) and falls straight into Post-merge cleanup. Do not restate the
-loop here — ship owns it in full (its **Land the PR** section and landing-driver reference).
-
-**Granting `land` also means: don't stop to ask.** Ship's own Phase 1 carve-out and its
-*Decisions made without asking* section own this in full — don't restate them here either.
+This command is a **thin forwarder** — it holds no landing logic of its own. The `land` skill
+owns the invocation matrix (bare land ≡ ship-and-land, `land it`, `land #N`) and delegates the
+actual loop to `ship`'s **Land the PR** verb and its `pr-landing-driver` reference. Keeping the
+semantics in one place (the skill) is deliberate: there's no second copy here to drift.

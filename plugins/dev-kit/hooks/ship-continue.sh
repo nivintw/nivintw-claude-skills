@@ -33,8 +33,14 @@ IFS=$'\t' read -r stop_active cwd <<<"$parsed" || true
 # rule out any chance of a loop.
 [ "$stop_active" = "true" ] && allow
 
-# Resolve the absolute git dir for the hook's working directory. Not a repo → no ship run.
-[ -n "$cwd" ] || cwd="$PWD"
+# A Stop hook that can't confirm which repo the session is in must FAIL SAFE (allow),
+# never guess. If `.cwd` is empty/missing we do NOT fall back to the hook process's own
+# `$PWD`: that could resolve a foreign/unrelated repo and read the wrong `ship/state`,
+# blocking a stop that has nothing to do with a ship run. Only ever resolve the git dir
+# from an explicit payload `.cwd`.
+[ -n "$cwd" ] || allow
+
+# Resolve the absolute git dir for the session's working directory. Not a repo → no ship run.
 gitdir="$(git -C "$cwd" rev-parse --absolute-git-dir 2>/dev/null || true)"
 [ -n "$gitdir" ] || allow
 

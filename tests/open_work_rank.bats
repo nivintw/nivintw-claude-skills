@@ -93,6 +93,40 @@ run_rank() {
   echo "$output" | jq -e '.needs_attention.blocked == []'
 }
 
+@test "a status:blocked issue whose only blocker is closed is a reconcile.unblock candidate" {
+  # blocked_label=true, its one recorded blocker (#9) is closed → the block can be lifted: it
+  # leaves needs_attention.blocked and lands in reconcile.unblock for handle-task-tracking to fix.
+  jq -n --argjson a "$(issue 1 ready medium null "$RECENT" true '[{"number": 9, "open": false}]')" \
+    '[$a]' >"$FIXTURE"
+  run_rank octocat
+  [ "$status" -eq 0 ]
+  echo "$output" | jq -e '.reconcile.unblock | length == 1 and .[0].number == 1'
+  echo "$output" | jq -e '.needs_attention.blocked == []' # no longer treated as blocked
+  echo "$output" | jq -e '.start_next | length == 1'       # now startable
+}
+
+@test "a status:blocked issue with no recorded blockers stays blocked (not reconcilable)" {
+  # blocked_label=true but no Blocked-by refs → the block isn't tied to a closable issue, so it
+  # must NOT be auto-unblocked: stays in needs_attention.blocked, absent from reconcile.unblock.
+  jq -n --argjson a "$(issue 1 ready medium null "$RECENT" true)" '[$a]' >"$FIXTURE"
+  run_rank octocat
+  [ "$status" -eq 0 ]
+  echo "$output" | jq -e '.reconcile.unblock == []'
+  echo "$output" | jq -e '.needs_attention.blocked | length == 1'
+}
+
+@test "reconcile surfaces a done-but-open issue for closing and a stale triage issue" {
+  local pr='{"number": 7, "state": "MERGED", "merged_at": "2026-01-01T00:00:00Z", "url": "u"}'
+  jq -n \
+    --argjson a "$(issue 1 in-review null null "$RECENT" false '[]' "$pr")" \
+    --argjson b "$(issue 2 triage null null "$STALE")" \
+    '[$a, $b]' >"$FIXTURE"
+  run_rank octocat
+  [ "$status" -eq 0 ]
+  echo "$output" | jq -e '.reconcile.close_done | length == 1 and .[0].number == 1'
+  echo "$output" | jq -e '.reconcile.stale_triage | length == 1 and .[0].number == 2'
+}
+
 @test "an in-progress issue with a merged linked PR is done-but-open, not resumable" {
   local pr='{"number": 50, "state": "MERGED", "merged_at": "2026-01-01T00:00:00Z", "url": "https://x/50"}'
   jq -n --argjson a "$(issue 1 in-progress null null "$RECENT" false '[]' "$pr")" '[$a]' >"$FIXTURE"

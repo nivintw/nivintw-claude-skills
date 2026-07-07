@@ -166,6 +166,54 @@ and stuck in `status:in-review`**. That stale label is exactly what makes a down
 reader — or `/dev-kit:open-work` — mistake done work for live work. When it happens, close
 the issue by hand (with the resolution) and clear the label.
 
+## Reconcile — re-verify the ledger against reality
+
+Labels are written on the happy path and then trusted forever, so drift accumulates: a
+`status:blocked` issue whose blocker closed long ago, a `status:in-*` label outliving its merged
+PR. This skill owns the status lifecycle and the "closing is terminal" rule, so it also owns a
+**reconcile pass** that not only *detects* that drift but *fixes* it. It's callable standalone
+("reconcile the tracker", "groom the backlog") and is what the auto-triggers below invoke.
+
+**Reuse the resolver — don't re-derive.** `open-work`'s
+[`../open-work/scripts/rank_issues.py`](../open-work/scripts/rank_issues.py) already resolves
+`Blocked by #N` open-state and linked-PR merge-state, and now emits a `reconcile` block:
+`unblock` (status:blocked whose every recorded blocker is closed), `close_done` (status:in-*
+with a merged linked PR), and `stale_triage` (triage past the staleness threshold). Run it
+(`uv run …/rank_issues.py`) and act on that block rather than re-querying GitHub yourself.
+
+**Dry-run first.** Default to a **report** of what would change (the three lists above) before
+mutating; only apply on confirmation or when an auto-trigger explicitly runs in apply mode.
+
+Then, in apply mode, over the repo's open issues:
+
+1. **`reconcile.unblock`** — remove `status:blocked`, restore the right progression label
+   (`status:ready`, or `status:in-progress`/`in-review` if it has an open linked PR), and
+   comment *why* (the blocker(s) that closed). A blocker set that isn't fully closed, or a
+   `status:blocked` with no recorded `Blocked by #N` refs, is **left blocked** — never guessed.
+2. **`reconcile.close_done`** — a done-but-open issue: clear the stale `status:in-*` label and
+   **close with a resolution** (per *Close deliberately*). If `Closes #N` should have fired and
+   didn't (a squash that dropped the keyword, a typo), close it by hand with the resolution.
+3. **`reconcile.stale_triage`** — **surface only**, don't auto-mutate: triage needs a human
+   decision, so list these for grooming rather than relabeling them.
+
+Attribute every mutation with a comment saying the reconcile pass made it and why, so the change
+is auditable rather than mysterious.
+
+## Auto-reconcile — keep it correct without being asked
+
+The user shouldn't have to run `open-work`/`doctor` to *discover* stale state — it should just
+be kept correct. So the reconcile above runs as a **natural side effect** at the points dev-kit
+already touches the ledger, each kept cheap (bounded, skippable on a large ledger, degrading to
+report-only where the context is read-only):
+
+- **`open-work`** runs the **blocked-recheck slice** before ranking, so its output is already
+  corrected rather than merely *reporting* drift it can't fix — this closes the "open-work keeps
+  surfacing stale `status:blocked`" loop. `open-work` stays read-only *for ranking*; the reconcile
+  it triggers is a separate, clearly-attributed mutation.
+- **`ship`** reconciles the issue(s) in play at Phase 0 (start of run) and in post-merge cleanup.
+- **`handle-task-tracking`** runs a lightweight reconcile whenever it's invoked to groom, not
+  only when someone asks for a full pass.
+
 ## Tooling — MCP first, gh as fallback
 
 Prefer the **GitHub MCP tools** (`mcp__github__*`) for issue operations: they're structured

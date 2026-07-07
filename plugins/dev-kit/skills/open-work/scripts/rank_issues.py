@@ -170,7 +170,11 @@ def gather(owner: str, repo: str, limit: int = 500) -> list[dict]:
             wants_pr_check = (issue["status"] in ("in-progress", "in-review")) or (degraded and issue["assignee"])
             if wants_pr_check:
                 issue["linked_pr"] = resolve_linked_pr(owner, repo, issue["number"])
-            if not degraded and issue["status"] == "ready":
+            # Resolve Blocked-by refs for ready candidates (to decide exclusion) AND for
+            # status:blocked issues (to decide whether the block can be *lifted* — the reconcile
+            # re-check). Without the blocked_label arm, a status:blocked issue is never
+            # re-verified and stays blocked long after its blocker closes.
+            if not degraded and (issue["status"] == "ready" or issue["blocked_label"]):
                 body = fetch_body(owner, repo, issue["number"])
                 issue["blocked_by"] = [
                     {"number": n, "open": n in open_numbers} for n in extract_blocked_by(body)
@@ -212,9 +216,19 @@ def rank(issues: list[dict], viewer: str | None, now: datetime) -> dict:
     done_but_open = [i for i in issues if is_in_flight(i) and has_merged_linked_pr(i)]
     done_numbers = {i["number"] for i in done_but_open}
 
+    def blockers_all_closed(issue: dict) -> bool:
+        # Only reconcilable when we actually resolved blockers AND every one is closed. A
+        # status:blocked issue with no recorded `Blocked by #N` refs stays blocked (the block
+        # may be for a reason not expressed as an issue), so an empty set is NOT "all closed".
+        blockers = issue.get("blocked_by", [])
+        return bool(blockers) and not any(b["open"] for b in blockers)
+
     def effectively_blocked(issue: dict) -> bool:
         if issue.get("blocked_label"):
-            return True
+            # A status:blocked issue whose every recorded blocker has closed is no longer
+            # blocked — it's a reconcile candidate (surfaced in `reconcile.unblock` below), not
+            # something to keep excluding from start-next.
+            return not blockers_all_closed(issue)
         return issue["status"] == "ready" and any(b["open"] for b in issue.get("blocked_by", []))
 
     blocked = [i for i in issues if i["number"] not in done_numbers and effectively_blocked(i)]
@@ -249,6 +263,12 @@ def rank(issues: list[dict], viewer: str | None, now: datetime) -> dict:
     def annotate_stale(rows: list[dict]) -> list[dict]:
         return [{**i, "stale": _is_stale(i["updated_at"], now)} for i in rows]
 
+    # Reconcile candidates — tracker labels that no longer match reality. Shared by open-work
+    # (reports) and handle-task-tracking (mutates); the resolution (blocked_by open-state,
+    # linked-PR merge-state) is computed once here, not re-derived per caller.
+    unblock = [i for i in issues if i.get("blocked_label") and blockers_all_closed(i)]
+    stale_triage = [i for i in issues if i["status"] == "triage" and _is_stale(i["updated_at"], now)]
+
     return {
         "tally": {
             "open": len(issues),
@@ -266,6 +286,14 @@ def rank(issues: list[dict], viewer: str | None, now: datetime) -> dict:
             "untriaged_count": len(untriaged),
             "blocked": blocked,
             "done_but_open": done_but_open,
+        },
+        "reconcile": {
+            # status:blocked whose every recorded blocker has closed → clear the block.
+            "unblock": unblock,
+            # in-progress/in-review whose linked PR merged → clear status:in-*, close.
+            "close_done": done_but_open,
+            # triage past the staleness threshold → surface for grooming (not auto-mutated).
+            "stale_triage": stale_triage,
         },
     }
 
