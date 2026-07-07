@@ -71,7 +71,7 @@ changes — fleet-ship only decides *when* each repo's run starts, gated on its 
 dependencies.
 
 - **`ship`-only vs `land`-granted.** A fleet batch can hand off each PR for human merge
-  (`ship` default) or, under **`land`**, drive each PR to merged in dependency order — the same
+  (`ship` default) or, under **`land`**, drive each PR to a merged state in dependency order — the same
   `/dev-kit:land` verb, applied per repo. Under `land`, a downstream repo's run doesn't start
   until its upstream PR is **merged** (and released if release-gated); under `ship`-only, the
   human merges each in order and fleet-ship surfaces the ordering they must follow.
