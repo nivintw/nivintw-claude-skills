@@ -30,7 +30,16 @@ fi
 
 # Hermetic HOME: claude resolves installed marketplaces/plugins relative to HOME; point it at
 # an empty temp dir so validation is against the repo manifests only, not the real config.
-TMP_HOME="$(mktemp -d)"
+# Hard-error on a failed mktemp (set -e isn't enabled): an empty TMP_HOME would set HOME="" and
+# validate against a non-hermetic HOME — the exact thing this indirection exists to prevent.
+TMP_HOME="$(mktemp -d)" || {
+  echo "error: failed to create a temp HOME for hermetic validation." >&2
+  exit 1
+}
+[ -n "$TMP_HOME" ] || {
+  echo "error: mktemp returned an empty path." >&2
+  exit 1
+}
 cleanup() { rm -rf "$TMP_HOME"; }
 trap cleanup EXIT
 
