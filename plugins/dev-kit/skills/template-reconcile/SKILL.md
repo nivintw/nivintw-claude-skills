@@ -30,13 +30,19 @@ each piece either landed in the repo or was deliberately skipped — never silen
 
 1. Read `.copier-answers.yml` for `_src_path` (here, `gh:nivintw/copier-everything`) and the
    pinned `_commit` (e.g. `v1.4.0`) — these are read from the file, not assumed.
-2. Materialize the template at that commit to inspect its tree. Use the GitHub MCP
-   (`mcp__github__get_file_contents` at the pinned `_commit` — a tag, branch, or SHA, passed
-   directly as the ref; `mcp__github__get_tag` only if you first need to resolve a tag to its
-   commit SHA) or clone it locally — do NOT reimplement copier's rendering. You need the
-   *tree*: what files and directories does the template provide?
-3. Walk the template's provided files — tests/ infra, config, CI workflows, gate hooks, scripts
-   — and for each, check whether it's present in the repo.
+2. **Render the template with copier — do NOT diff against the raw template tree.** The raw
+   tree can't be mapped 1:1 to repo paths: it ships `.jinja`-suffixed files, Jinja-*conditional*
+   file/dir names, `_exclude` skips, and usually a `_subdirectory` root, so a naive
+   `template/<path>` → repo-path diff either mismatches or silently skips on any non-trivial
+   template. Use copier itself — `copier recopy --pretend` / `copier update --pretend` — to
+   produce **what the template actually generates for this repo's answers**, with `.jinja`,
+   conditionals, `_exclude`, and `_subdirectory` all resolved. This is *using* copier to render,
+   not reimplementing its rendering. (Read `_subdirectory` from the template's `copier.yml` if
+   you need to reason about the source layout directly.)
+3. Compare the **rendered** file set against the repo: for each file the template renders, check
+   whether it's present (tests/ infra, config, CI workflows, gate hooks, scripts). Add a
+   **positive control** — assert the render actually produced files — so a broken or empty render
+   can't masquerade as "nothing missing."
 4. Output a checklist: **landed / intentionally-skipped / MISSING**. MISSING is the finding
    that warrants action. "Intentionally skipped" must have a documented reason (see the
    divergence registry below); absent one, treat it as a potential gap.
@@ -65,9 +71,13 @@ Model the test on whatever consistency-test pattern the repo already has. In thi
 that's `tests/check_plugin_release_wiring.bats` + `scripts/check_plugin_release_wiring.py` (a
 `setup()`/`teardown()` sandbox plus a real-tree assertion over the actual repo); in another
 consuming repo, fall back to its existing bats (or other) tests. For a synced-files test, the
-real-tree assertion fetches each candidate file from the template at `_commit` (GitHub MCP or a
-cached clone), diffs it against the local copy, and fails if they differ and the file isn't in
-the registry. A copy-pasteable registry format and bats skeleton live in
+real-tree assertion **renders the template with copier at `_commit`** (so `.jinja`,
+conditionals, `_exclude`, and `_subdirectory` are handled — never a raw-tree byte-diff), diffs
+each candidate against the *rendered* copy, and fails if they differ and the file isn't in the
+registry. It must **fail loudly, not vacuously green**: assert the candidate set is non-empty,
+assert the render produced files (positive control), and make a failed clone/render fail the
+test rather than leaving an empty render dir that silently skips every comparison. A
+copy-pasteable registry format and bats skeleton live in
 [`reference/synced-files-test.md`](reference/synced-files-test.md).
 
 This skill **scaffolds these into the target repo** — it reads the repo's existing conventions,
