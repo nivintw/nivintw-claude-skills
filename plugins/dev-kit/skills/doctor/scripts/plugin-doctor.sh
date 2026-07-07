@@ -46,8 +46,10 @@ tags_status="ok"
 tags_detail=""
 if ! command -v gh >/dev/null 2>&1; then
   tags_status="no-gh"
-else
-  gh_err="$(mktemp)"
+elif gh_err="$(mktemp 2>/dev/null)" && [ -n "$gh_err" ]; then
+  # `mktemp` runs in the `elif` condition so a failure there is `set -e`-exempt and falls to the
+  # else branch below (degrade to cache-only) rather than exiting non-zero — this tool always
+  # exits 0.
   if raw="$(gh api "repos/${repo}/tags" --paginate -q '.[].name' 2>"$gh_err")"; then
     releases="$(printf '%s\n' "$raw" | sed -n 's/^\(.*\)-v\([0-9][0-9.]*\)$/\1	\2/p')"
   elif grep -q 'HTTP 404' "$gh_err"; then
@@ -59,6 +61,10 @@ else
     [ -n "$tags_detail" ] || tags_detail="network/auth failure"
   fi
   rm -f "$gh_err"
+else
+  # Couldn't create a temp file to capture gh's stderr — degrade to cache-only, don't exit.
+  tags_status="fetch-failed"
+  tags_detail="could not create a temp file for the release lookup"
 fi
 
 latest_for() {
