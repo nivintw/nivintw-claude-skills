@@ -24,39 +24,35 @@ it turns the registry into the audit trail for the upstream-port workflow.
 
 ## Synced-files test (bats skeleton)
 
-Two parts, mirroring `tests/check_plugin_release_wiring.bats`: per-case sandbox assertions
-(optional, for the registry parser), and a **real-tree assertion** that diffs the actual repo
-against the template. Materialize the template once at the pinned `_commit` and diff each
-candidate file; skip anything in the registry.
+A **real-tree assertion** that diffs the actual repo against **what the template renders**, not
+against the raw template tree. Render with copier itself so `.jinja` suffixes, Jinja-conditional
+names, `_exclude`, and `_subdirectory` are all handled — a raw `template/<path>` byte-diff can't
+do any of that and silently mismatches or skips. The test must **fail loudly, never vacuously
+green**: an empty candidate set, a failed render, or an all-skipped run is a failure, not a pass.
 
 ```bash
 #!/usr/bin/env bats
-# Asserts template-owned files are byte-identical to the template at the pinned _commit,
-# except those documented in tests/template-divergences.txt.
+# Asserts template-owned files match what the template RENDERS at the pinned _commit, except
+# those documented in tests/template-divergences.txt. Uses copier to render (not a raw
+# template-tree byte-diff), so .jinja / conditional names / _exclude / _subdirectory are handled.
 
 setup() {
   REPO_ROOT="$(git rev-parse --show-toplevel)"
   REGISTRY="$REPO_ROOT/tests/template-divergences.txt"
-
-  # Read the template source + pinned commit from .copier-answers.yml.
-  SRC=$(sed -n 's/^_src_path: *//p' "$REPO_ROOT/.copier-answers.yml")   # e.g. gh:owner/repo
   COMMIT=$(sed -n 's/^_commit: *//p' "$REPO_ROOT/.copier-answers.yml")  # e.g. v1.4.0
 
-  # Resolve the clone source. _src_path may be Copier's `gh:owner/repo` shorthand, a full
-  # https/ssh URL, or a local path — handle the shorthand, otherwise clone $SRC as-is.
-  case "$SRC" in
-  gh:*) CLONE_SRC="https://github.com/${SRC#gh:}.git" ;;
-  *) CLONE_SRC="$SRC" ;;
-  esac
-
-  # Materialize the template tree at that commit. Clone then check out, so this works whether
-  # _commit is a tag, a branch, or a bare commit SHA (Copier allows any of them).
-  TEMPLATE_DIR="$(mktemp -d)"
-  git clone --quiet "$CLONE_SRC" "$TEMPLATE_DIR"
-  git -C "$TEMPLATE_DIR" checkout --quiet "$COMMIT"
+  # Render what the template GENERATES for this repo's recorded answers. `copier recopy` reads
+  # _src_path + the answers from .copier-answers.yml and regenerates the template files; run it
+  # on a throwaway clone (real tree untouched), pinned to _commit. If the clone or render fails,
+  # these commands return non-zero and bats fails the test in setup — never a silent empty dir
+  # that would make every comparison "match".
+  RENDER_ROOT="$(mktemp -d)"
+  RENDERED="$RENDER_ROOT/repo"
+  git clone --quiet "$REPO_ROOT" "$RENDERED"
+  uvx copier recopy --defaults --overwrite --vcs-ref "$COMMIT" "$RENDERED"
 }
 
-teardown() { rm -rf "$TEMPLATE_DIR"; }
+teardown() { rm -rf "$RENDER_ROOT"; }
 
 # True if $1 (repo-relative path) is listed in the divergence registry. Matches the path
 # literally against each line's first field — never as a regex (paths contain `.` etc.).
@@ -65,20 +61,36 @@ is_registered_divergence() {
     "$REGISTRY" 2>/dev/null
 }
 
-@test "template-owned files match the template unless a divergence is registered" {
+@test "template-owned files match the copier render unless a divergence is registered" {
+  # CANDIDATES: the files this repo declares should track the template. Derive these from the
+  # adoption walk (Adoption & update — no silent drops), e.g. the template's config/CI/gate
+  # files this repo adopted verbatim. NOT guessed.
+  CANDIDATES=(
+    # .config/licenserc.toml
+    # .github/workflows/pr.yml
+  )
+
+  # Guard against a vacuous pass: an empty candidate set, or a render that produced nothing,
+  # must FAIL — not silently compare zero files and report green.
+  [ "${#CANDIDATES[@]}" -gt 0 ] || { echo "no CANDIDATES declared — the test would check nothing"; false; }
+  # Positive control: the render must have produced its answers file, proving copier actually
+  # ran. Without this, a no-op render makes every candidate look "not rendered" and skip silently.
+  [ -f "$RENDERED/.copier-answers.yml" ] || { echo "copier render produced no output"; false; }
+
   drift=()
-  # CANDIDATES: the files this repo declares should track the template byte-for-byte.
-  # Derive these from the adoption walk (Adoption & update — no silent drops), e.g. the
-  # template's config/CI/gate files that this repo adopted verbatim.
+  compared=0
   for rel in "${CANDIDATES[@]}"; do
     is_registered_divergence "$rel" && continue
-    [ -f "$TEMPLATE_DIR/$rel" ] || continue   # template no longer ships it; not a sync target
-    if ! diff -q "$TEMPLATE_DIR/$rel" "$REPO_ROOT/$rel" >/dev/null 2>&1; then
-      drift+=("$rel")
-    fi
+    [ -f "$RENDERED/$rel" ] || continue   # template no longer renders it; not a sync target
+    compared=$((compared + 1))
+    diff -q "$RENDERED/$rel" "$REPO_ROOT/$rel" >/dev/null 2>&1 || drift+=("$rel")
   done
+
+  # If every candidate was registered or unrendered, nothing was actually compared — that is a
+  # vacuous run, not a pass.
+  [ "$compared" -gt 0 ] || { echo "no candidate was compared (all skipped) — the test is vacuous"; false; }
   [ "${#drift[@]}" -eq 0 ] || {
-    printf 'drifted from template (register the divergence or re-sync): %s\n' "${drift[@]}"
+    printf 'drifted from the template render (register the divergence or re-sync): %s\n' "${drift[@]}"
     false
   }
 }
@@ -87,10 +99,13 @@ is_registered_divergence() {
 Notes:
 
 - **`CANDIDATES`** is the list of files meant to stay in sync — populate it from the adoption
-  walk, not by guessing. A file the template no longer ships is skipped (not a drift).
-- Prefer the **GitHub MCP** (`mcp__github__get_file_contents` at the pinned `_commit`) over a
-  clone when the test runs somewhere a clone is awkward; the clone form above is the portable
-  default.
-- This is a **skeleton to adapt**, not a drop-in: the candidate set, registry path, and
-  template-materialization step are per-repo. Verify it passes against the current tree before
-  committing it.
+  walk, not by guessing. A file the template no longer renders is skipped (not a drift), but an
+  *empty or all-skipped* candidate set fails the test (the vacuous-green guards above).
+- **copier does the rendering.** Don't reimplement `.jinja`-stripping / `_subdirectory` /
+  conditional-name resolution by hand — that hand-rolled mapping is exactly what breaks on a
+  non-trivial template. `copier recopy --pretend` (dry-run) is the way to *inspect* drift without
+  writing; the skeleton above renders into a throwaway clone so it can byte-diff.
+- This is a **skeleton to adapt**, not a drop-in: the candidate set, registry path, and the
+  copier invocation (how copier is available — `uvx`, a venv, …) are per-repo. Verify it passes
+  against the current tree before committing it — and confirm it *fails* when you deliberately
+  drift a candidate, so you know it isn't vacuously green.
