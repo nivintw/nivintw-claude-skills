@@ -4,7 +4,8 @@
 
 # wait-for-copilot-review.sh <owner/repo> <pr-number> [timeout-seconds]
 #
-# Blocks until copilot-pull-request-reviewer[bot] has a review on the PR's CURRENT head SHA,
+# Blocks until copilot-pull-request-reviewer[bot] has a review on the head SHA captured when
+# this script STARTED (not re-read as the PR advances — see the pin note below),
 # then exits READY — or exits TIMEOUT if the bounded window elapses first. TWO terminal states,
 # both exit(0), so it can never hang. Run it via Bash with run_in_background: true so the
 # harness re-invokes the session on exit — a completing background *process* generates a resume
@@ -12,8 +13,10 @@
 # skill's watch-and-review reference). This is THE mechanism for the Copilot-review watch, the
 # review-side parallel to `gh pr checks --watch` for CI.
 #
-# Pins to the head SHA captured at start: a stale review left on an earlier push does not count
-# as convergence. On re-invoke: clean review -> merge; real findings -> address and re-request;
+# Pins to the head SHA captured at start — the state you're converging: a stale review on an
+# EARLIER push doesn't count, and if a NEW commit lands mid-watch, this run keeps waiting on the
+# SHA it started on (re-run it against the new head after you push). On re-invoke: clean
+# review -> merge; real findings -> address and re-request;
 # TIMEOUT -> Copilot is advisory, treat as unavailable and land anyway.
 
 set -euo pipefail
