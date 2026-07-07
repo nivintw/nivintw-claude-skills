@@ -23,10 +23,10 @@ findings into a single prioritized report — instead of a pile of overlapping o
   authored in this session. Goal: catch everything *before* a human looks. **Apply** safe
   fixes and re-run; surface anything judgment-heavy for the human at hand-off.
 - **Mode B — a teammate's PR.** When given a PR number / branch authored by someone else.
-  Goal: a high-signal review *for them*. **Do not push changes to their branch.** Posting review
-  comments is an outward-facing action — draft the review, show it, and only post with
-  explicit confirmation (`/pr-review-toolkit:review-pr` and `/code-review --comment` can
-  post; use them only after the user says to).
+  Goal: a high-signal review *for them*. **Do not push changes to their branch.** Post findings
+  by **staging a GitHub *pending* review and deliberately not submitting it** (see *Posting
+  findings* below): Claude drafts every inline comment, and the human owns the
+  APPROVE / REQUEST_CHANGES / COMMENT verdict by clicking Submit.
 - **Mode C — whole-repo audit.** For a first-time / never-been-reviewed repo, or when the
   user explicitly asks to review the entire codebase rather than a diff. Points the same
   reviewer battery at the whole codebase (or a named subtree) instead of a diff, and
@@ -48,6 +48,27 @@ broken behavior in the code the diff touches is a finding **even if it predates 
 change** — "it was already like that" is never a reason to wave it past. Surface it (and, in
 Mode A, fix the safe ones); flag it as pre-existing so the human can weigh it, rather than
 silently dropping it because it's older than the diff.
+
+### Materialize a fetched PR's head into a worktree (Mode B, and Mode C on a remote PR)
+
+`gh pr diff <n>` gives you the *diff*, but the working-tree reviewers in the battery
+(`/security-review`, the `/pr-review-toolkit` suite) read the **current working tree**, not the
+diff. On a PR you only fetched, that tree is still your own branch — so those reviewers would
+read the wrong (or an empty) tree and their findings would be meaningless. Before running them,
+check the PR head out into a dedicated worktree and run the battery there:
+
+- **Capture the PR head SHA *before* any other fetch.** Every `git fetch` overwrites
+  `FETCH_HEAD`, so grab it first — `PR_HEAD=$(gh pr view <n> --json headRefOid -q .headRefOid)`
+  (or `git fetch origin pull/<n>/head` and immediately read `FETCH_HEAD`) — and only fetch the
+  base branch *after* `PR_HEAD` is captured.
+- **Resolve `--git-common-dir` absolutely.** From inside a worktree, `git rev-parse
+  --git-common-dir` can return a **relative** path; resolve it to an absolute path before using
+  it to place the new worktree.
+- **Check out `PR_HEAD` into a dedicated worktree** (`git worktree add <path> "$PR_HEAD"`, under
+  `.claude/worktrees/`) and point the working-tree reviewers at that worktree, so every reviewer
+  reads the PR's actual tree. Tear the worktree down when the review is done.
+
+Mode A already runs in the branch's own worktree, so a reviewer there never reads the wrong tree.
 
 ## The battery — default to the full set, right-sized
 
@@ -102,6 +123,15 @@ installed rather than treating this list as exhaustive.
    names several as examples) isn't active code — neither is a finding. Pre-existing
    suppressions the diff doesn't touch are likewise out of scope unless the change is
    explicitly about them (per the "scopes to that diff" rule above).
+7. **Defer new-syntax validity to the toolchain (standing, every run).** The model's sense of
+   what is *syntactically valid* lags the language. If the repo's configured toolchain — the
+   linter, type-checker, or compiler (ruff / ty / tsc / rustc / …) — accepts the code, it **is**
+   valid: **never raise a "syntax error" finding the configured tooling doesn't also raise.**
+   Canonical trap: PEP 758's parenthesis-less `except A, B:`, valid on current Python but read as
+   a syntax error by an older internalized grammar. More generally, any construct newer than the
+   model's grammar looks wrong while the toolchain is green on it — that's stale grammar, not a
+   bug. (Language-agnostic: it's about deferring to *whatever* toolchain the repo runs, not about
+   Python.)
 
 ## Adversarial review (interpret per change, every time)
 
@@ -136,8 +166,33 @@ Merge every pass you ran into ONE report:
   must-fix; never promote to must-fix on the model's word alone.
 - End with a clear verdict: ready to hand off / merge, or the specific blockers remaining.
 
+## Posting findings — stage a pending review, never submit
+
+When findings are posted inline to a GitHub PR (Mode B, and Mode A whenever you want them on the
+PR rather than applied directly), post them by **staging a GitHub *pending* review and leaving it
+unsubmitted** — never by submitting a review. This is an intentional **human-in-the-loop guard**,
+not just UX: *submitting* a review issues an **APPROVE / REQUEST_CHANGES / COMMENT verdict**, and
+the agent must never issue that verdict autonomously. Staging-without-submit lets Claude do the
+whole review — every inline comment drafted and attached — while the **human owns the verdict**:
+they open the PR, read the staged comments, and click Submit with their decision.
+
+- **Clear the agent's own stale pending review first.** GitHub allows **one pending review per
+  user per PR**, so a prior *agent* run's leftover unsubmitted review would make this run's
+  comments **append onto the stale one**. Before staging, dismiss the agent account's own
+  leftover pending review (never a human's in-progress one) so each run produces a clean review.
+- **Stage, don't submit.** Create a pending review (`pull_request_review_write` with method
+  `create` via the GitHub MCP), attach each inline finding
+  (`add_comment_to_pending_review`), and **stop there** — do not call submit / approve /
+  request-changes.
+- **Hand off plainly:** tell the human *"review staged as a pending review — open the PR and
+  Submit with your verdict."*
+
+The existing guards still hold: never push to a teammate's branch, and the **submit** — the one
+outward, verdict-issuing action — is always the human's.
+
 ## Then
 
 - **Mode A:** apply the safe must-fixes, re-run the relevant reviewer to confirm, and hand
   the author the residual judgment calls. Leave the branch green.
-- **Mode B:** present the synthesized review; post it only on explicit confirmation.
+- **Mode B:** present the synthesized review and **stage it as an unsubmitted pending review**
+  (see *Posting findings*); hand off with "open the PR and Submit with your verdict."
