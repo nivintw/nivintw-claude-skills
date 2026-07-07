@@ -47,9 +47,16 @@ minimal `mkdocs.yml`), not something this skill does for you.
    editorial authority to restructure, re-level, and re-present. This is not a rhetorical
    nicety to nod at before defaulting to plain paragraphs — it has concrete, recurring
    answers (see *Structural tools*, below) that a run should actually reach for when the
-   content shape calls for them, not just when told to.
+   content shape calls for them, not just when told to. The standard for "best way" is the
+   **shipped affordance rubric** ([`reference/affordance-rubric.md`](reference/affordance-rubric.md)) —
+   consult it every run for what excellent docs must afford a reader. It's the skill's own
+   generic reference material (not per-repo); per-repo specifics stay re-derived from the code.
 5. **Code is the single source of truth.** Where prose and code disagree, the prose is
-   wrong. Fix the prose; never invent behavior the code doesn't have.
+   wrong. Fix the prose; never invent behavior the code doesn't have. **Exception — a
+   deliberately forward-looking page** may declare `doc_mode: target-state` in its frontmatter;
+   such a page describes the *intended* future state, so a run **leaves it alone** rather than
+   reconciling it back to current code. Current-state (code-is-truth) is the default; the marker
+   is the only opt-out, replacing the old hardcoded path exclusion (see *What this skill owns*).
 6. **Analyze the whole, rewrite only what's wrong.** Whole-codebase *analysis* every run,
    but only drifted / missing / poorly-communicated content gets *rewritten*. Accurate,
    well-communicated pages are left **byte-identical** — that is what keeps the diff small
@@ -334,6 +341,24 @@ tractable. Print it in the run; when running inside `dev-kit:ship`, also save it
 ship's run dir (`"$(git rev-parse --git-dir)/ship/"`) so it survives for the human's review
 without ever landing in the working tree. It is **not** part of the published site.
 
+### Stage 6 — Completeness critic (final) + rubric promotion
+
+Run the shared **completeness critic** ([`../../reference/completeness-critic.md`](../../reference/completeness-critic.md))
+as the last stage — the same primitive `dry-dock-overhaul` uses, built once so the two can't
+drift. As an independent pass over the run's own output, ask **"what's missing?"** in
+docs terms: a public surface with no page, a topic covered at the wrong altitude, a modality the
+content needed (a table, a diagram, a runnable example) but didn't get, measured against the
+affordance rubric. A gap the run *can* close feeds back into Stage 3 (author it), then re-run the
+critic until it surfaces nothing new; a gap left open is stated in the reconciliation report as a
+known blind spot, never dropped.
+
+**Promotion loop.** When the critic finds a *general* docs-affordance gap — a "docs like this
+should always afford X" lesson, not a repo-specific fix — promote it back into the **shipped**
+[`reference/affordance-rubric.md`](reference/affordance-rubric.md), so every repo inherits it on
+the next plugin version. The promotion writes to the **plugin's** reference, never a per-repo
+file — so the "re-derive per-repo structure from code" principle is untouched (that governs
+per-repo nav/layout; the rubric is the skill's own generic standard).
+
 ## Repo-kind shaping (zero-config)
 
 Classification seeds a starting shape; then shape to what the repo actually contains. No
@@ -376,9 +401,13 @@ A run **never**:
   into copier-everything rather than leaving it a silent local divergence,
 - touches the Pages build workflow or Pages configuration — see *Publishing* below.
 
-**Excluded from reconciliation:** developer specs and internal design docs — concretely
-`docs/superpowers/**` (specs and plans). The published site and dev specs share the `docs/`
-tree; this skill owns the former, not the latter. Never rewrite or clobber them.
+**Excluded from reconciliation:** any page marked `doc_mode: target-state` in its frontmatter
+(a deliberately forward-looking page — see Core philosophy #5) is left byte-identical, never
+reconciled back to current code. Beyond that per-page opt-out, one **built-in default excluded
+set** stands: developer specs and internal design docs — concretely `docs/superpowers/**`
+(specs and plans), which the skill doesn't own and can't add frontmatter to. The published site
+and dev specs share the `docs/` tree; this skill owns the former, not the latter. Never rewrite
+or clobber either the marked pages or the built-in set.
 
 ## Licensing & tooling
 
