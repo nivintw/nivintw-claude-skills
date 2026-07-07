@@ -2,11 +2,11 @@
 # SPDX-FileCopyrightText: © 2026 Tyler Nivin
 # SPDX-License-Identifier: MIT
 
-# Tests for the worktree-guard PreToolUse hook: it must block Write/Edit/MultiEdit that
+# Tests for the worktree-guard PreToolUse hook: it must block Write/Edit/NotebookEdit that
 # target the parent checkout when cwd is inside a .claude/worktrees/<name>/ worktree, while
 # allowing the worktree's own tree, the worktree's own git dir, non-matching tools, and any
 # session that isn't in a worktree. A real linked worktree is built in the sandbox so the
-# `.git`-pointer resolution of the worktree's own git dir is exercised for real.
+# git-rev-parse resolution of the roots and the worktree's own git dir is exercised for real.
 
 setup() {
   HOOK="$BATS_TEST_DIRNAME/../plugins/worktree-guard/hooks/block-write-outside-worktree.py"
@@ -32,6 +32,11 @@ teardown() {
 # run_hook TOOL CWD FILE_PATH — feed the hook a PreToolUse payload on stdin.
 run_hook() {
   run python3 "$HOOK" <<<"{\"tool_name\":\"$1\",\"cwd\":\"$2\",\"tool_input\":{\"file_path\":\"$3\"}}"
+}
+
+# run_hook_notebook CWD NOTEBOOK_PATH — NotebookEdit carries its target in notebook_path.
+run_hook_notebook() {
+  run python3 "$HOOK" <<<"{\"tool_name\":\"NotebookEdit\",\"cwd\":\"$1\",\"tool_input\":{\"notebook_path\":\"$2\"}}"
 }
 
 # A deny is signalled by a JSON object on stdout; an allow emits nothing. The hook always
@@ -74,6 +79,16 @@ assert_allow() {
 
 @test "is inert when the session is not in a worktree" {
   run_hook "Edit" "$REPO" "$REPO/install.sh"
+  assert_allow
+}
+
+@test "blocks a NotebookEdit targeting the parent checkout (notebook_path)" {
+  run_hook_notebook "$WT" "$REPO/analysis.ipynb"
+  assert_deny
+}
+
+@test "allows a NotebookEdit into the worktree's own copy" {
+  run_hook_notebook "$WT" "$WT/analysis.ipynb"
   assert_allow
 }
 
