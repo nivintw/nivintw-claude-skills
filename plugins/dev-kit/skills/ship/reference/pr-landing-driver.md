@@ -44,14 +44,25 @@ acceptable equivalent where it reads cleaner.
    poll loop, or a Monitor). Set `state` to `waiting:ci` so the Stop hook lets the session rest
    meanwhile (see ship Phase 0); when the watch fires, re-arm the active `phase-*` token and
    continue. Don't set `waiting:ci` with nothing watching — a bare stop strands the loop, since
-   nothing would resume it.
+   nothing would resume it. **Interpreting the result** (see
+   [`watch-and-review.md`](watch-and-review.md) for the full rules): CI reports through **two**
+   surfaces — read *both* `get_check_runs` **and** `get_status` on the head SHA. An empty
+   check-runs list is **not** "no CI" (the required status may be on the commit-status surface,
+   or a notification dropped), and a **green run in the CI UI is not the same as the required
+   status being published on the head SHA** — the merge gate reads the published status. On a
+   suspected dropped notification, re-request / re-watch rather than treating the silence as
+   terminal.
 3. **On red, fix and re-watch.** Triage the failing check like any reviewer: reproduce, fix,
    commit, push to the same branch, then go back to step 1 against the new head. **Bound it** —
    after ~3 rounds with no progress on the same failure, stop and surface it for the human
    rather than thrashing. Don't paper over a real failure to force the merge.
 4. **Converge the automated review.** Run ship's Phase 8 Copilot convergence loop to
    completion, parking as `waiting:copilot` between rounds the same way — backed by a watch
-   that resumes you, never a bare stop. If Copilot is **unavailable** (Phase 8 state (a) —
+   that resumes you, never a bare stop. The watch mechanism is
+   [`scripts/wait-for-copilot-review.sh`](../scripts/wait-for-copilot-review.sh) run with
+   `run_in_background: true` (parallel to step 2's `gh pr checks --watch` for CI); a timed
+   `ScheduleWakeup` is ruled out — see [`watch-and-review.md`](watch-and-review.md). If Copilot
+   is **unavailable** (Phase 8 state (a) —
    rejected, or assigned-but-silent past the bounded window), that **counts as converged** for
    the gate below: `land` does not block a green PR on a review that can't happen — surface
    that Copilot didn't review, and proceed.
