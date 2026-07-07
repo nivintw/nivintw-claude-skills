@@ -268,6 +268,36 @@ merged_gone_branch() {
   [ "$output" = "localscratch" ]
 }
 
+@test "recognizes a stash created despite a non-zero 'git stash push' exit" {
+  # Regression for the non-atomic stash-push race: under a contended HEAD.lock, `git stash
+  # push` can create the stash entry (reverting the tree) yet still exit non-zero. Trusting the
+  # exit code would leave the tree reverted with the work hidden in a stash. Simulate it with a
+  # git shim that runs the real `stash push` (which succeeds) but forces a non-zero exit; the
+  # script must still detect the new stash entry and pop it, restoring the tree.
+  advance_origin
+  echo localscratch >scratch.txt # untracked dirty change in main's worktree
+
+  REAL_GIT="$(command -v git)"
+  mkdir -p "$SANDBOX/bin"
+  cat >"$SANDBOX/bin/git" <<EOF
+#!/usr/bin/env bash
+"$REAL_GIT" "\$@"; rc=\$?
+case " \$* " in
+  *" stash push "*) exit 1 ;; # entry was created, but lie about the exit code
+esac
+exit \$rc
+EOF
+  chmod +x "$SANDBOX/bin/git"
+
+  PATH="$SANDBOX/bin:$PATH" run "$SCRIPT"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"stashed despite a non-zero"* ]] # recognized the race
+  [ -f "$REPO/ahead.txt" ]                          # main still advanced to origin
+  [ -f "$REPO/scratch.txt" ]                        # tree restored, not left reverted
+  run cat "$REPO/scratch.txt"
+  [ "$output" = "localscratch" ]
+}
+
 @test "updates main: rebases an unpushed local commit forward onto origin" {
   advance_origin
   commit_on "$REPO" mine.txt mine "my unpushed commit"
@@ -359,6 +389,19 @@ merged_live_remote_branch() {
   # the remote branch is gone
   run git -C "$REMOTE" rev-parse --verify --quiet refs/heads/feature-x
   [ "$status" -ne 0 ]
+}
+
+@test "--prune-remote relays git's real reason when a remote delete fails" {
+  # A failed remote delete must surface git's actual error, not a bare "failed to…". Make the
+  # bare remote refuse deletions so the push fails for a concrete, reportable reason.
+  merged_live_remote_branch feature-x
+  git -C "$REMOTE" config receive.denyDeletes true
+
+  run "$SCRIPT" --prune-remote
+  [ "$status" -ne 0 ] # had_failure → non-zero exit
+  [[ "$output" == *"WARNING: failed to delete remote branch origin/feature-x:"* ]]
+  [[ "$output" == *"deny"* ]] # git's real reason (deny deleting ref) is relayed
+  git -C "$REMOTE" rev-parse --verify --quiet refs/heads/feature-x # branch survived
 }
 
 @test "--prune-remote never touches origin/main or origin/HEAD" {

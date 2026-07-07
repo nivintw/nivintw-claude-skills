@@ -134,7 +134,7 @@ fi
 
 # ----------------------------- Update the default branch ----------------------------- #
 update_default() {
-  local wt stashed=0
+  local wt stashed=0 stash_before stash_after
   wt=$(worktree_of_branch "$default_local")
 
   if [ -z "$wt" ]; then
@@ -161,14 +161,29 @@ update_default() {
   fi
 
   if [ -n "$(git -C "$wt" status --porcelain)" ]; then
+    # `git stash push` is not atomic: under a contended HEAD.lock it can create the stash
+    # entry (reverting the working tree) yet still exit non-zero. Trusting the exit code alone
+    # would take the "couldn't stash" path and never pop — silently reverting the user's tree
+    # into a stash they don't know exists. So snapshot refs/stash before the push; if a new
+    # entry appeared despite a non-zero exit, recognize it (stashed=1) so the later pop
+    # restores the tree, rather than trusting the exit code.
+    stash_before=$(git -C "$wt" rev-parse --quiet --verify refs/stash 2>/dev/null || true)
     if git -C "$wt" stash push --include-untracked -m "cleanup-locally: auto-stash" >/dev/null 2>&1; then
       stashed=1
     else
-      # Couldn't safely set the tree aside — don't rebase a dirty tree (it would fail for
-      # reasons unrelated to conflicts and misdiagnose). Leave the branch untouched.
-      echo "WARNING: $default_local in $wt has changes that couldn't be stashed; left as-is." >&2
-      had_failure=1
-      return
+      stash_after=$(git -C "$wt" rev-parse --quiet --verify refs/stash 2>/dev/null || true)
+      if [ -n "$stash_after" ] && [ "$stash_after" != "$stash_before" ]; then
+        # A stash entry was created despite the non-zero exit — recognize it so the pop below
+        # restores the tree, rather than leaving a reverted tree + a hidden stash.
+        echo "WARNING: $default_local in $wt was stashed despite a non-zero 'git stash push'; will restore it after updating." >&2
+        stashed=1
+      else
+        # Couldn't safely set the tree aside — don't rebase a dirty tree (it would fail for
+        # reasons unrelated to conflicts and misdiagnose). Leave the branch untouched.
+        echo "WARNING: $default_local in $wt has changes that couldn't be stashed; left as-is." >&2
+        had_failure=1
+        return
+      fi
     fi
   fi
 
@@ -250,15 +265,17 @@ done < <(git worktree list --porcelain | awk '
 
 # ------------------------------- Prune merged branches ------------------------------- #
 delete_branch() {
-  local branch=$1 reason=$2 flag=$3
+  local branch=$1 reason=$2 flag=$3 err
   if [ "$DRY_RUN" = 1 ]; then
     echo "[dry-run] would delete $reason branch: $branch"
     deleted=$((deleted + 1))
-  elif git branch "$flag" "$branch" >/dev/null 2>&1; then
+  # Capture stderr so a failure relays git's real reason (not fully merged, protected,
+  # locked ref…) instead of a bare "failed to…". On success the captured message is discarded.
+  elif err=$(git branch "$flag" "$branch" 2>&1); then
     echo "Deleting $reason branch: $branch"
     deleted=$((deleted + 1))
   else
-    echo "    WARNING: failed to delete branch: $branch" >&2
+    echo "    WARNING: failed to delete branch $branch: $err" >&2
     had_failure=1
   fi
 }
@@ -329,11 +346,13 @@ if [ -n "$remote_merged_branches" ]; then
       if [ "$DRY_RUN" = 1 ]; then
         echo "[dry-run] would delete merged remote branch: origin/$branch"
         remote_deleted=$((remote_deleted + 1))
-      elif git push origin --delete "$branch" >/dev/null 2>&1; then
+      # Capture stderr so a failed push relays git's real reason (protected/denied ref,
+      # auth failure, remote ref already gone…) rather than a bare "failed to…".
+      elif push_err=$(git push origin --delete "$branch" 2>&1); then
         echo "Deleted merged remote branch: origin/$branch"
         remote_deleted=$((remote_deleted + 1))
       else
-        echo "    WARNING: failed to delete remote branch: origin/$branch" >&2
+        echo "    WARNING: failed to delete remote branch origin/$branch: $push_err" >&2
         had_failure=1
       fi
     else
