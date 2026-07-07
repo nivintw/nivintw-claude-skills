@@ -360,7 +360,13 @@ PR (or the tracking issue) alone, with no dependency on this conversation. Rules
 ### Converge an automated review before handing off
 
 With the draft PR open, request an **automated Copilot review** (GitHub's `request_copilot_review`
-via the GitHub MCP or `gh`) and **iterate to convergence**. The request resolves into one of
+via the GitHub MCP or `gh`) and **iterate to convergence**. Before you touch the API, read
+[`reference/watch-and-review.md`](reference/watch-and-review.md) for the request/detection traps
+that make this silently fail regardless of state — `gh pr edit --add-reviewer copilot` is a
+**silent no-op** (use `request_copilot_review`); the posted review is authored by
+`copilot-pull-request-reviewer[bot]` (a *different* login from the one Copilot holds in
+`requested_reviewers`); GraphQL `reviewRequests` omits the bot; and a review has **two parts**
+(summary body + inline comments) — parse both. The request resolves into one of
 three states — tell them apart by two signals: whether Copilot is in the PR's
 **`requested_reviewers`** (a PR-level flag, not tied to a head), and whether a **review**
 exists *for the current head SHA* — not by "did a review show up yet":
@@ -390,8 +396,15 @@ timeout above. A review *on the current head* means state (c), not unavailable �
 its absence before you skip. Then iterate:
 
 1. While parked waiting for a review to land on the current head (state b), set `state` to
-   `waiting:copilot` so the Stop hook lets the session rest without nagging; re-arm the
-   `phase-*` token once the review lands and you pick the work back up.
+   `waiting:copilot` **only once a self-resuming background watch is actually running** — the
+   same "never a bare stop" rule the land loop states. The mechanism is
+   [`scripts/wait-for-copilot-review.sh`](scripts/wait-for-copilot-review.sh) run with
+   `run_in_background: true` (the review-side parallel to `gh pr checks --watch` for CI); its
+   exit re-invokes the session. A timed **`ScheduleWakeup` is explicitly ruled out** — it does
+   not generate a completion event and has stranded a merge-ready PR for hours; see
+   [`reference/watch-and-review.md`](reference/watch-and-review.md) for the wait-primitive table
+   and the silence-≠-success / wake-≠-verdict rules. Re-arm the `phase-*` token once the review
+   lands and you pick the work back up.
 2. Triage its findings like any reviewer — apply the real ones (commit + push to the same
    branch).
 3. **Resolve each thread once you've handled it** — reply with how it was addressed (the
