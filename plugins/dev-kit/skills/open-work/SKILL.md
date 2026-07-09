@@ -1,18 +1,14 @@
 ---
 name: open-work
 description: >-
-  This skill should be used when the user asks "what should I work on next", "what should I
-  pick up next", "what's next in the backlog", "pick my next task", "rank my issues",
-  "shortlist my ready work", "what's in progress", "what am I in the middle of", or otherwise
-  wants a recommendation of which open work to start or resume. It reads the repo's open
-  GitHub issues (the durable task ledger) and returns the full ranked "pick up next" list —
-  every ready and startable item, never capped to a top-N — with a one-line rationale per
-  standout pick. It leads by calling out your in-progress work to resume (usually, finish what you
-  started first), then ranks status:ready work by priority, staleness, and dependencies,
-  surfaces blocked items, and flags an untriaged pile. It selects from the ledger but neither
-  grooms it (that's /dev-kit:handle-task-tracking, whose status-label model it reuses) nor does the
-  work (that's /dev-kit:ship). Gathers and ranks via a bundled script; reads issue bodies for
-  rationale via the GitHub MCP tools, falling back to the gh CLI.
+  Use when the user asks "what should I work on next", "what's next in the backlog", "pick my
+  next task", "rank my issues", or "what am I in the middle of". Reads the repo's open GitHub
+  issues (the durable task ledger) and returns the full ranked "pick up next" list — every
+  ready and startable item, never capped to a top-N — with a one-line rationale per standout
+  pick. Leads with in-progress work to resume, then ranks status:ready by priority, staleness,
+  and dependencies, surfaces blocked items, and flags an untriaged pile. Selects from the
+  ledger but neither grooms it (/dev-kit:handle-task-tracking) nor does the work
+  (/dev-kit:ship). Gathers and ranks via a bundled script.
 ---
 
 # open-work

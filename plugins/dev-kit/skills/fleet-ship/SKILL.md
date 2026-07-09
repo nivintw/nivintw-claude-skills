@@ -1,19 +1,14 @@
 ---
 name: fleet-ship
 description: >-
-  This skill should be used when the user asks to "ship a batch across repos", "coordinate a
-  fleet ship", "ship these issues spanning multiple repos", "land the whole backlog across the
-  fleet", or hands over a set of issues that live in more than one repository and wants them
-  driven together — especially a cross-repo chain like a copier-everything template change plus
-  the downstream `copier update` adoptions it enables. It is the CROSS-REPO layer above
-  /dev-kit:ship: ship batches issues within ONE repo (its Phase 1), fleet-ship coordinates a set
-  spanning MULTIPLE repos — per-repo worktrees + PRs, dependency-ordered across repos
-  (upstream-before-downstream, including "release the template, then adopt it"), and
-  review-deduplicated (the source change is reviewed once; downstream PRs review only the
-  adoption diff). It dispatches per-repo ship runs and sequences them, reusing ship's single-repo
-  batch and the ship/land HITL model rather than duplicating them. Not for a batch that lives in
-  a single repo (that's ship's own Phase 1 batching) — reach for it only when the work genuinely
-  spans repos.
+  Use when the user asks to "ship a batch across repos", "coordinate a fleet ship", or hands
+  over issues living in more than one repository to drive together — especially a cross-repo
+  chain like a copier-everything template change plus the downstream `copier update` adoptions
+  it enables. The CROSS-REPO layer above /dev-kit:ship: where ship batches within ONE repo,
+  fleet-ship coordinates a set spanning MULTIPLE — per-repo worktrees + PRs,
+  dependency-ordered (upstream-before-downstream), and review-deduplicated (the source change
+  is reviewed once; downstream PRs review only the adoption diff). Reuses ship's batching and
+  HITL model. Not for a single-repo batch (that's ship's Phase 1).
 ---
 
 # fleet-ship

@@ -1,17 +1,14 @@
 ---
 name: template-reconcile
 description: >-
-  This skill should be used when the user asks to "adopt the copier template", "reconcile
-  against the template", "after a copier update", "did the template infra come over?", "are
-  our template-owned files in sync?", or "should this be ported upstream to the template?". It
-  reconciles a copier-managed repo against its upstream template: verifying no template infra
-  was silently dropped on adoption or update, scaffolding a divergence registry and
-  synced-files test into the repo, and prompting to file upstream when a change touches a
-  template-owned file. A companion to copier's own `copier update` — it does NOT run copier
-  itself. The upstream-port prompt reuses `/dev-kit:handle-task-tracking`'s cross-repo filing
-  rather than reimplementing it. Reach for it whenever a `copier update` has just run, a
-  template-owned file was edited locally, or you want to verify the repo's template infra is
-  complete and documented.
+  Use when the user asks to "adopt the copier template", "reconcile against the template",
+  "after a copier update", "did the template infra come over?", "are our template-owned files
+  in sync?", or "should this be ported upstream?". Reconciles a copier-managed repo against
+  its upstream template: verifying no template infra was silently dropped on adoption or
+  update, scaffolding a divergence registry and synced-files test into the repo, and prompting
+  to file upstream when a change touches a template-owned file. A companion to `copier update`
+  — it does NOT run copier itself. The upstream-port prompt reuses
+  /dev-kit:handle-task-tracking's cross-repo filing.
 ---
 
 # template-reconcile

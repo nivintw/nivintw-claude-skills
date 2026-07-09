@@ -1,15 +1,12 @@
 ---
 name: review-pr
 description: >-
-  This skill should be used when the user asks to "review this PR", "review my changes
-  before I open a PR", "do a pre-merge review", "sanity-check this diff", or "review PR #N"
-  / a teammate's branch. It is the single review entry point: it runs and synthesizes the
-  full battery — /code-review, /security-review, /pr-review-toolkit:review-pr — plus a
-  context-chosen ADVERSARIAL pass that actively tries to break the change, then merges
-  everything into one prioritized report instead of a pile of overlapping outputs. Reach
-  for it on a PR authored in this session (pre-handoff) or a teammate's PR by number or
-  branch, rather than invoking the individual review skills one at a time.
-  /dev-kit:ship calls it automatically before opening its PR.
+  Use when the user asks to "review this PR", "review my changes before a PR", "do a pre-merge
+  review", "sanity-check this diff", or "review PR #N" / a teammate's branch. The single
+  review entry point: runs and synthesizes the full battery — /code-review, /security-review,
+  /pr-review-toolkit:review-pr — plus a context-chosen ADVERSARIAL pass, into one prioritized
+  report instead of overlapping outputs. /dev-kit:ship calls it automatically before opening
+  its PR.
 ---
 
 # review-pr

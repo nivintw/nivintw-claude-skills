@@ -1,18 +1,14 @@
 ---
 name: generate-docs
 description: >-
-  This skill should be used when the user asks to "generate the docs", "build the docs
-  site", "refresh the docs", "reconcile the docs", "publish to GitHub Pages", or "make a
-  docs page" for a repo. It reconciles the WHOLE documentation set against the WHOLE
-  codebase every run — catching both drift (docs that no longer match the code) and omission
-  (code with no docs) — and authors a bespoke, human-first MkDocs Material site (a landing
-  page plus per-topic pages, as Markdown + a `mkdocs.yml` nav tree) shaped to whatever the
-  repo is: a Claude Code plugin marketplace, a Copier template, a library or CLI, or a
-  generic project. Code is the source of truth and Claude authors the prose. Requires the
-  repo to already have an `mkdocs.yml` (from the copier-everything template's
-  `include_docs_site` feature, or hand-authored) — reach for it to create, refresh, or
-  reconcile a repo's docs content, including as part of shipping a change (dev-kit:ship runs
-  it automatically).
+  Use when the user asks to "generate the docs", "build the docs site", "refresh/reconcile the
+  docs", "publish to GitHub Pages", or "make a docs page" for a repo. Reconciles the WHOLE
+  documentation set against the WHOLE codebase every run — catching both drift (docs that no
+  longer match the code) and omission (code with no docs) — and authors a bespoke, human-first
+  MkDocs Material site (landing page plus per-topic pages, as Markdown + a `mkdocs.yml` nav
+  tree) shaped to whatever the repo is: a plugin marketplace, a Copier template, a
+  library/CLI, or a generic project. Code is the source of truth; Claude authors the prose.
+  Requires an existing `mkdocs.yml`. /dev-kit:ship runs it automatically.
 ---
 
 # generate-docs

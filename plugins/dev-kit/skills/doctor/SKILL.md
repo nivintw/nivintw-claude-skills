@@ -1,16 +1,12 @@
 ---
 name: doctor
 description: >-
-  This skill should be used when the user asks "am I on the latest version", "is dev-kit (or
-  any plugin) up to date", "check my plugin versions", "why am I running an old version of a
-  skill", "did the update actually take", "what skills do I have", "list my plugins and
-  skills", or otherwise wants a health check of their installed Claude Code plugins. It does
-  two things: (1) a **version-drift check** — compares the plugin versions actually loaded in
-  this session and cached on disk against the latest released versions, and flags when a stale
-  cache means an old skill is running despite a newer release (even with autoupdate on); and
-  (2) a **skill inventory** — lists the marketplace's plugins and their skills with a one-line
-  description of each. Reach for it whenever a skill seems out of date, an update doesn't seem
-  to have taken, or you just want to see what's installed and what it's for.
+  Use when the user asks "am I on the latest version", "is dev-kit (or any plugin) up to
+  date", "check my plugin versions", "why am I running an old skill", "did the update take",
+  or "what skills do I have". Does two things: (1) a version-drift check — compares the plugin
+  versions loaded this session and cached on disk against the latest releases, flagging when a
+  stale cache runs an old skill despite a newer release (even with autoupdate on); and (2) a
+  skill inventory — lists the marketplace's plugins and their skills, one line each.
 ---
 
 # doctor
