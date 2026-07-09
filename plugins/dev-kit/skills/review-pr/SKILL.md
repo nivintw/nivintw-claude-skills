@@ -3,10 +3,10 @@ name: review-pr
 description: >-
   Use when the user asks to "review this PR", "review my changes before a PR", "do a pre-merge
   review", "sanity-check this diff", or "review PR #N" / a teammate's branch. The single
-  review entry point: runs and synthesizes the full battery — /code-review, /security-review,
-  /pr-review-toolkit:review-pr — plus a context-chosen ADVERSARIAL pass, into one prioritized
-  report instead of overlapping outputs. /dev-kit:ship calls it automatically before opening
-  its PR.
+  review entry point: runs and synthesizes the review battery — /code-review, /security-review,
+  /pr-review-toolkit:review-pr, plus a context-chosen ADVERSARIAL pass — right-sized to the
+  diff, into one prioritized report instead of overlapping outputs. /dev-kit:ship calls it
+  automatically before opening its PR.
 ---
 
 # review-pr
