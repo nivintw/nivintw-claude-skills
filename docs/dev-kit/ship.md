@@ -31,7 +31,7 @@ One run, phases in order:
 | Phase 3 — Implement | Fan out subagents; route each chunk to the cheapest fitting model tier; checkpoint commits. |
 | Phase 4 — Simplify | `/simplify` before any review — and a suppression is a finding, not a cleanup. |
 | Phase 5 — Docs | `/dev-kit:generate-docs` so docs never drift (skip only if the repo has no docs). |
-| Phase 6 — Review | `/dev-kit:review-pr` — the full battery plus an adversarial pass; apply the must-fixes. |
+| Phase 6 — Review | `/dev-kit:review-pr`, right-sized to the diff — code-review always; security + adversarial passes added by risk. Apply the must-fixes. |
 | Phase 7 — Local gate | Infer the repo's checks (prek, tests, linters) and run them green. |
 | Phase 8 — Commit + PR | Conventional-commit draft PR, converge an automated Copilot review, then flip to ready — that flip *is* the hand-off. |
 
