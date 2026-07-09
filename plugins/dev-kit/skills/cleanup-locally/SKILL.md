@@ -1,15 +1,13 @@
 ---
 name: cleanup-locally
 description: >-
-  This skill should be used when the user asks to "clean up local branches", "prune merged
-  branches", "prune worktrees", "tidy up after a merge", "update main", "pull main", "sync
-  main", or otherwise wants their local clone reconciled with the remote after PRs land. It
-  fetches, brings the default branch up to date (stashing dirty work and rebasing unpushed
-  commits forward, never clobbering), removes merged worktrees under .claude/worktrees/, and
-  deletes local branches whose commits are already in the default branch — including squash
-  merges. It is deliberately conservative: anything unmerged, dirty, or currently checked out
-  is kept and reported. /dev-kit:ship calls it at the start of a run and again after the user
-  reports a merge. Reach for it whenever local branches/worktrees have drifted from the remote.
+  Use when the user asks to "clean up local branches", "prune merged branches", "prune
+  worktrees", "tidy up after a merge", "update/pull/sync main", or otherwise reconcile the
+  local clone with the remote after PRs land. Fetches, brings the default branch up to date
+  (stashing dirty work, rebasing unpushed commits forward, never clobbering), removes merged
+  worktrees under .claude/worktrees/, and deletes local branches whose commits are already in
+  the default branch — including squash merges. Conservative: anything unmerged, dirty, or
+  checked out is kept and reported. /dev-kit:ship calls it at a run's start and after a merge.
 ---
 
 # cleanup-locally

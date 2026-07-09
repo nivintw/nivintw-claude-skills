@@ -1,16 +1,13 @@
 ---
 name: record-terminal-casts
 description: >-
-  This skill should be used when the user asks to "record a terminal cast", "make an
-  asciinema recording", "demo this CLI/TUI as a terminal recording", "record an
-  fzf/less/vim session", or "embed a terminal recording in the docs/README". It makes
-  asciinema recordings scriptable — every keystroke and pause lives in a file instead of
-  being performed live — so casts are reproducible, deterministic, and re-recordable when
-  the CLI changes, and so interactive TUIs like fzf, less, or vim (which can't be driven by
-  piping stdin) can be recorded at all. It uses a tmux keystroke harness, then optionally
-  embeds the casts on a static web page with a vendored asciinema-player. Reach for it to
-  demo command-line tools, shell functions, or a TUI as a scrubbable terminal recording for
-  docs, a README, or a docs site, rather than a screenshot or a GIF.
+  Use when the user asks to "record a terminal cast", "make an asciinema recording", "demo
+  this CLI/TUI as a terminal recording", "record an fzf/less/vim session", or "embed a
+  terminal recording in the docs/README". Makes asciinema recordings scriptable — every
+  keystroke and pause lives in a file, not performed live — so casts are reproducible,
+  re-recordable when the CLI changes, and can capture interactive TUIs (fzf, less, vim) that
+  can't be driven by piping stdin. Uses a tmux keystroke harness, then optionally embeds casts
+  on a static page with a vendored asciinema-player.
 ---
 
 # Scriptable terminal casts

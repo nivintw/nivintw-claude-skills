@@ -1,17 +1,14 @@
 ---
 name: pre-public-hardening
 description: >-
-  This skill should be used when the user asks to "make this repo public", "prep this
-  repo to go public", "is this repo safe to open-source?", "harden before publishing",
-  "scan the git history for secrets", or "pre-public review". It drives a whole-repo,
-  full-history readiness review: scanning every commit for secrets (not just the working
-  tree), auditing .gitignore for leak gaps, flushing private-context artifacts, and
-  verifying license completeness — producing a go/no-go checklist the human signs off
-  before flipping visibility. Complements the gate's working-tree gitleaks scan rather
-  than replacing it; the gate cannot see a secret committed and later removed, but this
-  skill can. It does NOT flip repo visibility or rewrite history itself — it detects and
-  prescribes; the human acts. Reach for it whenever a private repo is about to be made
-  public or open-sourced.
+  Use when the user asks to "make this repo public", "prep this repo to go public", "is this
+  repo safe to open-source?", "harden before publishing", "scan the git history for secrets",
+  or "pre-public review". Drives a whole-repo, full-history readiness review: scanning every
+  commit for secrets (not just the working tree), auditing .gitignore for leak gaps, flushing
+  private-context artifacts, and verifying license completeness — producing a go/no-go
+  checklist for the human. Complements the gate's working-tree gitleaks scan rather than
+  replacing it: the gate can't see a secret committed and later removed, but this skill can.
+  It does NOT flip visibility or rewrite history — it detects and prescribes; the human acts.
 ---
 
 # pre-public-hardening

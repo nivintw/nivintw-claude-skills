@@ -1,22 +1,12 @@
 ---
 name: ship
 description: >-
-  This skill should be used when the user asks to "ship this", "ship a change/feature/fix",
-  "take this from idea to a PR", "open a PR for this", or "run the full dev workflow on
-  this" — any real change worth a planned, reviewed pull request. It drives a change from
-  idea to a review-ready PR through a disciplined Human + AI teaming workflow: an explicit
-  planning step and sign-off first (folded into the same grant when `land` is requested up
-  front), work isolated in a dedicated worktree,
-  implementation that fans out subagents and /workflows (delegating mechanical work to
-  cheaper models to stay token-conscious), task tracking delegated to
-  /dev-kit:handle-task-tracking across the lifecycle, then always /simplify, then refresh
-  docs, then a full /dev-kit:review-pr pass, the local quality gate, a conventional-commit
-  PR, and an automated Copilot review iterated to convergence before the change is handed
-  off for human review. On explicit request it also **lands** an open PR ("land the PR",
-  "land this", "land #N", "ship and land it"): it drives CI to green, converges the
-  automated review, then rebase-merges and cleans up — the one path where ship merges. Not
-  for a trivial one-off commit or a bare "push this". Never merges unless you explicitly
-  invoke `land`.
+  Use when the user asks to "ship this", "ship a change/feature/fix", "take this to a PR",
+  "open a PR for this", or "run the full dev workflow" — any change worth a planned, reviewed
+  PR. Drives idea → review-ready PR through a disciplined workflow: plan + sign-off, an
+  isolated worktree, token-conscious implementation (fans out subagents/`/workflows`,
+  delegates mechanical work to cheaper tiers), then /simplify, docs, and review. Stops at
+  hand-off and never merges unless `land` is granted.
 ---
 
 # ship

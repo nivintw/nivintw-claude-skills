@@ -1,16 +1,13 @@
 ---
 name: land
 description: >-
-  This skill should be used when the user asks to "land" a change or PR — "land it", "land
-  this", "land #N", or a bare "/land" — meaning: take a change all the way to merged without
-  waiting for a human hand-off. It is a thin modifier on /dev-kit:ship: bare /land runs ship's
-  full idea→PR workflow and then autonomously merges instead of handing off (functionally
-  identical to "/ship … and land it"); "land it" mid/after a ship run lands that run's PR; and
-  "land #N" attaches to an existing PR and drives it to merged. It does NOT change the quality
-  bar — all required CI checks and (usually) Copilot convergence still gate the merge; land only
-  removes the human-wait. The landing loop itself is NOT duplicated here — this skill delegates
-  to ship's own "Land the PR" verb and its pr-landing-driver reference. Reach for it whenever the
-  user wants a change merged autonomously ("I'm walking away — get this live").
+  Use when the user asks to "land" a change or PR — "land it", "land this", "land #N", or a
+  bare "/land" — meaning take a change all the way to merged without waiting for a human
+  hand-off. A thin modifier on /dev-kit:ship: bare /land runs ship's full idea→PR workflow
+  then autonomously merges instead of handing off; "land it" mid/after a ship run lands that
+  run's PR; "land #N" attaches to an existing PR. It does NOT change the quality bar —
+  required CI checks and (usually) Copilot convergence still gate the merge; land only removes
+  the human-wait. The landing loop delegates to ship's own "Land the PR" verb.
 ---
 
 # land
