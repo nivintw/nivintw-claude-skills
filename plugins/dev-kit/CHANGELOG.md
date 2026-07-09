@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.23.1](https://github.com/nivintw/nivintw-claude-skills/compare/dev-kit-v0.23.0...dev-kit-v0.23.1) (2026-07-09)
+
+
+### Bug Fixes
+
+* **dev-kit:** Correct unsupported minimal_output guidance + review-pr description ([3f31eff](https://github.com/nivintw/nivintw-claude-skills/commit/3f31effc888c450ce551d275cfea3fbe74fbb047)), closes [#171](https://github.com/nivintw/nivintw-claude-skills/issues/171)
+
 ## [0.23.0](https://github.com/nivintw/nivintw-claude-skills/compare/dev-kit-v0.22.0...dev-kit-v0.23.0) (2026-07-09)
 
 
