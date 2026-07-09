@@ -300,8 +300,10 @@ verification-cost × reasoning-depth* terms as Phase 3, **not by file count**.
 `/dev-kit:review-pr` already right-sizes internally; Phase 6's job is to hand it an honest
 read of the diff's risk surface and hold this floor:
 
-- **Always:** `/code-review` plus `/dev-kit:review-pr`'s own core pass. Every change is
-  reviewed — the gate scales *which extra passes run*, never *whether* review happens.
+- **Always:** `/dev-kit:review-pr` runs, with `/code-review` as its unconditional core pass
+  (it's *part* of the battery — never a separate `/code-review` on top, which would just
+  double the work). Every change is reviewed; the gate scales *which extra passes run*
+  (security, adversarial), never *whether* review happens.
 - **`/security-review`:** always for any diff touching a security-sensitive surface — auth,
   input handling, secrets, network, deserialization, file/path, permissions — **or** any
   non-trivial code change. Skip it **only** for docs-, prose-, or comment-only changes and
