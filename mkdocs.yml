@@ -7,9 +7,7 @@
 # mechanism — real navigation and content are authored per repo by the generate-docs
 # skill, not here. theme.features, markdown_extensions, edit_uri, and overrides/404.html
 # below now match the fleet-general baseline — this repo proved them out first and they've
-# since been folded upstream (nivintw/copier-everything#178). The one deliberate remaining
-# difference is exclude_docs's legacy *.html exclusions further down, kept until the batch
-# Pages-config flip (nivintw/repo-management#88) lands.
+# since been folded upstream (nivintw/copier-everything#178).
 site_name: "nivintw-claude-skills"
 site_description: "Tyler Nivin's Claude Code plugin marketplace."
 site_url: "https://nivintw.github.io/nivintw-claude-skills/"
@@ -208,24 +206,9 @@ extra_javascript:
 # includes/ holds pymdownx.snippets fragments (see markdown_extensions above) — they're
 # spliced into other pages via `--8<--`, not standalone nav pages, so they're excluded here
 # the same way superpowers/ is.
-#
-# The four legacy *.html pages, and the *.js/*.css assets they load, are the pre-migration
-# hand-rolled site, kept (not yet deleted) until the batch Pages-config flip
-# (nivintw/repo-management#88) confirms the new MkDocs build is actually live — excluded
-# here so the four pages' basename collision with the same-named .md pages doesn't fail the
-# strict build in the meantime. Remove this block (and the files themselves) once that issue
-# lands.
 exclude_docs: |
   superpowers/
   includes/
-
-  index.html
-  castify.html
-  dev-kit.html
-  worktree-guard.html
-  app.js
-  style.css
-  search-index.js
 
 nav:
   - Home: index.md
