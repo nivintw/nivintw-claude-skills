@@ -221,10 +221,11 @@ GitHub MCP to read remote file contents and issues directly. The MCP's `issue_wr
 explicit `owner`/`repo`, so filing into a different repo — e.g. the upstream template — is a
 first-class call: pass the target owner/repo directly, no directory change or clone needed.
 
-**Keep the reads lean.** Pass `minimal_output: true` on `list_issues` / `issue_read` /
-`search_issues` unless you genuinely need full issue bodies, and paginate in small batches
-(5–10) rather than pulling a whole large backlog into context at once — a default `list_issues`
-returns full-fidelity objects, wasted context when you only need numbers, titles, and labels.
+**Keep the reads lean.** Paginate in small batches (`perPage` 5–10, then `after` / `page`)
+rather than pulling a whole large backlog into context at once, and on `issue_read` request
+only the sub-resource you need (`get_labels` / `get_comments` / `get_sub_issues`) instead of
+the full issue — a broad `list_issues` returns full-fidelity objects, wasted context when you
+only need numbers, titles, and labels.
 
 Fall back to the **`gh` CLI** when the MCP server isn't connected — check first, since it can
 be absent in headless or cron runs — and whenever a human wants a command to paste into a
