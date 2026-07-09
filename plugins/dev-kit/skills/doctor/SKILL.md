@@ -78,12 +78,14 @@ The **STATUS** column distinguishes two failure modes that used to collapse toge
 ## Inventory the installed skills
 
 Answer "what do I have and what's it for" by listing each plugin in the marketplace and the
-skills under it, with the one-line purpose from each skill's frontmatter. Read the plugins
-from the cache (`~/.claude/plugins/cache/<marketplace>/<plugin>/<newest>/skills/*/SKILL.md`)
-or, when run inside the marketplace repo, from `plugins/<plugin>/skills/*/SKILL.md`. For each
-skill, surface its `name` and a trimmed first sentence of its `description`. Group by plugin,
-and mark which plugins/skills are **loaded in this session** versus merely installed, so the
-user can see the gap between available and active.
+skills under it, with a one-line purpose. **The helper's `SKILLS` section already does the
+mechanical harvest** — it emits each skill's `name` and the trimmed first sentence of its
+`description` from the cache — so read that section rather than globbing every `SKILL.md` and
+parsing its frontmatter yourself. Then group by plugin and mark which plugins/skills are
+**loaded in this session** versus merely installed, so the user can see the gap between
+available and active. (When run inside the marketplace repo and you want the working-tree copy
+rather than the cached one, read `plugins/<plugin>/skills/*/SKILL.md` directly — the helper
+reports the cache.)
 
 ### Classify installed hooks (blocking vs advisory)
 

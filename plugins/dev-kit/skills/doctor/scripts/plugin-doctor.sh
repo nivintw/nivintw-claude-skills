@@ -85,6 +85,29 @@ read_version() {
   fi
 }
 
+# --- Skill inventory ------------------------------------------------------------------
+# Harvest a skill's `name` and the trimmed first sentence of its `description` from a
+# SKILL.md's YAML frontmatter (the `>-` folded description is joined into one line first,
+# then cut at the first ". "). Emits "name<TAB>purpose". This moves the marketplace
+# inventory's per-skill frontmatter parsing off the model and into the helper.
+skill_purpose() {
+  local f="$1"
+  [ -f "$f" ] || return 0
+  awk '
+    NR==1 && $0=="---" { infm=1; next }
+    infm && $0=="---" { exit }
+    infm && /^name:/ { name=$0; sub(/^name:[[:space:]]*/,"",name); next }
+    infm && /^description:/ { indesc=1; next }
+    infm && indesc && /^[A-Za-z_-]+:/ { indesc=0 }
+    infm && indesc { line=$0; sub(/^[[:space:]]+/,"",line); desc=desc (desc==""?"":" ") line }
+    END {
+      s=desc
+      if (match(s, /\. /)) s=substr(s,1,RSTART)
+      if (name != "") printf "%s\t%s\n", name, s
+    }
+  ' "$f"
+}
+
 # --- Hook classification --------------------------------------------------------------
 # Heuristic (blocking vs advisory): a hook is BLOCKING when it runs on a decision-capable
 # event — one whose output/exit can veto an action (PreToolUse, UserPromptSubmit, Stop,
@@ -156,6 +179,7 @@ classify_plugin_hooks() {
 
 drift=0
 hook_rows=""
+skill_rows=""
 hooks_need_jq=0
 printf '%-14s %-18s %-10s %s\n' "PLUGIN" "INSTALLED" "LATEST" "STATUS"
 for dir in "$cache"/*/; do
@@ -199,6 +223,17 @@ for dir in "$cache"/*/; do
   printf '%-14s %-18s %-10s %s\n' "$plugin" "$installed" "${latest:-?}" "$status"
 
   classify_plugin_hooks "$plugin" "$vdir"
+
+  # Harvest the skill inventory for this plugin's newest cached version.
+  if [ -d "${vdir}/skills" ]; then
+    for skdir in "${vdir}/skills"/*/; do
+      skf="${skdir}SKILL.md"
+      [ -f "$skf" ] || continue
+      while IFS=$'\t' read -r sname spurpose; do
+        [ -n "$sname" ] && skill_rows+="${plugin}	${sname}	${spurpose}"$'\n'
+      done < <(skill_purpose "$skf")
+    done
+  fi
 done
 
 echo
@@ -221,5 +256,15 @@ elif [ "$hooks_need_jq" -ne 0 ]; then
   echo "HOOKS: jq not found — hook blocking/advisory classification skipped (install jq to enable)."
 else
   echo "HOOKS: none installed."
+fi
+
+echo
+if [ -n "$skill_rows" ]; then
+  echo "SKILLS  (each skill's name and the first sentence of its description)"
+  printf '%s' "$skill_rows" | while IFS=$'\t' read -r p n purpose; do
+    printf '  %-14s %-26s %s\n' "$p" "$n" "$purpose"
+  done
+else
+  echo "SKILLS: none found in the cache."
 fi
 exit 0

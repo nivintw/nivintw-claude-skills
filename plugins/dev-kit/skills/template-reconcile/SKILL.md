@@ -36,10 +36,13 @@ each piece either landed in the repo or was deliberately skipped — never silen
    conditionals, `_exclude`, and `_subdirectory` all resolved. This is *using* copier to render,
    not reimplementing its rendering. (Read `_subdirectory` from the template's `copier.yml` if
    you need to reason about the source layout directly.)
-3. Compare the **rendered** file set against the repo: for each file the template renders, check
-   whether it's present (tests/ infra, config, CI workflows, gate hooks, scripts). Add a
-   **positive control** — assert the render actually produced files — so a broken or empty render
-   can't masquerade as "nothing missing."
+3. Compare the **rendered** file set against the repo **mechanically — don't walk it file by
+   file in your head.** Build two sorted path lists — the rendered set (the paths copier's
+   `--pretend` output would create/overwrite) and the repo set (`git ls-files | sort`) — and
+   take the set difference with `comm -23 <rendered> <repo>` in one pass; the paths it prints
+   are the not-yet-present candidates. Add a **positive control** — assert the rendered set is
+   non-empty — so a broken or empty render can't masquerade as "nothing missing." The
+   set-diff is deterministic; your judgment goes into step 4, classifying each result.
 4. Output a checklist: **landed / intentionally-skipped / MISSING**. MISSING is the finding
    that warrants action. "Intentionally skipped" must have a documented reason (see the
    divergence registry below); absent one, treat it as a potential gap.
