@@ -282,6 +282,11 @@ into a hard failure. Then smoke-check the **built** output (not the raw Markdown
 from a `file://` path with no server, using the available Playwright tooling (the
 `mcp__playwright__*` MCP, or the Playwright CLI):
 
+Route the mechanical checks — page loads, network/console scraping, and interaction clicks
+(the first three below) — to a **cheap tier or a subagent** (the Playwright MCP drives fine
+from there); they return deterministic pass/fail. Keep the **pixel-judgment** check on the
+driver: judging rendering in both color schemes needs a capable vision model.
+
 - **Pages load.** Navigate to the built `index.html` and each key per-topic page it links
   (`mcp__playwright__browser_navigate`); confirm each renders content, not a blank page or an
   error.
