@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.23.0](https://github.com/nivintw/nivintw-claude-skills/compare/dev-kit-v0.22.0...dev-kit-v0.23.0) (2026-07-09)
+
+
+### Features
+
+* **dev-kit:** Scale ship's Phase 6 review battery to the diff ([e6f83f9](https://github.com/nivintw/nivintw-claude-skills/commit/e6f83f967e626aba8d324a7ff624b888c4142994)), closes [#166](https://github.com/nivintw/nivintw-claude-skills/issues/166)
+
 ## [0.22.0](https://github.com/nivintw/nivintw-claude-skills/compare/dev-kit-v0.21.0...dev-kit-v0.22.0) (2026-07-07)
 
 
