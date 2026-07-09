@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 # Changes here will be overwritten by Copier; NEVER EDIT MANUALLY.
-_commit: v1.11.1
+_commit: v1.12.0
 _src_path: gh:nivintw/copier-everything
 author_email: tyler@nivin.tech
 author_name: Tyler Nivin
@@ -20,6 +20,7 @@ markdown_has_frontmatter: true
 project_description: Tyler Nivin's Claude Code plugin marketplace.
 project_name: nivintw-claude-skills
 project_slug: nivintw-claude-skills
+release_model: single
 repo_name: nivintw-claude-skills
 repo_owner: nivintw
 test_frameworks:

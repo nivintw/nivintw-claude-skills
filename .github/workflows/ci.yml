@@ -35,6 +35,41 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  secret-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          # fetch-depth: 0 so gitleaks scans the WHOLE history, not just the tip. The pre-commit
+          # `gitleaks --staged` hook is a no-op in CI's clean checkout (nothing is staged), so
+          # without this job a generated project ships effectively zero CI secret scanning — and
+          # a secret committed then removed in a later commit is invisible to a tip-only scan.
+          fetch-depth: 0
+          # Read-only gate — don't leave the checkout token in .git/config (zizmor artipacked).
+          persist-credentials: false
+      - name: Scan full git history for secrets (gitleaks)
+        if: inputs.skip-quality-gate != true
+        env:
+          # renovate: datasource=github-releases depName=gitleaks/gitleaks
+          GITLEAKS_VERSION: "8.30.1"
+          # SHA256 of gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz — refreshed with the version
+          # by scripts/refresh-binary-checksums.sh.
+          GITLEAKS_SHA256: "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb"  # gitleaks:allow
+        run: |
+          set -euo pipefail
+          # Fail loudly on a shallow checkout rather than silently scanning a partial history —
+          # a shallow clone would turn this full-history scan into a false all-clear.
+          if [ "$(git rev-parse --is-shallow-repository)" = "true" ]; then
+            echo "::error::Checkout is shallow — gitleaks would scan only partial history. Ensure fetch-depth: 0."
+            exit 1
+          fi
+          curl -fsSL --retry 5 --retry-all-errors --retry-delay 2 --retry-max-time 60 \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" \
+            -o "$RUNNER_TEMP/gitleaks.tar.gz"
+          echo "${GITLEAKS_SHA256}  $RUNNER_TEMP/gitleaks.tar.gz" | sha256sum -c -
+          tar -xz -C "$RUNNER_TEMP" -f "$RUNNER_TEMP/gitleaks.tar.gz" gitleaks
+          "$RUNNER_TEMP/gitleaks" git --redact --verbose .
+
   lint-and-test:
     runs-on: ubuntu-latest
     steps:
@@ -120,7 +155,28 @@ jobs:
 
       - name: Shell tests (bats)
         if: inputs.skip-quality-gate != true
+        # bats publishes no downloadable release asset to checksum, so it's pinned by the git
+        # commit its release tag points at (a *_COMMIT pin, refreshed with the version by
+        # scripts/refresh-binary-checksums.sh) and installed from that exact commit — closing the
+        # unpinned/mutable `apt-get install bats` supply-chain gap. The checkout verifies the
+        # pinned commit actually is v${BATS_VERSION}'s tag before installing.
+        env:
+          # renovate: datasource=github-releases depName=bats-core/bats-core
+          BATS_VERSION: "1.13.0"
+          # Commit that v${BATS_VERSION}'s tag points at — refreshed with the version by
+          # scripts/refresh-binary-checksums.sh (a *_COMMIT pin, not a *_SHA256).
+          BATS_COMMIT: "3bca150ec86275d6d9d5a4fd7d48ab8b6c6f3d87"  # gitleaks:allow
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq bats
-          bats tests/
+          set -euo pipefail
+          git clone --quiet --filter=blob:none --no-checkout \
+            https://github.com/bats-core/bats-core "$RUNNER_TEMP/bats-core"
+          git -C "$RUNNER_TEMP/bats-core" checkout --quiet "$BATS_COMMIT"
+          # Fail loudly if the pinned commit isn't the one v${BATS_VERSION} tags — a mismatch
+          # means the pin drifted from its version (re-run the refresh script).
+          tag_commit="$(git -C "$RUNNER_TEMP/bats-core" rev-list -n 1 "v${BATS_VERSION}")"
+          if [ "$tag_commit" != "$BATS_COMMIT" ]; then
+            echo "::error::BATS_COMMIT ${BATS_COMMIT} != v${BATS_VERSION} tag commit ${tag_commit}"
+            exit 1
+          fi
+          "$RUNNER_TEMP/bats-core/install.sh" "$RUNNER_TEMP/bats-install"
+          "$RUNNER_TEMP/bats-install/bin/bats" tests/
