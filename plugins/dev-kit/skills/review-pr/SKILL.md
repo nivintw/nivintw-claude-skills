@@ -81,8 +81,11 @@ it comes back. Collect its findings and move on to the next pass, then to synthe
 review isn't done until you've merged every pass into the one report below (and, in Mode A
 under `/dev-kit:ship`, continued into the gate and PR phases).
 
-**Right-size, and degrade gracefully.** Scale to the change: a one-file docs/typo PR
-doesn't need the security or adversarial passes — say which passes are being skipped and why. And
+**Right-size, and degrade gracefully.** Scale to what the diff *touches*, not its size:
+docs-, prose-, or comment-only changes and cosmetic config skip the security and adversarial
+passes, but any security-sensitive surface (auth, input, secrets, network, deserialization,
+file/path, permissions) or non-trivial code change keeps `/security-review` — a one-line
+change isn't automatically safe. Say which passes are being skipped and why. And
 if an orchestrated skill isn't installed or is denied (e.g. `/security-review`,
 `/pr-review-toolkit:review-pr`), note that the coverage is missing and continue with the
 rest rather than failing the whole review. Conversely, **reach for any other relevant skill

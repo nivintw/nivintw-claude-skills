@@ -302,12 +302,27 @@ whole docs set against the whole codebase and shapes the site to the repo kind (
 Copier template, library/CLI, or generic), so it applies to any repo — only skip if the repo
 genuinely has no docs to maintain. Default to keeping docs current.
 
-## Phase 6 — Review (always)
+## Phase 6 — Review (always; breadth scaled to the diff)
 
-Run **`/dev-kit:review-pr`** (Mode A — your own change). That runs the full battery
-(`/code-review`, `/security-review`, `/pr-review-toolkit:review-pr`) **plus a context-chosen
-adversarial pass**, then synthesizes one prioritized report. Apply the must-fixes; re-run as
-needed; leave the branch green. Flip the tracking issue to `status:in-review` (via
+Run **`/dev-kit:review-pr`** (Mode A — your own change). The review itself never skips, but
+its **breadth scales to what the diff touches** — judged in the same *stakes ×
+verification-cost × reasoning-depth* terms as Phase 3, **not by file count**.
+`/dev-kit:review-pr` already right-sizes internally; Phase 6's job is to hand it an honest
+read of the diff's risk surface and hold this floor:
+
+- **Always:** `/code-review` plus `/dev-kit:review-pr`'s own core pass. Every change is
+  reviewed — the gate scales *which extra passes run*, never *whether* review happens.
+- **`/security-review`:** always for any diff touching a security-sensitive surface — auth,
+  input handling, secrets, network, deserialization, file/path, permissions — **or** any
+  non-trivial code change. Skip it **only** for docs-, prose-, or comment-only changes and
+  cosmetic config. A one-line change is *not* automatically safe: gate on what it touches,
+  not how big it is.
+- **Context-chosen adversarial pass:** reserved for cross-cutting, higher-risk, or
+  non-trivial logic changes. Skip it for docs-only and tiny, localized edits that can't
+  change behavior.
+
+Then synthesize one prioritized report. Apply the must-fixes; re-run as needed; leave the
+branch green. Flip the tracking issue to `status:in-review` (via
 `/dev-kit:handle-task-tracking`) once the change is up for review.
 
 **`/dev-kit:review-pr` and the reviewers under it return *hand-backs*, not stopping points.**
