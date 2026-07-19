@@ -35,11 +35,18 @@ get migrated mkdocs → Starlight **before those PRs merge**.
    (one PR there). It stays the fleet's single build/version pin; it is **not** retired.
 5. **Fleet application** — run the rewritten generate-docs across this repo (#176, dogfood)
    and the 8 adoption PR branches, converting each mkdocs scaffold to Starlight before merge.
+6. **castify embed guidance** — the `record-terminal-casts` skill ships **mkdocs-specific**
+   asciinema-embed guidance (`<figure class="cast">` + vendored player + `extra_css/js`) in
+   `plugins/castify/skills/record-terminal-casts/reference/embedding.md`. Starlight embeds
+   casts via an Astro/MDX component, so this reference (and this repo's own cast-embedding
+   pages) migrate too. Non-obvious scope — it's not just generate-docs.
 
 **Follow-ups (tracked, not blocking):**
 
 - `copier-everything` `include_docs_site` → scaffold Starlight instead of MkDocs, so **new**
   adoptions start correct (generate-docs migrates the transitional mkdocs scaffold meanwhile).
+- Renovate/Dependabot need an npm/pnpm manager entry once `package.json` exists (template-owned
+  config; rides along with the `include_docs_site` follow-up).
 
 **Out of scope:**
 
@@ -65,10 +72,16 @@ The hard *"requires `mkdocs.yml`; stop if absent"* gate is **removed**. Absence 
 
 ### What `create` scaffolds (the mechanism the skill used to disclaim)
 
-- `package.json` + committed `package-lock.json` — `astro`, `@astrojs/starlight`.
-  **Toolchain decision: npm** (committed lockfile for CI determinism; the fleet has no prior
-  Node preference — revisit only if a repo needs pnpm workspaces).
-- `astro.config.mjs` — Starlight integration + `sidebar` (the nav's new home).
+- `package.json` + committed `pnpm-lock.yaml` — `astro`, `@astrojs/starlight`.
+  **Toolchain decision: pnpm** (strict resolution / no phantom deps, content-addressable
+  store, fast; committed lockfile for CI determinism). CI uses `corepack`/`pnpm/action-setup`.
+  Renovate handles pnpm natively; Dependabot has supported pnpm lockfiles since 2024, so the
+  fleet's floor+ceiling model is intact.
+- `astro.config.mjs` — Starlight integration + `sidebar` (the nav's new home). **Must set
+  `site` + `base: '/<repo>/'`** for project Pages (`nivintw.github.io/<repo>/`) — the #1
+  Astro-on-Pages footgun: a wrong/absent `base` builds clean locally but 404s every asset and
+  internal link once deployed under the subpath. generate-docs sets this per-repo; the
+  Playwright check must exercise the site *under its base path*, not just at root.
 - `src/content/docs/**` (+ `src/content.config.ts` / content collection config), `index.mdx`
   landing page.
 - `.gitignore` additions: `node_modules/`, `dist/`, `.astro/`.
@@ -87,8 +100,18 @@ The hard *"requires `mkdocs.yml`; stop if absent"* gate is **removed**. Absence 
 | `mkdocs.yml`, Material `theme`/`markdown_extensions` | **removed** |
 | `docs/superpowers/**` (dev specs) | **preserved, not migrated content** — still the built-in excluded set; they move to `src/content/docs/` only if they were published, else stay put |
 
-Pages marked `doc_mode: target-state` keep their opt-out semantics. `README.md` stays the
-concise entry point.
+`README.md` stays the concise entry point.
+
+**Forward-looking pages — marker dropped.** The old `doc_mode: target-state` **frontmatter
+marker is removed** (and with it any Starlight content-schema worry). It's replaced by a
+**textual convention**: a page that **explicitly declares** it describes intended/future
+state (a visible in-content statement, e.g. "This is the design we are heading toward, not
+current behavior") is left alone; every other page is current-state and reconciled to code.
+The test is deterministic and textual — *honor an explicit declaration, never infer
+aspiration.* A page that silently describes behavior the code lacks, with no such
+declaration, is still **drift** and still gets fixed. This also reads more honestly for
+humans (a visible banner beats an invisible flag). generate-docs philosophy #5 is reworded
+accordingly.
 
 ### Affordance rubric & Structural tools — translated, not discarded
 
@@ -115,7 +138,7 @@ discipline stays.
 - generate-docs **writes the thin `docs.yml` caller** in each repo → self-sufficiency of the
   *target repo* (nothing pre-scaffolded required).
 - The caller **delegates to repo-management's reusable `workflow_call`**, migrated to run
-  `npm ci && npm run build` (`astro build`) and deploy to Pages. **One fleet-wide pin** for
+  `pnpm install --frozen-lockfile && pnpm build` (`astro build`) and deploy to Pages. **One fleet-wide pin** for
   Node/Astro/Starlight versions + build logic, maintained in one place.
 - Pages source stays `pages: {enabled: true, build_type: workflow}` in each repo's
   repo-management config.
@@ -128,7 +151,7 @@ discipline stays.
 - **Rewrite `check_docs.py`** to validate Starlight structure statically: internal links,
   sidebar-entry ↔ file correspondence, anchors, orphan pages — against `src/content/docs/**`
   and the `astro.config.mjs` `sidebar`, not `mkdocs.yml`/`docs_dir`.
-- **Real build:** `npm ci && npm run build`; `astro build` already hard-fails on broken
+- **Real build:** `pnpm install --frozen-lockfile && pnpm build`; `astro build` already hard-fails on broken
   internal links (replaces `mkdocs build --strict`).
 - **Playwright smoke over built `dist/`** (already ~80% present in the skill — retarget from
   MkDocs to Astro output and **strengthen the screenshot-driven visual check the user asked
@@ -166,7 +189,9 @@ generate-docs doc page `docs/dev-kit/generate-docs.md` updates as part of the mi
 
 1. **#176 hygiene** — latest `copier-everything` release + rebase/update onto `main`.
 2. **repo-management** — migrate the reusable docs `workflow_call` to Astro/Starlight (its own
-   PR); lands first (or branch-referenceable).
+   PR); lands first (or branch-referenceable). **Hard gate:** #176's `docs.yml` caller points
+   at this workflow, so #176's docs CI can't go green — and #176 can't merge — until this
+   lands. repo-management leads, #176 follows (upstream-before-downstream, as with the adoptions).
 3. **generate-docs rewrite** on #176 (dev-kit `feat`) — kept as distinct, reviewable commits
    alongside the copier-update chore.
 4. **Dogfood** — run rewritten generate-docs on **this repo** (#176), migrating its own
@@ -191,7 +216,7 @@ commits for reviewability.
 - Self-sufficient generate-docs (create/update/migrate); no template requirement.
 - Publishing = thin caller (written by generate-docs) + reusable Astro workflow
   (repo-management, migrated, one pin).
-- Node toolchain = **npm** + committed lockfile.
+- Node toolchain = **pnpm** + committed `pnpm-lock.yaml` (corepack/pnpm-action in CI).
 - `include_docs_site` → Starlight is a **follow-up**, not blocking.
 - #176 carries the generate-docs feat (+ this repo's docs migration).
 
@@ -203,5 +228,7 @@ commits for reviewability.
 - **Astro `social`/OG-image** parity with Material's `social` plugin (Linux-CI-only quirk
   today) — decide whether Starlight OG images are in the baseline.
 - **`.mdx` licensing** — confirm REUSE glob covers it; add if not.
-- **Content collection schema** — Starlight's frontmatter schema vs. the skill's `doc_mode`
-  frontmatter marker (custom field needs to be allowed in the collection schema).
+- **Content collection schema** — confirm the fleet's existing docs frontmatter (titles,
+  descriptions, any per-page keys) all satisfy Starlight's default content schema during
+  migrate; extend the schema for any legitimately-needed field. (The `doc_mode` marker is
+  gone, so it's no longer a concern — this is only about whatever real frontmatter pages carry.)
