@@ -121,6 +121,10 @@ jobs:
       # cleanly. Every OTHER failure (gh API 5xx, auth, a missing required check on main)
       # then reddens the job under `set -euo pipefail`, so a stalled release is loud instead
       # of hiding as a ::warning:: on an otherwise-green run.
+      # `!= '[]'` is defensive belt-and-suspenders, not load-bearing today: verified against
+      # release-please-action v4.4.1's source that `prs` is only ever set (never to `"[]"`)
+      # when at least one PR exists — but the action isn't pinned by version, just by commit
+      # SHA that Renovate bumps, so this guards against a future release changing that.
       - name: Auto-merge the Release PRs
         if: ${{ steps.release.outputs.prs && steps.release.outputs.prs != '[]' }}
         env:
@@ -129,20 +133,25 @@ jobs:
           RELEASE_PRS: ${{ steps.release.outputs.prs }}
         run: |
           set -euo pipefail
+          # Capture jq's output first (not `jq | while`): under `set -e` a jq failure (null /
+          # non-array `prs`) aborts the step loudly instead of being swallowed by the pipe and
+          # silently enabling auto-merge on nothing. Computed before the auto_merge_allowed
+          # check too, so a disabled-auto-merge warning can name the exact PR(s) to merge
+          # manually instead of pointing at a discovery step.
+          numbers="$(printf '%s' "$RELEASE_PRS" | jq -r '.[].number')"
           # Read the setting in its own statement so a gh API failure here (5xx/auth) trips
           # set -e and reddens the job, rather than the empty result masquerading as "off".
           auto_merge_allowed="$(gh api "repos/${GH_REPO}" --jq '.allow_auto_merge')"
           if [ "$auto_merge_allowed" != "true" ]; then
-            echo "::warning::Auto-merge is off for ${GH_REPO}, so the Release PRs were left open. Enable 'Allow auto-merge' + 'Allow rebase merging' and require a status check on main, then merge them (manually for now)."
+            # `paste -d` treats a multi-char delimiter as a cycling set of characters, not a
+            # literal string, so it'd alternate ',' and ' ' across 3+ items — join on a single
+            # char first, then widen it to ", ".
+            pr_list="$(echo "$numbers" | sed 's/^/#/' | paste -sd, - | sed 's/,/, /g')"
+            echo "::warning::Auto-merge is off for ${GH_REPO}, so Release PR(s) ${pr_list} were left open (merge manually once ready). Enable 'Allow auto-merge' + 'Allow rebase merging' and require a status check on main to automate this."
             exit 0
           fi
-          # Capture jq's output first (not `jq | while`): under `set -e` a jq failure (null /
-          # non-array `prs`) aborts the step loudly instead of being swallowed by the pipe and
-          # silently enabling auto-merge on nothing. A defensive empty `prs` still loops zero
-          # times even though the `if:` already skips that case.
-          numbers="$(printf '%s' "$RELEASE_PRS" | jq -r '.[].number')"
-          for n in $numbers; do
-            gh pr merge "$n" --auto --rebase
+          for num in $numbers; do
+            gh pr merge "$num" --auto --rebase
           done
 
       # Deliberately a SECOND step, not folded into the auto-merge above: the two act on
@@ -185,24 +194,30 @@ jobs:
           CI_APP_SLUG: ${{ vars.CI_APP_SLUG }}
         run: |
           set -euo pipefail
-          # `gh pr list --jq` only accepts a single filter expression (no `--arg` passthrough,
-          # unlike standalone jq) — piping through jq directly instead. Assigning the listing
-          # to a variable (rather than `mapfile < <(...)`, which runs the producer in a process
-          # substitution whose exit status `set -e` can't see) makes a `gh pr list` failure
-          # (auth, API 5xx) abort the step loudly instead of silently reading as "none found".
-          # --limit raised well past gh's 30-item default so a busier repo's stranded PR can't
-          # fall off the first page. commits is deliberately NOT fetched here — pulling it for
-          # every open PR just to filter almost all of them back out again below is wasted
-          # query cost on a hot path (this step runs on every push to main). It's fetched once
-          # per actual candidate, below, in the same fresh call that re-verifies
-          # mergeStateStatus.
+          # Two-phase on purpose. Phase 1 lists open PRs on CHEAP fields only and must NOT
+          # request `commits`: `gh pr list --json ...,commits` makes GitHub's GraphQL cost
+          # estimator score the nested commits→authors connection across the whole requested
+          # page (roughly limit × 100 commits × authors) and REJECT the query before it runs
+          # once the page size passes ~50 ("requesting up to N possible nodes ... exceeds the
+          # maximum limit of 500,000"). It fails on the query SHAPE, independent of how many PRs
+          # or commits actually exist — so requesting commits here reddened this step on
+          # essentially every run once CI_APP_SLUG was set. `commits` is fetched per stranded
+          # candidate in phase 2 instead (a repo normally has 0-1 stranded Release PRs open at
+          # once, so that's a couple of extra calls, not one per open PR).
+          # Plain assignment (not `mapfile < <(...)`, a process substitution whose exit status
+          # `set -e` can't see) so a `gh pr list` failure (auth, API 5xx) aborts the step loudly
+          # instead of silently reading as "none found". --limit raised well past gh's 30-item
+          # default so a busier repo's stranded PR can't fall off the first page.
           prs_json="$(gh pr list --state open --limit 100 \
             --json number,author,labels,mergeStateStatus)"
           # Same reasoning as above: a plain assignment (not `mapfile < <(...)`) so a jq
           # failure trips `set -e` too, instead of silently reading as "none found". An empty
           # filter result is a legitimate zero-matches outcome, not a failure — `mapfile` from
           # an empty string yields a one-element array holding "", so that case is normalized
-          # back to a true zero-length array below.
+          # back to a true zero-length array below. Literal equality against DIRTY (not
+          # "!= CLEAN"): mergeStateStatus is transiently UNKNOWN right after a push, so a
+          # just-orphaned PR simply isn't caught this run and converges on a later one rather
+          # than being misclassified.
           stranded_str="$(printf '%s' "$prs_json" | jq -r --arg app "${CI_APP_SLUG}[bot]" \
             '.[] | select(.author.login == $app and (.labels[]?.name == "autorelease: pending") and .mergeStateStatus == "DIRTY") | .number')"
           stranded=()
@@ -223,6 +238,8 @@ jobs:
             # landing after the initial list but not flipping mergeStateStatus away from DIRTY
             # would slip past a stale check while still passing a fresh mergeStateStatus
             # recheck. One fresh read backs all three conditions from the original filter.
+            # (This full-record re-fetch replaces the cheap phase-1 list's role as the commits
+            # source, so no separate commits-only `gh pr view` is needed for the guard below.)
             current_json="$(gh pr view "$num" --json mergeStateStatus,commits,labels)"
             current_status="$(printf '%s' "$current_json" | jq -r '.mergeStateStatus')"
             if [ "$current_status" != "DIRTY" ]; then
@@ -240,19 +257,29 @@ jobs:
             # closing it under the "release-please will regenerate this PR" message would
             # silently discard those commits, not just an auto-generated bump. Checked from
             # the branch's actual commits (a persistent record, unlike the mutable `author`
-            # field) rather than trusting the PR-level author. A commit author with no linked
-            # GitHub account (an unlinked git email) comes back with a null OR empty-string
-            # `.login`/`.email`/`.name` — falling straight to any of them and joining would
-            # silently collapse a real human commit to an empty string (jq's `//` treats ""
-            # as truthy, so a bare `.login // .email` wouldn't fall through for that case
-            # either), defeating this whole check. Explicitly treat null and "" as "no value"
-            # at every fallback step. The final `gsub` strips embedded newlines: a commit's
-            # `user.name`/`user.email` is attacker-controlled by anyone with push access to
-            # the branch, and an unstripped newline followed by `::` could inject a forged
-            # workflow log annotation into this step's output.
+            # field) rather than trusting the PR-level author.
+            # Fail SAFE (leave open) on any degraded shape this check can't verify, resolving it
+            # to a non-empty "unknown-authors" marker rather than an empty string:
+            #   - a null/absent `.commits` (whole response degraded), and
+            #   - a commit whose `.authors` is empty/null/absent (per-commit degraded) — without
+            #     this, that commit's authors iterate to nothing, the list collapses to "", and
+            #     the [ -n ] check below reads "" as "verified bot-only" and auto-closes the PR,
+            #     discarding a human's commit (the opposite of this guard's fail-safe direction).
+            # A naive `.commits[]?`/`.authors[]?` would silently swallow both into "verified
+            # bot-only" instead. A commit author with no linked GitHub account comes back with a
+            # null OR empty-string `.login` AND/OR `.email`; jq's `//` treats "" as truthy, so
+            # guard both null and "" on EACH field before falling through, or a `login: null,
+            # email: ""` human commit would collapse to "" and be misread as bot-only. The
+            # embedded-newline strip (a commit's `user.name`/`user.email` is attacker-controlled
+            # by anyone with push access, and a newline followed by `::` could inject a forged
+            # workflow log annotation) is applied by the bash parameter expansion below.
             non_bot_logins="$(printf '%s' "$current_json" | jq -r --arg app "${CI_APP_SLUG}[bot]" \
-              '[.commits[].authors[]? | select(.login != $app) | ((.login | select(. != null and . != "")) // (.email | select(. != null and . != "")) // (.name | select(. != null and . != "")) // "unknown-author")] | unique | join(", ") | gsub("[\r\n]+"; " ")')"
+              'if .commits == null then "unknown-authors (commits field missing from API response)" elif any(.commits[]; (.authors // []) | length == 0) then "unknown-authors (a commit is missing author data)" else ([.commits[].authors[]? | select(.login != $app) | ((.login | select(. != null and . != "")) // (.email | select(. != null and . != "")) // .name // "unknown-author")] | unique | join(", ")) end')"
             if [ -n "$non_bot_logins" ]; then
+              # Strip CR/LF from the (attacker-influenceable) author string before echoing it
+              # into a ::warning:: — a forged commit author name containing a newline could
+              # otherwise inject spurious GitHub Actions workflow-command annotations (log spoof).
+              non_bot_logins="${non_bot_logins//[$'\r\n']/ }"
               echo "::warning::Release PR #${num} is DIRTY but carries a commit from ${non_bot_logins} (not just ${CI_APP_SLUG}[bot]) — leaving it open rather than auto-closing, since that would discard those commits. Resolve the conflict manually."
               continue
             fi
