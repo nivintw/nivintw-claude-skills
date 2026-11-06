@@ -4,10 +4,11 @@
 
 # scripts/refresh-binary-checksums.sh's supply-chain tamper gate (refusing to silently
 # re-pin a SHA256 when the upstream asset changed under an unchanged *_VERSION) is only
-# active when BASE_REF is set — .github/renovate.json's postUpgradeTask must pass it, or
-# the exact automated run the gate exists for (Renovate re-pinning checksums unattended)
-# runs with the gate silently off. Caught by review once already; this is the regression
-# guard so it can't happen again without a test failing.
+# active when BASE_REF is set. The central Renovate runner (nivintw/repo-management's
+# renovate-global.json) sets BASE_REF for every repo and allowlists only the bare script, so
+# .github/renovate.json's postUpgradeTask must be exactly that command. Anything else, such
+# as a command that also sets BASE_REF inline, is refused by the runner, and the checksum is
+# never refreshed.
 
 setup() {
   ROOT="$BATS_TEST_DIRNAME/.."
@@ -19,9 +20,9 @@ setup() {
   jq -e . "$RENOVATE_JSON" >/dev/null
 }
 
-@test "the checksum-refresh postUpgradeTask sets BASE_REF" {
+@test "the checksum-refresh postUpgradeTask is the command the central runner allows" {
   jq -e '
     [.packageRules[]?.postUpgradeTasks?.commands[]? | select(contains("refresh-binary-checksums.sh"))]
-    | length > 0 and all(contains("BASE_REF="))
+    | length > 0 and all(test("^scripts/refresh-binary-checksums\\.sh$"))
   ' "$RENOVATE_JSON" >/dev/null
 }
