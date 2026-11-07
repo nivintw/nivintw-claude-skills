@@ -26,4 +26,13 @@ exclude = [
   # The published-site URL in README.md 404s until the batch Pages-source flip
   # (nivintw/repo-management#88) points Pages at the MkDocs build. Remove once it lands.
   "https://nivintw\\.github\\.io/nivintw-claude-skills/dev-kit/",
+  # Documentation universals — safe to exclude in any project's docs.
+  # Loopback / local-dev hosts that never resolve in CI.
+  "^https?://(localhost|127\\.0\\.0\\.1)([:/]|$)",
+  # RFC 2606 reserved example domains — placeholders, never real links.
+  "^https?://([^/@]+\\.)?example\\.(com|org|net)([:/]|$)",
+  # A not-yet-published private GitHub Pages site — REQUIRES a subdomain label (`x.pages.github.io`),
+  # so the bare `pages.github.io` (GitHub's Pages home/docs) still gets link-checked. The `([:/]|$)`
+  # boundary after `pages.github.io` keeps a spoof host like `evil-pages.github.io.attacker.com` out.
+  "^https?://[^/@]+\\.pages\\.github\\.io([:/]|$)",
 ]
