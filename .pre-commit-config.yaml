@@ -133,7 +133,7 @@ repos:
 
   # ------------------------------- ✨ Spelling -------------------------------------- #
   - repo: https://github.com/crate-ci/typos
-    rev: v1.48.0
+    rev: v1.52.0
     hooks:
       - id: typos
         name: "✨ language · Check spelling with typos"
