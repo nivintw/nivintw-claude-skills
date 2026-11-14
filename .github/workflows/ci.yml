@@ -38,7 +38,7 @@ jobs:
   secret-scan:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           # fetch-depth: 0 so gitleaks scans the WHOLE history, not just the tip. The pre-commit
           # `gitleaks --staged` hook is a no-op in CI's clean checkout (nothing is staged), so
@@ -77,9 +77,20 @@ jobs:
         with:
           # Read-only gate — don't leave the checkout token in .git/config (zizmor artipacked).
           persist-credentials: false
+          # Full history, so the binary-pin check below can compare against the PR's base commit.
+          fetch-depth: 0
+
+      - name: Binary pins only move with their version
+        # A *_SHA256 / *_COMMIT pin that changes while its *_VERSION doesn't is a release asset
+        # swapped on a published tag, or a hand edit hiding one. Inside this required check so
+        # it blocks the merge, Renovate's included.
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: scripts/check-binary-pins.sh "$BASE_SHA"
 
       - name: Set up uv (+ managed Python)
-        uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990 # v8.3.2
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
           enable-cache: true
 
@@ -101,8 +112,6 @@ jobs:
           # runs --offline in the hook (token-free local gate) and is SKIP'd here so CI
           # runs the FULL online audit as the dedicated step below instead.
           SKIP: taplo,hawkeye-format,no-commit-to-branch,zizmor
-        # Pinned (unlike the unpinned `uvx prek run` a contributor runs locally, per
-        # CLAUDE.md) so a prek release can't change CI's behavior without a deliberate bump.
         run: uvx prek@0.5.10 run --all-files
 
       - name: Audit workflows for security issues (zizmor, online)
@@ -114,7 +123,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           # renovate: datasource=pypi depName=zizmor
-          ZIZMOR_VERSION: "1.26.1"
+          ZIZMOR_VERSION: "1.32.0"
         run: uvx "zizmor@${ZIZMOR_VERSION}" --no-progress .github/workflows/
 
       - name: Check SPDX license headers (hawkeye)
@@ -162,10 +171,10 @@ jobs:
         # pinned commit actually is v${BATS_VERSION}'s tag before installing.
         env:
           # renovate: datasource=github-releases depName=bats-core/bats-core
-          BATS_VERSION: "1.13.0"
+          BATS_VERSION: "1.14.0"
           # Commit that v${BATS_VERSION}'s tag points at — refreshed with the version by
           # scripts/refresh-binary-checksums.sh (a *_COMMIT pin, not a *_SHA256).
-          BATS_COMMIT: "3bca150ec86275d6d9d5a4fd7d48ab8b6c6f3d87"  # gitleaks:allow
+          BATS_COMMIT: "eb7f42f8d608ac693d7a4b67474f6714ea68cfc5"  # gitleaks:allow
         run: |
           set -euo pipefail
           git clone --quiet --filter=blob:none --no-checkout \
