@@ -133,7 +133,7 @@ repos:
 
   # ------------------------------- ✨ Spelling -------------------------------------- #
   - repo: https://github.com/crate-ci/typos
-    rev: v1.52.0
+    rev: v1.52.2
     hooks:
       - id: typos
         name: "✨ language · Check spelling with typos"
@@ -156,7 +156,7 @@ repos:
 
   # -------------------------------- 📝 Markdown ------------------------------------- #
   - repo: https://github.com/rvben/rumdl-pre-commit
-    rev: v0.3.2
+    rev: v0.3.4
     hooks:
       - id: rumdl
         name: "📝 markdown · Lint/format with rumdl"
